@@ -17,7 +17,7 @@ LidarGraphSlam::LidarGraphSlam(
     std::unique_ptr<ScanMatcherType>&& scanMatcher,
     double mapResolution,
     int patchSize,
-    int numOfScansForLocalMap,
+    int numOfScansForLatestMap,
     double travelDistThresholdForLocalMap,
     const RobotPose2D<double>& initialPose,
     double updateThresholdTravelDist,
@@ -30,6 +30,9 @@ LidarGraphSlam::LidarGraphSlam(
     mPoseGraph(nullptr),
     mScanMatcher(std::move(scanMatcher)),
     mInitialPose(initialPose),
+    mLastOdomPose(0.0, 0.0, 0.0),
+    mAccumulatedTravelDist(0.0),
+    mAccumulatedAngle(0.0),
     mLastMapUpdateOdomPose(0.0, 0.0, 0.0),
     mLastMapUpdateTime(0.0),
     mUpdateThresholdTravelDist(updateThresholdTravelDist),
@@ -45,7 +48,7 @@ LidarGraphSlam::LidarGraphSlam(
 
     /* Construct the grid map */
     this->mGridMapBuilder = std::make_shared<GridMapBuilder>(
-        mapResolution, patchSize, numOfScansForLocalMap,
+        mapResolution, patchSize, numOfScansForLatestMap,
         travelDistThresholdForLocalMap, usableRangeMin, usableRangeMax);
     
     /* Construct the pose graph */
@@ -56,16 +59,18 @@ LidarGraphSlam::LidarGraphSlam(
 bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
                                  const RobotPose2D<double>& odomPose)
 {
-    /* Calculate the relative odometry pose from the last map update */
+    /* Calculate the relative odometry pose */
     const RobotPose2D<double> relOdomPose = (this->mProcessCount == 0) ?
         RobotPose2D<double>(0.0, 0.0, 0.0) :
-        InverseCompound(this->mLastMapUpdateOdomPose, odomPose);
+        InverseCompound(this->mLastOdomPose, odomPose);
+    
+    this->mLastOdomPose = odomPose;
 
     /* Accumulate the linear and angular distance */
-    const double accumulatedTravelDist =
+    this->mAccumulatedTravelDist +=
         std::sqrt(relOdomPose.mX * relOdomPose.mX +
                   relOdomPose.mY * relOdomPose.mY);
-    const double accumulatedAngle = std::fabs(relOdomPose.mTheta);
+    this->mAccumulatedAngle += std::fabs(relOdomPose.mTheta);
 
     /* Compute the elapsed time since the last map update */
     const double elapsedTime = (this->mProcessCount == 0) ?
@@ -74,9 +79,9 @@ bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
     /* Map is updated only when the robot moved more than the specified
      * distance or the specified time has elapsed since the last map update */
     const bool travelDistThreshold =
-        accumulatedTravelDist >= this->mUpdateThresholdTravelDist;
+        this->mAccumulatedTravelDist >= this->mUpdateThresholdTravelDist;
     const bool angleThreshold =
-        accumulatedAngle >= this->mUpdateThresholdAngle;
+        this->mAccumulatedAngle >= this->mUpdateThresholdAngle;
     const bool timeThreshold = elapsedTime >= this->mUpdateThresholdTime;
     const bool isFirstScan = this->mProcessCount == 0;
     const bool mapUpdateNeeded =
@@ -89,13 +94,16 @@ bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
     RobotPose2D<double> estimatedPose;
 
     if (this->mProcessCount == 0) {
-        /* Fix to the initial pose for the first scan */
-        estimatedPose = RobotPose2D<double>(0.0, 0.0, 0.0);
+        /* Set the initial pose for the first scan */
+        estimatedPose = this->mInitialPose;
     } else {
         /* Perform scan matching against the grid map
          * that contains latest scans */
+        const RobotPose2D<double> relPoseFromLastMapUpdate =
+            InverseCompound(this->mLastMapUpdateOdomPose, odomPose);
         const RobotPose2D<double> initialPose =
-            Compound(this->mPoseGraph->LatestNode().Pose(), relOdomPose);
+            Compound(this->mPoseGraph->LatestNode().Pose(),
+                     relPoseFromLastMapUpdate);
         this->mScanMatcher->OptimizePose(
             this->mGridMapBuilder->LatestMap(),
             scanData, initialPose, estimatedPose);
@@ -138,6 +146,8 @@ bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
 
     /* Update miscellaneous parameters */
     this->mProcessCount += 1;
+    this->mAccumulatedTravelDist = 0.0;
+    this->mAccumulatedAngle = 0.0;
     this->mLastMapUpdateOdomPose = odomPose;
     this->mLastMapUpdateTime = scanData->TimeStamp();
 

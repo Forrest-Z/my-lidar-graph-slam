@@ -29,7 +29,7 @@ public:
     LidarGraphSlam(std::unique_ptr<ScanMatcherType>&& scanMatcher,
                    double mapResolution,
                    int patchSize,
-                   int numOfScansForLocalMap,
+                   int numOfScansForLatestMap,
                    double travelDistThresholdForLocalMap,
                    const RobotPose2D<double>& initialPose,
                    double updateThresholdTravelDist,
@@ -76,6 +76,12 @@ private:
     std::unique_ptr<ScanMatcherType> mScanMatcher;
     /* Initial pose */
     RobotPose2D<double>              mInitialPose;
+    /* Last odometry pose */
+    RobotPose2D<double>              mLastOdomPose;
+    /* Accumulated travel distance since the last map update */
+    double                           mAccumulatedTravelDist;
+    /* Accumulated angle since the last map update */
+    double                           mAccumulatedAngle;
     /* Odometry pose at the last map update */
     RobotPose2D<double>              mLastMapUpdateOdomPose;
     /* Time of the last map update */
