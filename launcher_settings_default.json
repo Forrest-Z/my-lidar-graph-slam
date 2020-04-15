@@ -1,0 +1,40 @@
+{
+    "GuiEnabled": "true",
+    "DrawFrameInterval": 5,
+
+    "CostGreedyEndpoint": {
+        "UsableRangeMin": 0.01,
+        "UsableRangeMax": 50.0,
+        "HitAndMissedDist": 0.075,
+        "OccupancyThreshold": 0.1,
+        "GaussianSigma": 0.05,
+        "KernelSize": 1,
+        "ScalingFactor": 1.0
+    },
+
+    "ScanMatcherGreedyEndpoint": {
+        "LinearStep": 0.1,
+        "AngularStep": 0.1,
+        "MaxIterations": 100,
+        "MaxNumOfRefinements": 5
+    },
+
+    "LidarGraphSlam": {
+        "Map": {
+            "Resolution": 0.05,
+            "PatchSize": 64,
+            "NumOfScansForLatestMap": 5,
+            "TravelDistThresholdForLocalMap": 10.0
+        },
+        "InitialPose": {
+            "X": 0.0,
+            "Y": 0.0,
+            "Theta": 0.0
+        },
+        "UpdateThresholdTravelDist": 1.0,
+        "UpdateThresholdAngle": 0.5,
+        "UpdateThresholdTime": 5.0,
+        "UsableRangeMin": 0.01,
+        "UsableRangeMax": 50.0
+    }
+}
