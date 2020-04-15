@@ -118,7 +118,7 @@ void ScanMatcherGreedyEndpoint<T, U>::OptimizePose(
             minCost = minLocalCost;
             bestPose = bestLocalPose;
         } else {
-            /* Update the delta value if pose not improved */
+            /* Update the step value if pose not improved */
             ++numOfRefinements;
             currentLinearStep *= 0.5;
             currentAngularStep *= 0.5;
