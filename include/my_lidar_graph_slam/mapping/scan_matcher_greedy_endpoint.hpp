@@ -28,13 +28,13 @@ public:
     ScanMatcherGreedyEndpoint(double linearStep,
                               double angularStep,
                               int maxIterations,
-                              int numOfRefinements,
+                              int maxNumOfRefinements,
                               CostType&& costFunc) :
         ScanMatcher<T, U>(),
         mLinearStep(linearStep),
         mAngularStep(angularStep),
         mMaxIterations(maxIterations),
-        mNumOfRefinements(numOfRefinements),
+        mMaxNumOfRefinements(maxNumOfRefinements),
         mCostFunc(std::move(costFunc)) { }
     
     /* Destructor */
@@ -54,7 +54,7 @@ private:
     /* Maximum number of iterations */
     int      mMaxIterations;
     /* Maximum number of step parameter updates */
-    int      mNumOfRefinements;
+    int      mMaxNumOfRefinements;
     /* Cost function */
     CostType mCostFunc;
 };
@@ -123,7 +123,7 @@ void ScanMatcherGreedyEndpoint<T, U>::OptimizePose(
             currentLinearStep *= 0.5;
             currentAngularStep *= 0.5;
         }
-    } while ((poseUpdated || numOfRefinements < this->mNumOfRefinements) &&
+    } while ((poseUpdated || numOfRefinements < this->mMaxNumOfRefinements) &&
              (++numOfIterations < this->mMaxIterations));
     
     /* Calculate the robot pose from the updated sensor pose */
