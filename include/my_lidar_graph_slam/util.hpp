@@ -9,7 +9,10 @@
 #include <type_traits>
 #include <vector>
 
+#include <Eigen/Core>
+
 #include "my_lidar_graph_slam/point.hpp"
+#include "my_lidar_graph_slam/pose.hpp"
 
 namespace MyLidarGraphSlam {
 
@@ -67,6 +70,43 @@ T NormalizeAngle(T theta)
         normalizedTheta += 2.0 * M_PI;
     
     return normalizedTheta;
+}
+
+/* Rotate a covariance matrix */
+inline void RotateCovariance(
+    const double rotationAngle,
+    const Eigen::Matrix3d& covMat,
+    Eigen::Matrix3d& rotatedCovMat)
+{
+    const double cosTheta = std::cos(rotationAngle);
+    const double sinTheta = std::sin(rotationAngle);
+
+    /* Create a rotation matrix */
+    Eigen::Matrix3d rotationMat;
+    rotationMat << cosTheta, -sinTheta, 0.0,
+                   sinTheta,  cosTheta, 0.0,
+                   0.0,       0.0,      1.0;
+    
+    /* Rotate a covariance matrix */
+    rotatedCovMat = rotationMat * covMat * rotationMat.transpose();
+}
+
+/* Convert a covariance matrix from world frame to robot frame */
+inline void ConvertCovarianceFromWorldToRobot(
+    const RobotPose2D<double>& robotPose,
+    const Eigen::Matrix3d& worldCovMat,
+    Eigen::Matrix3d& robotCovMat)
+{
+    RotateCovariance(-robotPose.mTheta, worldCovMat, robotCovMat);
+}
+
+/* Convert a covariance matrix from robot frame to world frame */
+inline void ConvertCovarianceFromRobotToWorld(
+    const RobotPose2D<double>& robotPose,
+    const Eigen::Matrix3d& robotCovMat,
+    Eigen::Matrix3d& worldCovMat)
+{
+    RotateCovariance(robotPose.mTheta, robotCovMat, worldCovMat);
 }
 
 /* Execute bresenham algorithm */
