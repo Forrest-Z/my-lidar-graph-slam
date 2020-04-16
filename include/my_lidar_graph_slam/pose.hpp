@@ -8,8 +8,6 @@
 #include <iostream>
 #include <type_traits>
 
-#include "my_lidar_graph_slam/util.hpp"
-
 namespace MyLidarGraphSlam {
 
 template <typename T>
