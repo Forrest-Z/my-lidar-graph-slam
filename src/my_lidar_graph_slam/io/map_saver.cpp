@@ -58,7 +58,7 @@ bool MapSaver::SavePoseGraph(const PoseGraphPtr& poseGraph,
         nodeInfo.put("Pose.X", node.Pose().mX);
         nodeInfo.put("Pose.Y", node.Pose().mY);
         nodeInfo.put("Pose.Theta", node.Pose().mTheta);
-        nodeInfo.put("Timestamp", node.ScanData()->TimeStamp());
+        nodeInfo.put("TimeStamp", node.ScanData()->TimeStamp());
         poseGraphNodes.push_back(std::make_pair("", nodeInfo));
     }
 
