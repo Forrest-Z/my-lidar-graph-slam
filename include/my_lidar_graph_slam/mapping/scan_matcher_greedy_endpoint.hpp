@@ -153,50 +153,9 @@ void ScanMatcherGreedyEndpoint<T, U>::ComputeCovariance(
     const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
     const RobotPose2D<double> sensorPose = Compound(robotPose, relPose);
 
-    /* Approximate a covariance matrix using Laplace approximation
-     * Covariance matrix is computed from the inverse of a Hessian matrix
-     * of a cost function at the estimated robot pose (optimum point) */
-    /* Hessian matrix is then calculated using a Jacobian matrix based on
-     * Gauss-Newton approximation */
-
-    /* Calculate the cost function */
-    const double diffLinear = 0.01;
-    const double diffAngular = 0.01;
-
-    const RobotPose2D<double> deltaX { diffLinear, 0.0, 0.0 };
-    const RobotPose2D<double> deltaY { 0.0, diffLinear, 0.0 };
-    const RobotPose2D<double> deltaTheta { 0.0, 0.0, diffAngular };
-
-    const auto costValue = [&](const RobotPose2D<double>& pose) {
-        return this->mCostFunc->Cost(gridMap, scanData, pose); };
-
-    const double costX0 = costValue(sensorPose - deltaX);
-    const double costX1 = costValue(sensorPose + deltaX);
-    const double costY0 = costValue(sensorPose - deltaY);
-    const double costY1 = costValue(sensorPose + deltaY);
-    const double costTheta0 = costValue(sensorPose - deltaTheta);
-    const double costTheta1 = costValue(sensorPose + deltaTheta);
-
-    /* Calculate a partial derivatives */
-    const double partialX = 0.5 * (costX1 - costX0) / diffLinear;
-    const double partialY = 0.5 * (costY1 - costY0) / diffLinear;
-    const double partialTheta = 0.5 * (costTheta1 - costTheta0) / diffAngular;
-
-    /* Create a covariance matrix */
-    estimatedCovMat(0, 0) = partialX * partialX;
-    estimatedCovMat(0, 1) = partialX * partialY;
-    estimatedCovMat(0, 2) = partialX * partialTheta;
-    estimatedCovMat(1, 0) = estimatedCovMat(0, 1);
-    estimatedCovMat(1, 1) = partialY * partialY;
-    estimatedCovMat(1, 2) = partialY * partialTheta;
-    estimatedCovMat(2, 0) = estimatedCovMat(0, 2);
-    estimatedCovMat(2, 1) = estimatedCovMat(1, 2);
-    estimatedCovMat(2, 2) = partialTheta * partialTheta;
-
-    /* Add a small constant to the diagonal elements */
-    estimatedCovMat(0, 0) += 0.01;
-    estimatedCovMat(1, 1) += 0.01;
-    estimatedCovMat(2, 2) += 0.01;
+    /* Calculate a covariance matrix */
+    estimatedCovMat = this->mCostFunc->ComputeCovariance(
+        gridMap, scanData, sensorPose);
 
     return;
 }
