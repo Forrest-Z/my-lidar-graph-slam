@@ -137,11 +137,11 @@ double CostGreedyEndpoint<T, U>::Cost(const GridMapType& gridMap,
                 minSquaredDist = std::min(squaredDist, minSquaredDist);
             }
         }
-
-        /* Add to the cost value, which is the negative log-likelihood
-         * of the observation probability and represents the degree of
-         * mismatch between the laser scan and the grid map */
-        costValue += (minSquaredDist / (0.5 * this->mGaussianSigma));
+        
+        /* Add to the cost value, which is proportional to the negative
+         * log-likelihood of the observation probability and represents the
+         * degree of the mismatch between the laser scan and the grid map */
+        costValue += minSquaredDist;
     }
 
     /* Apply the scaling factor to the cost value */
