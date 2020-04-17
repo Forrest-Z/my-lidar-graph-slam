@@ -83,6 +83,10 @@ public:
     inline const std::vector<LocalMapInfo>& LocalMaps() const
     { return this->mLocalMaps; }
 
+    /* Retrieve the local map information of the specified index */
+    inline const LocalMapInfo& LocalMapAt(int localMapIdx) const
+    { return this->mLocalMaps.at(localMapIdx); }
+
     /* Retrieve the grid map constructed from the latest scans */
     inline const GridMapType& LatestMap() const { return this->mLatestMap; }
 
