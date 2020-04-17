@@ -42,6 +42,12 @@ public:
     double Cost(const GridMapType& gridMap,
                 const ScanType& scanData,
                 const RobotPose2D<double>& sensorPose) override;
+    
+    /* Calculate a covariance matrix */
+    Eigen::Matrix3d ComputeCovariance(
+        const GridMapType& gridMap,
+        const ScanType& scanData,
+        const RobotPose2D<double>& sensorPose) override;
 
 private:
     /* Minimum laser scan range considered for calculation */
@@ -148,6 +154,62 @@ double CostGreedyEndpoint<T, U>::Cost(const GridMapType& gridMap,
     costValue *= this->mScalingFactor;
 
     return costValue;
+}
+
+/* Calculate a covariance matrix */
+template <typename T, typename U>
+Eigen::Matrix3d CostGreedyEndpoint<T, U>::ComputeCovariance(
+    const GridMapType& gridMap,
+    const ScanType& scanData,
+    const RobotPose2D<double>& sensorPose)
+{
+    /* Approximate a covariance matrix using Laplace approximation
+     * Covariance matrix is computed from the inverse of a Hessian matrix
+     * of a cost function at the estimated robot pose (optimum point) */
+    /* Hessian matrix is then calculated using a Jacobian matrix based on
+     * Gauss-Newton approximation */
+
+    /* Calculate the cost values */
+    const double diffLinear = 0.01;
+    const double diffAngular = 0.01;
+
+    const RobotPose2D<double> deltaX { diffLinear, 0.0, 0.0 };
+    const RobotPose2D<double> deltaY { 0.0, diffLinear, 0.0 };
+    const RobotPose2D<double> deltaTheta { 0.0, 0.0, diffAngular };
+
+    const auto costValue = [&](const RobotPose2D<double>& pose) {
+        return this->Cost(gridMap, scanData, pose); };
+    
+    const double diffCostX = costValue(sensorPose + deltaX) -
+                             costValue(sensorPose - deltaX);
+    const double diffCostY = costValue(sensorPose + deltaY) -
+                             costValue(sensorPose - deltaY);
+    const double diffCostTheta = costValue(sensorPose + deltaTheta) -
+                                 costValue(sensorPose - deltaTheta);
+    
+    /* Calculate gradients */
+    const double gradX = 0.5 * diffCostX / diffLinear;
+    const double gradY = 0.5 * diffCostY / diffLinear;
+    const double gradTheta = 0.5 * diffCostTheta / diffAngular;
+
+    /* Create a covariance matrix */
+    Eigen::Matrix3d covMat;
+    covMat(0, 0) = gradX * gradX;
+    covMat(0, 1) = gradX * gradY;
+    covMat(0, 2) = gradX * gradTheta;
+    covMat(1, 0) = covMat(0, 1);
+    covMat(1, 1) = gradY * gradY;
+    covMat(1, 2) = gradY * gradTheta;
+    covMat(2, 0) = covMat(0, 2);
+    covMat(2, 1) = covMat(1, 2);
+    covMat(2, 2) = gradTheta * gradTheta;
+
+    /* Add a small constant to the diagonal elements */
+    covMat(0, 0) += 0.01;
+    covMat(1, 1) += 0.01;
+    covMat(2, 2) += 0.01;
+
+    return covMat;
 }
 
 } /* namespace Mapping */
