@@ -44,7 +44,8 @@ public:
     void OptimizePose(const GridMapType& gridMap,
                       const ScanType& scanData,
                       const RobotPose2D<double>& initialPose,
-                      RobotPose2D<double>& estimatedPose) override;
+                      RobotPose2D<double>& estimatedPose,
+                      double& normalizedCostValue) override;
     
     /* Calculate a covariance matrix */
     void ComputeCovariance(const GridMapType& gridMap,
@@ -71,7 +72,8 @@ void ScanMatcherGreedyEndpoint<T, U>::OptimizePose(
     const GridMapType& gridMap,
     const ScanType& scanData,
     const RobotPose2D<double>& initialPose,
-    RobotPose2D<double>& estimatedPose)
+    RobotPose2D<double>& estimatedPose,
+    double& normalizedCostValue)
 {
     /* Constants used for hill-climbing method */
     static const double moveX[] = { 1.0, -1.0, 0.0, 0.0, 0.0, 0.0 };
@@ -137,6 +139,8 @@ void ScanMatcherGreedyEndpoint<T, U>::OptimizePose(
     
     /* Set the estimated robot pose */
     estimatedPose = robotPose;
+    /* Set the normalized cost value */
+    normalizedCostValue = minCost / scanData->Ranges().size();
 
     return;
 }

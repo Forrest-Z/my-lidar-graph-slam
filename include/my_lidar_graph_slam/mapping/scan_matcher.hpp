@@ -31,7 +31,8 @@ public:
     virtual void OptimizePose(const GridMapType& gridMap,
                               const ScanType& scanData,
                               const RobotPose2D<double>& initialPose,
-                              RobotPose2D<double>& estimatedPose) = 0;
+                              RobotPose2D<double>& estimatedPose,
+                              double& normalizedCostValue) = 0;
     
     /* Calculate a covariance matrix */
     virtual void ComputeCovariance(
