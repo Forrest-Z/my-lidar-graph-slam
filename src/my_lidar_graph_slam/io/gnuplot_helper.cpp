@@ -22,10 +22,30 @@ GnuplotHelper::GnuplotHelper() :
 void GnuplotHelper::DrawPoseGraph(
     const std::shared_ptr<Mapping::PoseGraph>& poseGraph) const
 {
-    /* Setup pose graph edges */
-    std::fprintf(this->mGnuplot.get(), "$edges << EOF\n");
+    /* Setup pose graph edges for odometric constraints */
+    std::fprintf(this->mGnuplot.get(), "$odometryEdges << EOF\n");
 
     for (const auto& edge : poseGraph->Edges()) {
+        if (!edge.IsOdometricConstraint())
+            continue;
+        
+        const auto& startNode = poseGraph->NodeAt(edge.StartNodeIndex());
+        const auto& endNode = poseGraph->NodeAt(edge.EndNodeIndex());
+
+        std::fprintf(this->mGnuplot.get(), "%f %f\n%f %f\n\n",
+                     startNode.Pose().mX, startNode.Pose().mY,
+                     endNode.Pose().mX, endNode.Pose().mY);
+    }
+
+    std::fprintf(this->mGnuplot.get(), "EOF\n");
+
+    /* Setup pose graph edges for loop closing constraints */
+    std::fprintf(this->mGnuplot.get(), "$loopClosingEdges << EOF\n");
+
+    for (const auto& edge : poseGraph->Edges()) {
+        if (!edge.IsLoopClosingConstraint())
+            continue;
+        
         const auto& startNode = poseGraph->NodeAt(edge.StartNodeIndex());
         const auto& endNode = poseGraph->NodeAt(edge.EndNodeIndex());
 
@@ -39,8 +59,12 @@ void GnuplotHelper::DrawPoseGraph(
     /* Draw pose graph edges */
     std::fprintf(
         this->mGnuplot.get(),
-        "plot $edges using 1:2 with lines lc rgb \"black\" lw 2, \\\n"
-        "$edges using 1:2:(0.15) with circles fill solid lc rgb \"red\"\n");
+        "plot $odometryEdges using 1:2 "
+        "with lines lc rgb \"black\" lw 2, \\\n"
+        "$odometryEdges using 1:2:(0.15) "
+        "with circles fill solid lc rgb \"red\", \\\n"
+        "$loopClosingEdges using 1:2 "
+        "with lines lc rgb \"blue\" lw 5\n");
     std::fflush(this->mGnuplot.get());
 }
 
