@@ -122,7 +122,7 @@ bool MapSaver::SaveLocalMaps(const GridMapBuilderPtr& gridMapBuilder,
     /* Save local maps individually as PNG images */
     for (std::size_t i = 0; i < gridMapBuilder->LocalMaps().size(); ++i) {
         /* Retrieve the local map */
-        const auto& localMapInfo = gridMapBuilder->LocalMaps().at(i);
+        const auto& localMapInfo = gridMapBuilder->LocalMapAt(i);
         const std::string localMapFileName =
             fileName + "-localmap-" + std::to_string(i);
 
@@ -251,7 +251,7 @@ void MapSaver::DrawTrajectory(const GridMapType& gridMap,
     assert(nodeIdxMax < poseGraph->Nodes().size());
 
     /* Draw the trajectory lines to the image */
-    const auto& initialNode = poseGraph->Nodes().at(nodeIdxMin);
+    const auto& initialNode = poseGraph->NodeAt(nodeIdxMin);
     Point2D<int> prevGridCellIdx =
         gridMap.WorldCoordinateToGridCellIndex(
             initialNode.Pose().mX, initialNode.Pose().mY);
@@ -261,7 +261,7 @@ void MapSaver::DrawTrajectory(const GridMapType& gridMap,
         gridCellIdxMin.mY + mapSizeInGridCells.mY };
 
     for (std::size_t i = nodeIdxMin + 1; i <= nodeIdxMax; ++i) {
-        const auto& node = poseGraph->Nodes().at(i);
+        const auto& node = poseGraph->NodeAt(i);
         const Point2D<int> gridCellIdx =
             gridMap.WorldCoordinateToGridCellIndex(
                 node.Pose().mX, node.Pose().mY);
