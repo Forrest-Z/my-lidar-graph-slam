@@ -7,6 +7,8 @@
 #include <cmath>
 #include <cstdlib>
 
+#include <Eigen/Core>
+
 #include "my_lidar_graph_slam/point.hpp"
 #include "my_lidar_graph_slam/pose.hpp"
 
@@ -39,6 +41,12 @@ public:
     virtual double Cost(const GridMapType& gridMap,
                         const ScanType& scanData,
                         const RobotPose2D<double>& sensorPose) = 0;
+    
+    /* Calculate a covariance matrix */
+    virtual Eigen::Matrix3d ComputeCovariance(
+        const GridMapType& gridMap,
+        const ScanType& scanData,
+        const RobotPose2D<double>& sensorPose) = 0;
 };
 
 } /* namespace Mapping */
