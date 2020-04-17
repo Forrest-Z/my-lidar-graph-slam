@@ -4,7 +4,12 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_HPP
 #define MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_HPP
 
+#include <cmath>
+
+#include <Eigen/Core>
+
 #include "my_lidar_graph_slam/pose.hpp"
+#include "my_lidar_graph_slam/util.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -27,6 +32,13 @@ public:
                               const ScanType& scanData,
                               const RobotPose2D<double>& initialPose,
                               RobotPose2D<double>& estimatedPose) = 0;
+    
+    /* Calculate a covariance matrix */
+    virtual void ComputeCovariance(
+        const GridMapType& gridMap,
+        const ScanType& scanData,
+        const RobotPose2D<double>& robotPose,
+        Eigen::Matrix3d& estimatedCovMat) = 0;
 };
 
 } /* namespace Mapping */
