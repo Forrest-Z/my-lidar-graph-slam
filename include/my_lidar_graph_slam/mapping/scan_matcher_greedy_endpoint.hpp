@@ -19,7 +19,7 @@ class ScanMatcherGreedyEndpoint final : public ScanMatcher<T, U>
 {
 public:
     /* Type definitions */
-    using CostType = std::unique_ptr<CostFunction<T, U>>;
+    using CostType = std::shared_ptr<CostFunction<T, U>>;
 
     using typename ScanMatcher<T, U>::GridMapType;
     using typename ScanMatcher<T, U>::ScanType;
@@ -29,13 +29,13 @@ public:
                               double angularStep,
                               int maxIterations,
                               int maxNumOfRefinements,
-                              CostType&& costFunc) :
+                              const CostType& costFunc) :
         ScanMatcher<T, U>(),
         mLinearStep(linearStep),
         mAngularStep(angularStep),
         mMaxIterations(maxIterations),
         mMaxNumOfRefinements(maxNumOfRefinements),
-        mCostFunc(std::move(costFunc)) { }
+        mCostFunc(costFunc) { }
     
     /* Destructor */
     ~ScanMatcherGreedyEndpoint() = default;
