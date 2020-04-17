@@ -108,6 +108,13 @@ public:
         inline const Eigen::Matrix3d& InformationMatrix() const
         { return this->mInformationMat; }
 
+        /* Check if the edge represents odometric constraint */
+        inline bool IsOdometricConstraint() const
+        { return this->mEndNodeIdx == this->mStartNodeIdx + 1; }
+        /* Check if the edge represents loop closing constraint */
+        inline bool IsLoopClosingConstraint() const
+        { return !this->IsOdometricConstraint(); }
+
     private:
         /* Index of the start node */
         int                 mStartNodeIdx;
