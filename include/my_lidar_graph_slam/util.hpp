@@ -59,7 +59,8 @@ inline bool IsPowerOf2(int x)
 }
 
 /* Normalize the angle in radians from -pi to pi */
-template <typename T>
+template <typename T, std::enable_if_t<
+          std::is_arithmetic_v<T>, std::nullptr_t> = nullptr>
 T NormalizeAngle(T theta)
 {
     T normalizedTheta = std::fmod(theta, 2.0 * M_PI);
@@ -70,6 +71,15 @@ T NormalizeAngle(T theta)
         normalizedTheta += 2.0 * M_PI;
     
     return normalizedTheta;
+}
+
+/* Normalize the angle in radians from -pi to pi */
+template <typename T>
+RobotPose2D<T> NormalizeAngle(const RobotPose2D<T>& robotPose)
+{
+    return RobotPose2D<T> { robotPose.mX,
+                            robotPose.mY,
+                            NormalizeAngle(robotPose.mTheta) };
 }
 
 /* Rotate a covariance matrix */
