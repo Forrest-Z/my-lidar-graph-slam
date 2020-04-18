@@ -83,7 +83,12 @@ GridMapBuilder::GridMapType GridMapBuilder::ConstructGlobalMap(
     const int nodeIdxMin = poseGraph->Nodes().front().Index();
     const int nodeIdxMax = poseGraph->Nodes().back().Index();
 
-    return this->ConstructMapFromScans(poseGraph, nodeIdxMin, nodeIdxMax);
+    /* Construct the global map */
+    GridMapType gridMap { this->mMapResolution, this->mPatchSize,
+                          0, 0, Point2D<double>(0.0, 0.0) };
+    this->ConstructMapFromScans(gridMap, poseGraph, nodeIdxMin, nodeIdxMax);
+
+    return gridMap;
 }
 
 /* Update the grid map (list of the local grid maps) */
@@ -177,12 +182,14 @@ void GridMapBuilder::UpdateLatestMap(
         0, poseGraph->LatestNode().Index() - this->mNumOfScansForLatestMap + 1);
     this->mLatestScanIdxMax = poseGraph->LatestNode().Index();
 
-    this->mLatestMap = this->ConstructMapFromScans(
-        poseGraph, this->mLatestScanIdxMin, this->mLatestScanIdxMax);
+    this->ConstructMapFromScans(
+        this->mLatestMap, poseGraph,
+        this->mLatestScanIdxMin, this->mLatestScanIdxMax);
 }
 
 /* Construct the grid map from the specified scans */
-GridMapBuilder::GridMapType GridMapBuilder::ConstructMapFromScans(
+void GridMapBuilder::ConstructMapFromScans(
+    GridMapType& gridMap,
     const std::shared_ptr<PoseGraph>& poseGraph,
     int poseGraphNodeIdxMin,
     int poseGraphNodeIdxMax) const
@@ -247,9 +254,9 @@ GridMapBuilder::GridMapType GridMapBuilder::ConstructMapFromScans(
     }
 
     /* Create a new grid map that contains all scan points */
-    GridMapType gridMap { this->mMapResolution, this->mPatchSize,
-                          bottomLeft.mX, bottomLeft.mY,
-                          topRight.mX, topRight.mY };
+    gridMap.Resize(bottomLeft.mX, bottomLeft.mY,
+                   topRight.mX, topRight.mY);
+    gridMap.Reset();
     
     /* Integrate the scan into the grid map */
     for (int nodeIdx = poseGraphNodeIdxMin;
@@ -290,7 +297,7 @@ GridMapBuilder::GridMapType GridMapBuilder::ConstructMapFromScans(
         }
     }
 
-    return gridMap;
+    return;
 }
 
 /* Compute the bounding box of the scan and scan points */

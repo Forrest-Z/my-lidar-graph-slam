@@ -105,7 +105,8 @@ private:
         const std::shared_ptr<PoseGraph>& poseGraph);
 
     /* Construct the grid map from the specified scans */
-    GridMapType ConstructMapFromScans(
+    void ConstructMapFromScans(
+        GridMapType& gridMap,
         const std::shared_ptr<PoseGraph>& poseGraph,
         int poseGraphNodeIdxMin,
         int poseGraphNodeIdxMax) const;
