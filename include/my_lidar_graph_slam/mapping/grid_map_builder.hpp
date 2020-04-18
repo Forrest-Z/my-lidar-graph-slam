@@ -75,6 +75,9 @@ public:
     /* Append the new scan data */
     void AppendScan(const std::shared_ptr<PoseGraph>& poseGraph);
 
+    /* Re-create the local grid maps and latest map after the loop closure */
+    void AfterLoopClosure(const std::shared_ptr<PoseGraph>& poseGraph);
+
     /* Construct the global map */
     GridMapType ConstructGlobalMap(
         const std::shared_ptr<PoseGraph>& poseGraph) const;

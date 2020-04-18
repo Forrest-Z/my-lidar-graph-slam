@@ -76,6 +76,20 @@ void GridMapBuilder::AppendScan(
     this->UpdateLatestMap(poseGraph);
 }
 
+/* Re-create the local grid maps and latest map after the loop closure */
+void GridMapBuilder::AfterLoopClosure(
+    const std::shared_ptr<PoseGraph>& poseGraph)
+{
+    /* Update the all local grid maps */
+    for (auto& localMapInfo : this->mLocalMaps)
+        this->ConstructMapFromScans(localMapInfo.mMap, poseGraph,
+                                    localMapInfo.mPoseGraphNodeIdxMin,
+                                    localMapInfo.mPoseGraphNodeIdxMax);
+
+    /* Update the grid map with latest scans */
+    this->UpdateLatestMap(poseGraph);
+}
+
 /* Construct the global grid map */
 GridMapBuilder::GridMapType GridMapBuilder::ConstructGlobalMap(
     const std::shared_ptr<PoseGraph>& poseGraph) const
