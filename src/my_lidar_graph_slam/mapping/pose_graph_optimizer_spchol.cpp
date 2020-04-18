@@ -70,8 +70,11 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
     const int numOfNodes = static_cast<int>(poseGraph->Nodes().size());
     const int numOfVariables = 3 * numOfNodes;
 
-    /* Clear the non-zero elements of sparse matrix H */
+    /* Clear all vectors and matrices */
+    matA.setZero();
     matATriplets.clear();
+    vecB.setZero();
+    vecDelta.setZero();
 
     /* Setup the left-hand side sparse matrix H */
     for (const auto& edge : poseGraph->Edges()) {
