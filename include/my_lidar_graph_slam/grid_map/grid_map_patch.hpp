@@ -57,6 +57,9 @@ public:
      * Return the default value if not allocated */
     const ValueType Value(int x, int y,
         const ValueType defaultValue = GridCellType::Unknown) const;
+    
+    /* Reset all occupancy grid cells */
+    void Reset();
 
 private:
     /* Validate the patch */
@@ -147,6 +150,20 @@ const typename Patch<T>::ValueType Patch<T>::Value(
     
     assert(this->IsInside(x, y));
     return this->mData[y * this->mSize + x].Value();
+}
+
+/* Reset all occupancy grid cells */
+template <typename T>
+void Patch<T>::Reset()
+{
+    /* Do not reset if not allocated */
+    if (!this->IsValid())
+        return;
+
+    /* Reset all grid cells */
+    for (int idxY = 0; idxY < this->mSize; ++idxY)
+        for (int idxX = 0; idxX < this->mSize; ++idxX)
+            this->At(idxX, idxY).Reset();
 }
 
 /* Validate the patch */
