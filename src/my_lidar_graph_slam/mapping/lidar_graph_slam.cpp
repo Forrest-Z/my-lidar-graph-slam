@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <Eigen/Core>
+#include <Eigen/LU>
 
 #include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
 
@@ -14,7 +15,11 @@ namespace Mapping {
 
 /* Constructor */
 LidarGraphSlam::LidarGraphSlam(
-    std::unique_ptr<ScanMatcherType>&& scanMatcher,
+    const std::shared_ptr<ScanMatcherType>& scanMatcher,
+    const std::shared_ptr<LoopClosure>& loopClosure,
+    const std::shared_ptr<PoseGraph>& poseGraph,
+    const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
+    int loopClosureInterval,
     double mapResolution,
     int patchSize,
     int numOfScansForLatestMap,
@@ -27,8 +32,11 @@ LidarGraphSlam::LidarGraphSlam(
     double usableRangeMax) :
     mProcessCount(0),
     mGridMapBuilder(nullptr),
-    mPoseGraph(nullptr),
-    mScanMatcher(std::move(scanMatcher)),
+    mPoseGraph(poseGraph),
+    mPoseGraphOptimizer(poseGraphOptimizer),
+    mScanMatcher(scanMatcher),
+    mLoopClosure(loopClosure),
+    mLoopClosureInterval(loopClosureInterval),
     mInitialPose(initialPose),
     mLastOdomPose(0.0, 0.0, 0.0),
     mAccumulatedTravelDist(0.0),
@@ -50,9 +58,6 @@ LidarGraphSlam::LidarGraphSlam(
     this->mGridMapBuilder = std::make_shared<GridMapBuilder>(
         mapResolution, patchSize, numOfScansForLatestMap,
         travelDistThresholdForLocalMap, usableRangeMin, usableRangeMax);
-    
-    /* Construct the pose graph */
-    this->mPoseGraph = std::make_shared<PoseGraph>();
 }
 
 /* Process scan data and odometry */
@@ -90,35 +95,42 @@ bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
     if (!mapUpdateNeeded)
         return false;
     
-    /* Calculate the refined pose */
-    RobotPose2D<double> estimatedPose;
-
+    /* Update the pose graph */
     if (this->mProcessCount == 0) {
         /* Set the initial pose for the first scan */
-        estimatedPose = this->mInitialPose;
+        RobotPose2D<double> estimatedPose = this->mInitialPose;
+        /* Append the new pose graph node */
+        this->mPoseGraph->AppendNode(estimatedPose, scanData);
     } else {
-        /* Perform scan matching against the grid map
-         * that contains latest scans */
         const RobotPose2D<double> relPoseFromLastMapUpdate =
             InverseCompound(this->mLastMapUpdateOdomPose, odomPose);
         const RobotPose2D<double> initialPose =
             Compound(this->mPoseGraph->LatestNode().Pose(),
                      relPoseFromLastMapUpdate);
+        
+        /* Perform scan matching against the grid map
+         * that contains latest scans */
+        RobotPose2D<double> estimatedPose;
+        double normalizedCostValue;
         this->mScanMatcher->OptimizePose(
             this->mGridMapBuilder->LatestMap(),
-            scanData, initialPose, estimatedPose);
-    }
-
-    /* Update the pose graph */
-    if (this->mProcessCount == 0) {
+            scanData, initialPose, estimatedPose, normalizedCostValue);
+        
+        /* Estimate a covariance matrix */
+        Eigen::Matrix3d estimatedCovMat;
+        this->mScanMatcher->ComputeCovariance(
+            this->mGridMapBuilder->LatestMap(),
+            scanData, estimatedPose, estimatedCovMat);
+        
         /* Append the new pose graph node */
-        this->mPoseGraph->AppendNode(estimatedPose, scanData);
-    } else {
-        /* Append the new pose graph node */
-        const int startNodeIdx =
-            this->mPoseGraph->LatestNode().Index();
         const RobotPose2D<double>& startNodePose =
             this->mPoseGraph->LatestNode().Pose();
+        const double startNodeTimeStamp =
+            this->mPoseGraph->LatestNode().ScanData()->TimeStamp();
+        const int startNodeIdx =
+            this->mPoseGraph->LatestNode().Index();
+        
+        const double endNodeTimeStamp = scanData->TimeStamp();
         const int endNodeIdx =
             this->mPoseGraph->AppendNode(estimatedPose, scanData);
 
@@ -127,14 +139,21 @@ bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
         assert(endNodeIdx == startNodeIdx + 1);
         
         /* Setup the pose graph edge parameters */
+        /* Relative pose in the frame of the start node
+         * Angular component must be normalized from -pi to pi */
         const RobotPose2D<double> edgeRelPose =
-            InverseCompound(startNodePose, estimatedPose);
-        /* TODO: Calculate information matrix properly using the
-         * covariance matrices obtained from odometry and scan matching */
-        const Eigen::Matrix3d edgeInfoMat =
-            Eigen::Matrix3d::Identity();
+            NormalizeAngle(InverseCompound(startNodePose, estimatedPose));
         
-        /* Append the new pose graph edge */
+        /* Covariance matrix must be rotated beforehand since the matrix
+         * must represent the covariance in the node frame (not world frame) */
+        Eigen::Matrix3d robotFrameCovMat;
+        ConvertCovarianceFromWorldToRobot(
+            startNodePose, estimatedCovMat, robotFrameCovMat);
+        /* Calculate a information matrix by inverting a covariance matrix
+         * obtained from the scan matching */
+        const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();
+        
+        /* Append the new pose graph edge for odometric constraint */
         this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
                                      edgeRelPose, edgeInfoMat);
     }
@@ -142,7 +161,50 @@ bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
     /* Integrate the scan data into the grid map */
     this->mGridMapBuilder->AppendScan(this->mPoseGraph);
     
-    /* TODO: Perform loop closure (pose graph optimization) */
+    /* Perform loop closure (pose graph optimization) */
+    if (this->mProcessCount > this->mLoopClosureInterval &&
+        this->mProcessCount % this->mLoopClosureInterval == 0) {
+        /* Relative pose of the pose graph edge */
+        RobotPose2D<double> relPose;
+        /* Index of the pose graph node for starting pose */
+        int startNodeIdx;
+        /* Index of the pose graph node for ending pose */
+        int endNodeIdx;
+        /* Covariance matrix of the pose graph edge */
+        Eigen::Matrix3d estimatedCovMat;
+
+        /* Find a loop using a pose graph and local grid maps */
+        const bool loopFound = this->mLoopClosure->FindLoop(
+            this->mGridMapBuilder, this->mPoseGraph,
+            relPose, startNodeIdx, endNodeIdx, estimatedCovMat);
+        
+        if (loopFound) {
+            /* Setup the pose graph edge parameters */
+            /* Relative pose must be normalized beforehand */
+            relPose = NormalizeAngle(relPose);
+            
+            /* Covariance matrix must be rotated since the matrix
+             * must represent the covariance in the node frame */
+            const RobotPose2D<double>& startNodePose =
+                this->mPoseGraph->NodeAt(startNodeIdx).Pose();
+            Eigen::Matrix3d robotFrameCovMat;
+            ConvertCovarianceFromWorldToRobot(
+                startNodePose, estimatedCovMat, robotFrameCovMat);
+            /* Calculate a information matrix by inverting a covariance matrix
+             * obtained from the scan matching */
+            const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();
+
+            /* Append the new pose graph edge for loop closing constraint */
+            this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
+                                         relPose, edgeInfoMat);
+            
+            /* Perform loop closure */
+            this->mPoseGraphOptimizer->Optimize(this->mPoseGraph);
+
+            /* Re-create the grid maps */
+            this->mGridMapBuilder->AfterLoopClosure(this->mPoseGraph);
+        }
+    }
 
     /* Update miscellaneous parameters */
     this->mProcessCount += 1;

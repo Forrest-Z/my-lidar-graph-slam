@@ -10,7 +10,9 @@
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/grid_map/counting_grid_cell.hpp"
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
+#include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
@@ -26,17 +28,22 @@ public:
     using ScanMatcherType = ScanMatcher<GridMapType, ScanType>;
 
     /* Constructor */
-    LidarGraphSlam(std::unique_ptr<ScanMatcherType>&& scanMatcher,
-                   double mapResolution,
-                   int patchSize,
-                   int numOfScansForLatestMap,
-                   double travelDistThresholdForLocalMap,
-                   const RobotPose2D<double>& initialPose,
-                   double updateThresholdTravelDist,
-                   double updateThresholdAngle,
-                   double updateThresholdTime,
-                   double usableRangeMin,
-                   double usableRangeMax);
+    LidarGraphSlam(
+        const std::shared_ptr<ScanMatcherType>& scanMatcher,
+        const std::shared_ptr<LoopClosure>& loopClosure,
+        const std::shared_ptr<PoseGraph>& poseGraph,
+        const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
+        int loopClosureInterval,
+        double mapResolution,
+        int patchSize,
+        int numOfScansForLatestMap,
+        double travelDistThresholdForLocalMap,
+        const RobotPose2D<double>& initialPose,
+        double updateThresholdTravelDist,
+        double updateThresholdAngle,
+        double updateThresholdTime,
+        double usableRangeMin,
+        double usableRangeMax);
 
     /* Destructor */
     ~LidarGraphSlam() = default;
@@ -67,31 +74,37 @@ public:
 
 private:
     /* Process counter (the total number of input data) */
-    int                              mProcessCount;
+    int                                 mProcessCount;
     /* Grid map */
-    std::shared_ptr<GridMapBuilder>  mGridMapBuilder;
+    std::shared_ptr<GridMapBuilder>     mGridMapBuilder;
     /* Pose graph */
-    std::shared_ptr<PoseGraph>       mPoseGraph;
+    std::shared_ptr<PoseGraph>          mPoseGraph;
+    /* Pose graph optimizer */
+    std::shared_ptr<PoseGraphOptimizer> mPoseGraphOptimizer;
     /* Scan matcher */
-    std::unique_ptr<ScanMatcherType> mScanMatcher;
+    std::shared_ptr<ScanMatcherType>    mScanMatcher;
+    /* Loop closure */
+    std::shared_ptr<LoopClosure>        mLoopClosure;
+    /* Frame interval for loop closure */
+    int                                 mLoopClosureInterval;
     /* Initial pose */
-    RobotPose2D<double>              mInitialPose;
+    RobotPose2D<double>                 mInitialPose;
     /* Last odometry pose */
-    RobotPose2D<double>              mLastOdomPose;
+    RobotPose2D<double>                 mLastOdomPose;
     /* Accumulated travel distance since the last map update */
-    double                           mAccumulatedTravelDist;
+    double                              mAccumulatedTravelDist;
     /* Accumulated angle since the last map update */
-    double                           mAccumulatedAngle;
+    double                              mAccumulatedAngle;
     /* Odometry pose at the last map update */
-    RobotPose2D<double>              mLastMapUpdateOdomPose;
+    RobotPose2D<double>                 mLastMapUpdateOdomPose;
     /* Time of the last map update */
-    double                           mLastMapUpdateTime;
+    double                              mLastMapUpdateTime;
     /* Map update threshold for accumulated travel distance */
-    double                           mUpdateThresholdTravelDist;
+    double                              mUpdateThresholdTravelDist;
     /* Map update threshold for accumulated angle */
-    double                           mUpdateThresholdAngle;
+    double                              mUpdateThresholdAngle;
     /* Map update threshold for the elapsed time since the last map update */
-    double                           mUpdateThresholdTime;
+    double                              mUpdateThresholdTime;
 };
 
 } /* namespace Mapping */
