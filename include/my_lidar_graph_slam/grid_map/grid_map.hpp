@@ -71,7 +71,7 @@ public:
                 double enlargeStep = 5.0);
     
     /* Reset occupancy probability values of all grid cells */
-    void ResetAllValues();
+    void Reset();
  
     /* Check if the grid cell index is inside the map */
     inline bool IsInside(int gridCellX, int gridCellY) const;
@@ -559,14 +559,16 @@ void GridMap<T>::Expand(double minX, double minY,
 
 /* Reset occupancy probability values of all grid cells */
 template <typename T>
-void GridMap<T>::ResetAllValues()
+void GridMap<T>::Reset()
 {
     assert(this->mNumOfPatchesX > 0);
     assert(this->mNumOfPatchesY > 0);
-
-    const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
-    this->mPatches.reset(new Patch<T>[numOfPatches]);
     assert(this->mPatches != nullptr);
+
+    /* Reset all patches */
+    for (int patchIdxY = 0; patchIdxY < this->mNumOfPatchesY; ++patchIdxY)
+        for (int patchIdxX = 0; patchIdxX < this->mNumOfPatchesX; ++patchIdxX)
+            this->PatchAt(patchIdxX, patchIdxY).Reset();
 }
 
 /* Check if the grid cell index is inside the map */
