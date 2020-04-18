@@ -38,6 +38,9 @@ public:
     /* Get the value of the grid cell */
     T Value() const override { return this->mValue; }
 
+    /* Reset the grid cell state */
+    void Reset() override;
+
     /* Update the value of the grid cell */
     void Update(const bool& hitOrMiss) override;
 
@@ -97,6 +100,15 @@ CountingGridCell<T>& CountingGridCell<T>::operator=(
     this->mMiss = std::move(other.mMiss);
 
     return *this;
+}
+
+/* Reset the grid cell state */
+template <typename T>
+void CountingGridCell<T>::Reset()
+{
+    this->mValue = CountingGridCell::Unknown;
+    this->mHit = 0;
+    this->mMiss = 0;
 }
 
 /* Update the value of the grid cell */

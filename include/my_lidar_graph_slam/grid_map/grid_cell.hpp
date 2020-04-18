@@ -33,6 +33,9 @@ public:
     /* Get the value of the grid cell */
     virtual T Value() const = 0;
 
+    /* Reset the grid cell state */
+    virtual void Reset() = 0;
+    
     /* Update the value of the grid cell */
     virtual void Update(const U& currentObservation) = 0;
 
