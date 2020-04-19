@@ -29,21 +29,16 @@ public:
 
     /* Constructor */
     LidarGraphSlam(
+        const std::shared_ptr<GridMapBuilder>& gridMapBuilder,
         const std::shared_ptr<ScanMatcherType>& scanMatcher,
-        const std::shared_ptr<LoopClosure>& loopClosure,
         const std::shared_ptr<PoseGraph>& poseGraph,
         const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
+        const std::shared_ptr<LoopClosure>& loopClosure,
         int loopClosureInterval,
-        double mapResolution,
-        int patchSize,
-        int numOfScansForLatestMap,
-        double travelDistThresholdForLocalMap,
         const RobotPose2D<double>& initialPose,
         double updateThresholdTravelDist,
         double updateThresholdAngle,
-        double updateThresholdTime,
-        double usableRangeMin,
-        double usableRangeMax);
+        double updateThresholdTime);
 
     /* Destructor */
     ~LidarGraphSlam() = default;
@@ -77,12 +72,12 @@ private:
     int                                 mProcessCount;
     /* Grid map */
     std::shared_ptr<GridMapBuilder>     mGridMapBuilder;
+    /* Scan matcher */
+    std::shared_ptr<ScanMatcherType>    mScanMatcher;
     /* Pose graph */
     std::shared_ptr<PoseGraph>          mPoseGraph;
     /* Pose graph optimizer */
     std::shared_ptr<PoseGraphOptimizer> mPoseGraphOptimizer;
-    /* Scan matcher */
-    std::shared_ptr<ScanMatcherType>    mScanMatcher;
     /* Loop closure */
     std::shared_ptr<LoopClosure>        mLoopClosure;
     /* Frame interval for loop closure */

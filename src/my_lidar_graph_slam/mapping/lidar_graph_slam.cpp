@@ -15,26 +15,21 @@ namespace Mapping {
 
 /* Constructor */
 LidarGraphSlam::LidarGraphSlam(
+    const std::shared_ptr<GridMapBuilder>& gridMapBuilder,
     const std::shared_ptr<ScanMatcherType>& scanMatcher,
-    const std::shared_ptr<LoopClosure>& loopClosure,
     const std::shared_ptr<PoseGraph>& poseGraph,
     const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
+    const std::shared_ptr<LoopClosure>& loopClosure,
     int loopClosureInterval,
-    double mapResolution,
-    int patchSize,
-    int numOfScansForLatestMap,
-    double travelDistThresholdForLocalMap,
     const RobotPose2D<double>& initialPose,
     double updateThresholdTravelDist,
     double updateThresholdAngle,
-    double updateThresholdTime,
-    double usableRangeMin,
-    double usableRangeMax) :
+    double updateThresholdTime) :
     mProcessCount(0),
-    mGridMapBuilder(nullptr),
+    mGridMapBuilder(gridMapBuilder),
+    mScanMatcher(scanMatcher),
     mPoseGraph(poseGraph),
     mPoseGraphOptimizer(poseGraphOptimizer),
-    mScanMatcher(scanMatcher),
     mLoopClosure(loopClosure),
     mLoopClosureInterval(loopClosureInterval),
     mInitialPose(initialPose),
@@ -47,17 +42,6 @@ LidarGraphSlam::LidarGraphSlam(
     mUpdateThresholdAngle(updateThresholdAngle),
     mUpdateThresholdTime(updateThresholdTime)
 {
-    assert(mapResolution > 0.0);
-    assert(updateThresholdTravelDist > 0.0);
-    assert(updateThresholdAngle > 0.0);
-    assert(updateThresholdTime > 0.0);
-    assert(usableRangeMin >= 0.0);
-    assert(usableRangeMax >= 0.0);
-
-    /* Construct the grid map */
-    this->mGridMapBuilder = std::make_shared<GridMapBuilder>(
-        mapResolution, patchSize, numOfScansForLatestMap,
-        travelDistThresholdForLocalMap, usableRangeMin, usableRangeMax);
 }
 
 /* Process scan data and odometry */
