@@ -19,13 +19,35 @@
         "MaxNumOfRefinements": 5
     },
 
-    "LidarGraphSlam": {
+    "LoopClosureGridSearch": {
+        "PoseGraphNodeDistMax": 2.0,
+        "SearchRangeX": 2.0,
+        "SearchRangeY": 2.0,
+        "SearchRangeTheta": 1.0,
+        "SearchStepX": 0.1,
+        "SearchStepY": 0.1,
+        "SearchStepTheta": 0.05,
+        "CostThreshold": 0.01
+    },
+
+    "PoseGraphOptimizerSpChol": {
+        "NumOfIterationsMax": 10,
+        "ErrorTolerance": 1e-3,
+        "InitialLambda": 1e-4
+    },
+
+    "GridMapBuilder": {
         "Map": {
             "Resolution": 0.05,
             "PatchSize": 64,
             "NumOfScansForLatestMap": 5,
             "TravelDistThresholdForLocalMap": 10.0
         },
+        "UsableRangeMin": 0.01,
+        "UsableRangeMax": 50.0
+    },
+
+    "LidarGraphSlam": {
         "InitialPose": {
             "X": 0.0,
             "Y": 0.0,
@@ -33,8 +55,10 @@
         },
         "UpdateThresholdTravelDist": 1.0,
         "UpdateThresholdAngle": 0.5,
-        "UpdateThresholdTime": 5.0,
-        "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0
+        "UpdateThresholdTime": 5.0
+    },
+
+    "Launcher": {
+        "WaitForKey": "false"
     }
 }
