@@ -144,6 +144,10 @@ private:
     int                           mLatestScanIdxMin;
     /* The maximum index of the latest scans */
     int                           mLatestScanIdxMax;
+    /* Last robot pose */
+    RobotPose2D<double>           mLastRobotPose;
+    /* Accumulated travel distance since the last local grid map is created */
+    double                        mAccumulatedTravelDist;
     /* Robot pose when the last local grid map is created */
     RobotPose2D<double>           mRobotPoseLastLocalMap;
     /* Travel distance threshold for creating a new local grid map */

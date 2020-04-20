@@ -58,6 +58,8 @@ GridMapBuilder::GridMapBuilder(
     mNumOfScansForLatestMap(numOfScansForLatestMap),
     mLatestScanIdxMin(0),
     mLatestScanIdxMax(0),
+    mLastRobotPose(0.0, 0.0, 0.0),
+    mAccumulatedTravelDist(0.0),
     mRobotPoseLastLocalMap(0.0, 0.0, 0.0),
     mTravelDistThreshold(travelDistThreshold),
     mUsableRangeMin(usableRangeMin),
@@ -122,14 +124,21 @@ void GridMapBuilder::UpdateGridMap(
     const RobotPose2D<double> sensorPose =
         Compound(robotPose, scanData->RelativeSensorPose());
 
-    /* Update the accumulated travel distance since the last grid map */
-    const double accumulatedTravelDist = std::sqrt(
-        std::pow(robotPose.mX - this->mRobotPoseLastLocalMap.mX, 2.0) +
-        std::pow(robotPose.mY - this->mRobotPoseLastLocalMap.mY, 2.0));
+    /* Calculate the relative robot pose since the last method call */
+    const RobotPose2D<double> relRobotPose = (this->mLocalMaps.size() == 0) ?
+        RobotPose2D<double>(0.0, 0.0, 0.0) :
+        InverseCompound(this->mLastRobotPose, robotPose);
     
+    this->mLastRobotPose = robotPose;
+
+    /* Update the accumulated travel distance since the last grid map */
+    this->mAccumulatedTravelDist +=
+        std::sqrt(relRobotPose.mX * relRobotPose.mX +
+                  relRobotPose.mY * relRobotPose.mY);
+
     /* Determine whether to create a new local map */
     const bool travelDistThreshold =
-        accumulatedTravelDist >= this->mTravelDistThreshold;
+        this->mAccumulatedTravelDist >= this->mTravelDistThreshold;
     const bool isFirstScan = this->mLocalMaps.size() == 0;
     const bool createNewLocalMap = travelDistThreshold || isFirstScan;
 
@@ -139,6 +148,9 @@ void GridMapBuilder::UpdateGridMap(
         GridMapType newLocalMap {
             this->mMapResolution, this->mPatchSize, 0, 0, centerPos };
         this->mLocalMaps.emplace_back(std::move(newLocalMap), nodeIdx);
+
+        /* Reset the variables properly */
+        this->mAccumulatedTravelDist = 0.0;
         this->mRobotPoseLastLocalMap = robotPose;
     }
 
