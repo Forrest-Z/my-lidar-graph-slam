@@ -42,6 +42,12 @@ public:
                         const ScanType& scanData,
                         const RobotPose2D<double>& sensorPose) = 0;
     
+    /* Calculate a gradient vector */
+    virtual Eigen::Vector3d ComputeGradient(
+        const GridMapType& gridMap,
+        const ScanType& scanData,
+        const RobotPose2D<double>& sensorPose) = 0;
+
     /* Calculate a covariance matrix */
     virtual Eigen::Matrix3d ComputeCovariance(
         const GridMapType& gridMap,
