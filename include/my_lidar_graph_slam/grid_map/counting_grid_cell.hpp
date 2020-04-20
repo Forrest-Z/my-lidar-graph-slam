@@ -44,6 +44,10 @@ public:
     /* Update the value of the grid cell */
     void Update(const bool& hitOrMiss) override;
 
+    /* Smallest possible occupancy probability value,
+     * which is slightly larger than the unknown value */
+    static constexpr T Epsilon = static_cast<T>(1e-3);
+
 private:
     T             mValue;
     std::uint32_t mHit;
@@ -124,6 +128,10 @@ void CountingGridCell<T>::Update(const bool& hitOrMiss)
     /* Update the occupancy probability value */
     this->mValue = static_cast<T>(this->mHit) /
                    static_cast<T>(this->mHit + this->mMiss);
+    
+    /* If the number of the hits is zero, then add the small value
+     * to distinguish from the unknown state */
+    this->mValue = !this->mHit ? CountingGridCell<T>::Epsilon : this->mValue;
 }
 
 } /* namespace MyLidarGraphSlam */
