@@ -40,7 +40,7 @@ public:
     virtual void Update(const U& currentObservation) = 0;
 
     /* Unknown occupancy probability value (negative) */
-    static constexpr T Unknown = static_cast<T>(-1.0);
+    static constexpr T Unknown = static_cast<T>(0.0);
 };
 
 } /* namespace MyLidarGraphSlam */
