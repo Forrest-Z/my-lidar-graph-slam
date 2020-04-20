@@ -42,6 +42,12 @@ public:
     double Cost(const GridMapType& gridMap,
                 const ScanType& scanData,
                 const RobotPose2D<double>& sensorPose) override;
+
+    /* Calculate a gradient vector */
+    Eigen::Vector3d ComputeGradient(
+        const GridMapType& gridMap,
+        const ScanType& scanData,
+        const RobotPose2D<double>& sensorPose) override;
     
     /* Calculate a covariance matrix */
     Eigen::Matrix3d ComputeCovariance(
@@ -156,20 +162,14 @@ double CostGreedyEndpoint<T, U>::Cost(const GridMapType& gridMap,
     return costValue;
 }
 
-/* Calculate a covariance matrix */
+/* Calculate a gradient vector */
 template <typename T, typename U>
-Eigen::Matrix3d CostGreedyEndpoint<T, U>::ComputeCovariance(
+Eigen::Vector3d CostGreedyEndpoint<T, U>::ComputeGradient(
     const GridMapType& gridMap,
     const ScanType& scanData,
     const RobotPose2D<double>& sensorPose)
 {
-    /* Approximate a covariance matrix using Laplace approximation
-     * Covariance matrix is computed from the inverse of a Hessian matrix
-     * of a cost function at the estimated robot pose (optimum point) */
-    /* Hessian matrix is then calculated using a Jacobian matrix based on
-     * Gauss-Newton approximation */
-
-    /* Calculate the cost values */
+    /* Compute a gradient of the cost function with respect to sensor pose */
     const double diffLinear = 0.01;
     const double diffAngular = 0.01;
 
@@ -192,17 +192,28 @@ Eigen::Matrix3d CostGreedyEndpoint<T, U>::ComputeCovariance(
     const double gradY = 0.5 * diffCostY / diffLinear;
     const double gradTheta = 0.5 * diffCostTheta / diffAngular;
 
+    return Eigen::Vector3d { gradX, gradY, gradTheta };
+}
+
+/* Calculate a covariance matrix */
+template <typename T, typename U>
+Eigen::Matrix3d CostGreedyEndpoint<T, U>::ComputeCovariance(
+    const GridMapType& gridMap,
+    const ScanType& scanData,
+    const RobotPose2D<double>& sensorPose)
+{
+    /* Approximate a covariance matrix using Laplace approximation
+     * Covariance matrix is computed from the inverse of a Hessian matrix
+     * of a cost function at the estimated robot pose (optimum point) */
+    /* Hessian matrix is then calculated using a Jacobian matrix based on
+     * Gauss-Newton approximation */
+
+    /* Calculate the gradient vector */
+    const Eigen::Vector3d gradVec =
+        this->ComputeGradient(gridMap, scanData, sensorPose);
+
     /* Create a covariance matrix */
-    Eigen::Matrix3d covMat;
-    covMat(0, 0) = gradX * gradX;
-    covMat(0, 1) = gradX * gradY;
-    covMat(0, 2) = gradX * gradTheta;
-    covMat(1, 0) = covMat(0, 1);
-    covMat(1, 1) = gradY * gradY;
-    covMat(1, 2) = gradY * gradTheta;
-    covMat(2, 0) = covMat(0, 2);
-    covMat(2, 1) = covMat(1, 2);
-    covMat(2, 2) = gradTheta * gradTheta;
+    Eigen::Matrix3d covMat = gradVec * gradVec.transpose();
 
     /* Add a small constant to the diagonal elements */
     covMat(0, 0) += 0.01;
