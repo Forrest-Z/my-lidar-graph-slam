@@ -106,6 +106,16 @@ public:
         const Point2D<double>& mapPos) const
     { return this->WorldCoordinateToGridCellIndex(mapPos.mX, mapPos.mY); }
 
+    /* Convert the point in world frame to the
+     * floating-point grid cell index */
+    inline Point2D<double> WorldCoordinateToGridCellIndexFloat(
+        double mapX, double mapY) const;
+    /* Convert the point in world frame to the
+     * floating-point grid cell index */
+    inline Point2D<double> WorldCoordinateToGridCellIndexFloat(
+        const Point2D<double>& mapPos) const
+    { return this->WorldCoordinateToGridCellIndexFloat(mapPos.mX, mapPos.mY); }
+
     /* Get the grid cell of the specified index */
     inline GridCellType& GridCellAt(int gridCellX, int gridCellY);
     /* Get the grid cell of the specified index */
@@ -604,6 +614,18 @@ Point2D<int> GridMap<T>::WorldCoordinateToGridCellIndex(
         (mapY - this->mMinPos.mY) / this->mMapResolution));
     
     return Point2D<int> { cellIdxX, cellIdxY };
+}
+
+/* Convert the point in world frame to the
+ * floating-point grid cell index */
+template <typename T>
+Point2D<double> GridMap<T>::WorldCoordinateToGridCellIndexFloat(
+    double mapX, double mapY) const
+{
+    const double cellIdxX = (mapX - this->mMinPos.mX) / this->mMapResolution;
+    const double cellIdxY = (mapY - this->mMinPos.mY) / this->mMapResolution;
+
+    return Point2D<double> { cellIdxX, cellIdxY };
 }
 
 /* Get the grid cell of the specified index */
