@@ -219,7 +219,10 @@ void MapSaver::DrawMap(const GridMapType& gridMap,
                 for (int xx = 0; xx < gridMap.PatchSize(); ++xx) {
                     const double gridCellValue = patch.At(xx, yy).Value();
 
-                    if (gridCellValue < 0.0 || gridCellValue > 1.0)
+                    /* If the occupancy probability value is less than or
+                     * equal to zero, then the grid cell is not yet observed
+                     * and is in unknown state (GridCell::Unknown is zero) */
+                    if (gridCellValue <= 0.0 || gridCellValue > 1.0)
                         continue;
                     
                     const std::ptrdiff_t idxX = static_cast<std::ptrdiff_t>(
