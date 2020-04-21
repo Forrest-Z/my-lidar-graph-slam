@@ -19,7 +19,7 @@ class ScanMatcherGreedyEndpoint final : public ScanMatcher<T, U>
 {
 public:
     /* Type definitions */
-    using CostType = std::shared_ptr<CostFunction<T, U>>;
+    using CostFuncPtr = std::shared_ptr<CostFunction<T, U>>;
 
     using typename ScanMatcher<T, U>::GridMapType;
     using typename ScanMatcher<T, U>::ScanType;
@@ -29,7 +29,7 @@ public:
                               double angularStep,
                               int maxIterations,
                               int maxNumOfRefinements,
-                              const CostType& costFunc) :
+                              const CostFuncPtr& costFunc) :
         ScanMatcher<T, U>(),
         mLinearStep(linearStep),
         mAngularStep(angularStep),
@@ -55,15 +55,15 @@ public:
     
 private:
     /* Initial step of the linear components (x and y) */
-    double   mLinearStep;
+    double      mLinearStep;
     /* Initial step of the angular component (theta) */
-    double   mAngularStep;
+    double      mAngularStep;
     /* Maximum number of iterations */
-    int      mMaxIterations;
+    int         mMaxIterations;
     /* Maximum number of step parameter updates */
-    int      mMaxNumOfRefinements;
+    int         mMaxNumOfRefinements;
     /* Cost function */
-    CostType mCostFunc;
+    CostFuncPtr mCostFunc;
 };
 
 /* Optimize the robot pose by scan matching */
@@ -88,9 +88,11 @@ void ScanMatcherGreedyEndpoint<T, U>::OptimizePose(
     double minCost = this->mCostFunc->Cost(gridMap, scanData, sensorPose);
     RobotPose2D<double> bestPose = sensorPose;
 
-    /* The number of the refinements (step parameter updates) */
+    /* The number of iterations */
     int numOfIterations = 0;
+    /* The number of refinements (step parameter updates) */
     int numOfRefinements = 0;
+    
     double currentLinearStep = this->mLinearStep;
     double currentAngularStep = this->mAngularStep;
     bool poseUpdated = false;
@@ -135,7 +137,7 @@ void ScanMatcherGreedyEndpoint<T, U>::OptimizePose(
              (++numOfIterations < this->mMaxIterations));
     
     /* Calculate the robot pose from the updated sensor pose */
-    RobotPose2D<double> robotPose = MoveBackward(bestPose, relPose);
+    const RobotPose2D<double> robotPose = MoveBackward(bestPose, relPose);
     
     /* Set the estimated robot pose */
     estimatedPose = robotPose;
