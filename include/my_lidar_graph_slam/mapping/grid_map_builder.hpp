@@ -8,7 +8,7 @@
 
 #include "my_lidar_graph_slam/point.hpp"
 #include "my_lidar_graph_slam/pose.hpp"
-#include "my_lidar_graph_slam/grid_map/counting_grid_cell.hpp"
+#include "my_lidar_graph_slam/grid_map/binary_bayes_grid_cell.hpp"
 #include "my_lidar_graph_slam/grid_map/grid_map.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
@@ -20,7 +20,7 @@ class GridMapBuilder
 {
 public:
     /* Type definitions */
-    using GridMapType = GridMap<CountingGridCell<double>>;
+    using GridMapType = GridMap<BinaryBayesGridCell<double>>;
     using PatchType = typename GridMapType::PatchType;
     using ScanType = Sensor::ScanDataPtr<double>;
 
@@ -67,7 +67,9 @@ public:
                    int numOfScansForLatestMap,
                    double travelDistThreshold,
                    double usableRangeMin,
-                   double usableRangeMax);
+                   double usableRangeMax,
+                   double probHit,
+                   double probMiss);
 
     /* Destructor */
     ~GridMapBuilder() = default;
@@ -156,6 +158,12 @@ private:
     double                        mUsableRangeMin;
     /* Maximum range of the laser scan that is considered valid */
     double                        mUsableRangeMax;
+    /* Occupancy probability value for hit grid cell
+     * Used for calculating the probability value with Binary Bayes Filter */
+    double                        mProbHit;
+    /* Occupancy probability value for missed grid cell
+     * Used for calculating the probability value with Binary Bayes Filter */
+    double                        mProbMiss;
 };
 
 } /* namespace Mapping */
