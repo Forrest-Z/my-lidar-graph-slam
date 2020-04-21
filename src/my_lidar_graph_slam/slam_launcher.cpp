@@ -12,10 +12,12 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include "my_lidar_graph_slam/point.hpp"
+#include "my_lidar_graph_slam/grid_map/binary_bayes_grid_cell.hpp"
 #include "my_lidar_graph_slam/io/gnuplot_helper.hpp"
 #include "my_lidar_graph_slam/io/map_saver.hpp"
 #include "my_lidar_graph_slam/io/carmen/carmen_reader.hpp"
 #include "my_lidar_graph_slam/mapping/cost_function_greedy_endpoint.hpp"
+#include "my_lidar_graph_slam/mapping/cost_function_square_error.hpp"
 #include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
@@ -29,15 +31,29 @@ using namespace MyLidarGraphSlam;
 namespace pt = boost::property_tree;
 
 /* Declare types for convenience */
-using MapType = GridMap<CountingGridCell<double>>;
+using MapType = GridMap<BinaryBayesGridCell<double>>;
 using ScanType = Sensor::ScanDataPtr<double>;
-using CostType = Mapping::CostGreedyEndpoint<MapType, ScanType>;
-using ScanMatcherBaseType = Mapping::ScanMatcher<MapType, ScanType>;
+
+using CostFuncType =
+    Mapping::CostFunction<MapType, ScanType>;
+using CostGreedyEndpointType =
+    Mapping::CostGreedyEndpoint<MapType, ScanType>;
+using CostSquareErrorType =
+    Mapping::CostSquareError<MapType, ScanType>;
+
 using ScanMatcherType =
+    Mapping::ScanMatcher<MapType, ScanType>;
+using ScanMatcherGreedyEndpointType =
     Mapping::ScanMatcherGreedyEndpoint<MapType, ScanType>;
 
-/* Create cost function object */
-std::shared_ptr<CostType> CreateCostFunction(
+using LoopClosureType = Mapping::LoopClosure;
+using LoopClosureGridSearchType = Mapping::LoopClosureGridSearch;
+
+using OptimizerType = Mapping::PoseGraphOptimizer;
+using OptimizerSpCholType = Mapping::PoseGraphOptimizerSpChol;
+
+/* Create the greedy endpoint cost function object */
+std::shared_ptr<CostFuncType> CreateCostGreedyEndpoint(
     const pt::ptree& jsonSettings)
 {
     /* Load settings for greedy endpoint cost function */
@@ -57,7 +73,7 @@ std::shared_ptr<CostType> CreateCostFunction(
         "CostGreedyEndpoint.ScalingFactor", 1.0);
     
     /* Create cost function object */
-    std::shared_ptr<CostType> pCostFunc = std::make_shared<CostType>(
+    auto pCostFunc = std::make_shared<CostGreedyEndpointType>(
         usableRangeMin, usableRangeMax, hitAndMissedDist,
         occupancyThreshold, gaussianSigma, kernelSize,
         scalingFactor);
@@ -65,10 +81,40 @@ std::shared_ptr<CostType> CreateCostFunction(
     return pCostFunc;
 }
 
-/* Create scan matcher object */
-std::shared_ptr<ScanMatcherType> CreateScanMatcher(
+/* Create the square error cost function object */
+std::shared_ptr<CostFuncType> CreateCostSquareError(
+    const pt::ptree& jsonSettings)
+{
+    /* Load settings for square error cost function */
+    const double usableRangeMin = jsonSettings.get(
+        "CostSquareError.UsableRangeMin", 0.01);
+    const double usableRangeMax = jsonSettings.get(
+        "CostSquareError.UsableRangeMax", 50.0);
+    
+    /* Create cost function object */
+    auto pCostFunc = std::make_shared<CostSquareErrorType>(
+        usableRangeMin, usableRangeMax);
+    
+    return pCostFunc;
+}
+
+/* Create the cost function object */
+std::shared_ptr<CostFuncType> CreateCostFunction(
     const pt::ptree& jsonSettings,
-    const std::shared_ptr<CostType>& pCostFunc)
+    const std::string& costType)
+{
+    if (costType == "GreedyEndpoint")
+        return CreateCostGreedyEndpoint(jsonSettings);
+    else if (costType == "SquareError")
+        return CreateCostSquareError(jsonSettings);
+    
+    return nullptr;
+}
+
+/* Create the greedy endpoint scan matcher object */
+std::shared_ptr<ScanMatcherType> CreateScanMatcherGreedyEndpoint(
+    const pt::ptree& jsonSettings,
+    const std::shared_ptr<CostFuncType>& pCostFunc)
 {
     /* Load settings for greedy endpoint scan matcher */
     const double linearStep = jsonSettings.get(
@@ -81,19 +127,30 @@ std::shared_ptr<ScanMatcherType> CreateScanMatcher(
         "ScanMatcherGreedyEndpoint.MaxNumOfRefinements", 5);
     
     /* Construct scan matcher */
-    std::shared_ptr<ScanMatcherType> pScanMatcher =
-        std::make_shared<ScanMatcherType>(
-            linearStep, angularStep, maxIterations, maxNumOfRefinements,
-            pCostFunc);
+    auto pScanMatcher = std::make_shared<ScanMatcherGreedyEndpointType>(
+        linearStep, angularStep, maxIterations, maxNumOfRefinements,
+        pCostFunc);
     
     return pScanMatcher;
 }
 
-/* Create loop closure object */
-std::shared_ptr<Mapping::LoopClosureGridSearch> CreateLoopClosure(
+/* Create the scan matcher object */
+std::shared_ptr<ScanMatcherType> CreateScanMatcher(
+    const pt::ptree& jsonSettings,
+    const std::string& scanMatcherType,
+    const std::shared_ptr<CostFuncType>& pCostFunc)
+{
+    if (scanMatcherType == "GreedyEndpoint")
+        return CreateScanMatcherGreedyEndpoint(jsonSettings, pCostFunc);
+    
+    return nullptr;
+}
+
+/* Create the grid search loop closure object */
+std::shared_ptr<LoopClosureType> CreateLoopClosureGridSearch(
     const pt::ptree& jsonSettings,
     const std::shared_ptr<ScanMatcherType>& pScanMatcher,
-    const std::shared_ptr<CostType>& pCostFunc)
+    const std::shared_ptr<CostFuncType>& pCostFunc)
 {
     /* Read settings for loop closure */
     const double nodeDistMax = jsonSettings.get(
@@ -114,13 +171,25 @@ std::shared_ptr<Mapping::LoopClosureGridSearch> CreateLoopClosure(
         "LoopClosureGridSearch.CostThreshold", 0.01);
 
     /* Construct loop closure object */
-    std::shared_ptr<Mapping::LoopClosureGridSearch> pLoopClosure =
-        std::make_shared<Mapping::LoopClosureGridSearch>(
-            pScanMatcher, pCostFunc,
-            nodeDistMax, rangeX, rangeY, rangeTheta,
-            stepX, stepY, stepTheta, costThreshold);
+    auto pLoopClosure = std::make_shared<Mapping::LoopClosureGridSearch>(
+        pScanMatcher, pCostFunc, nodeDistMax,
+        rangeX, rangeY, rangeTheta, stepX, stepY, stepTheta, costThreshold);
     
     return pLoopClosure;
+}
+
+/* Create the loop closure object */
+std::shared_ptr<LoopClosureType> CreateLoopClosure(
+    const pt::ptree& jsonSettings,
+    const std::string& loopClosureType,
+    const std::shared_ptr<ScanMatcherType>& pScanMatcher,
+    const std::shared_ptr<CostFuncType>& pCostFunc)
+{
+    if (loopClosureType == "GridSearch")
+        return CreateLoopClosureGridSearch(
+            jsonSettings, pScanMatcher, pCostFunc);
+    
+    return nullptr;
 }
 
 /* Create pose graph object */
@@ -128,14 +197,13 @@ std::shared_ptr<Mapping::PoseGraph> CreatePoseGraph(
     const pt::ptree& jsonSettings)
 {
     /* Construct pose graph object */
-    std::shared_ptr<Mapping::PoseGraph> pPoseGraph =
-        std::make_shared<Mapping::PoseGraph>();
-    
+    auto pPoseGraph = std::make_shared<Mapping::PoseGraph>();
+
     return pPoseGraph;
 }
 
-/* Create pose graph optimizer object */
-std::shared_ptr<Mapping::PoseGraphOptimizerSpChol> CreatePoseGraphOptimizer(
+/* Create sparse Cholesky pose graph optimizer object */
+std::shared_ptr<OptimizerType> CreatePoseGraphOptimizerSpChol(
     const pt::ptree& jsonSettings)
 {
     /* Read settings for sparse Cholesky pose graph optimizer */
@@ -147,11 +215,21 @@ std::shared_ptr<Mapping::PoseGraphOptimizerSpChol> CreatePoseGraphOptimizer(
         "PoseGraphOptimizerSpChol.InitialLambda", 1e-4);
 
     /* Construct pose graph optimizer object */
-    std::shared_ptr<Mapping::PoseGraphOptimizerSpChol> pPoseGraphOptimizer =
-        std::make_shared<Mapping::PoseGraphOptimizerSpChol>(
-            numOfIterationsMax, errorTolerance, initialLambda);
+    auto pOptimizer = std::make_shared<OptimizerSpCholType>(
+        numOfIterationsMax, errorTolerance, initialLambda);
     
-    return pPoseGraphOptimizer;
+    return pOptimizer;
+}
+
+/* Create pose graph optimizer object */
+std::shared_ptr<OptimizerType> CreatePoseGraphOptimizer(
+    const pt::ptree& jsonSettings,
+    const std::string& optimizerType)
+{
+    if (optimizerType == "SpChol")
+        return CreatePoseGraphOptimizerSpChol(jsonSettings);
+    
+    return nullptr;
 }
 
 /* Create grid map builder object */
@@ -173,12 +251,17 @@ std::shared_ptr<Mapping::GridMapBuilder> CreateGridMapBuilder(
     const double usableRangeMax = jsonSettings.get(
         "GridMapBuilder.UsableRangeMax", 50.0);
     
+    const double probHit = jsonSettings.get(
+        "GridMapBuilder.ProbabilityHit", 0.9);
+    const double probMiss = jsonSettings.get(
+        "GridMapBuilder.ProbabilityMiss", 0.1);
+    
     /* Construct grid map builder object */
-    std::shared_ptr<Mapping::GridMapBuilder> pGridMapBuilder =
-        std::make_shared<Mapping::GridMapBuilder>(
-            mapResolution, patchSize,
-            numOfScansForLatestMap, travelDistThresholdForLocalMap,
-            usableRangeMin, usableRangeMax);
+    auto pGridMapBuilder = std::make_shared<Mapping::GridMapBuilder>(
+        mapResolution, patchSize,
+        numOfScansForLatestMap, travelDistThresholdForLocalMap,
+        usableRangeMin, usableRangeMax,
+        probHit, probMiss);
     
     return pGridMapBuilder;
 }
@@ -189,17 +272,31 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
 {
     /* Create grid map builder object */
     auto pGridMapBuilder = CreateGridMapBuilder(jsonSettings);
-    /* Create greedy endpoint cost function */
-    auto pCostFunc = CreateCostFunction(jsonSettings);
-    /* Create greedy endpoint scan matcher */
-    auto pScanMatcher = CreateScanMatcher(jsonSettings, pCostFunc);
-    /* Create pose graph object */
+
+    /* Create the cost function for local SLAM */
+    const std::string localCostType = jsonSettings.get(
+        "LidarGraphSlam.LocalSlam.CostType", "GreedyEndpoint");
+    auto pCostFunc = CreateCostFunction(jsonSettings, localCostType);
+
+    /* Create the scan matcher for local SLAM */
+    const std::string localScanMatcherType = jsonSettings.get(
+        "LidarGraphSlam.LocalSlam.ScanMatcherType", "GreedyEndpoint");
+    auto pScanMatcher = CreateScanMatcher(
+        jsonSettings, localScanMatcherType, pCostFunc);
+    
+    /* Create pose graph */
     auto pPoseGraph = CreatePoseGraph(jsonSettings);
-    /* Create pose graph optimizer object */
-    auto pPoseGraphOptimizer = CreatePoseGraphOptimizer(jsonSettings);
+
+    /* Create pose graph optimizer */
+    const std::string optimizerType = jsonSettings.get(
+        "LidarGraphSlam.PoseGraphOptimizerType", "SpChol");
+    auto pOptimizer = CreatePoseGraphOptimizer(jsonSettings, optimizerType);
+
     /* Create loop closure object */
+    const std::string loopClosureType = jsonSettings.get(
+        "LidarGraphSlam.LoopClosureType", "GridSearch");
     auto pLoopClosure = CreateLoopClosure(
-        jsonSettings, pScanMatcher, pCostFunc);
+        jsonSettings, loopClosureType, pScanMatcher, pCostFunc);
 
     /* Load settings for LiDAR Graph-Based SLAM */
     const double initialPoseX = jsonSettings.get(
@@ -216,17 +313,19 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     const double updateThresholdTime = jsonSettings.get(
         "LidarGraphSlam.UpdateThresholdTime", 5.0);
     
+    const int loopClosureInterval = jsonSettings.get(
+        "LidarGraphSlam.LoopClosureInterval", 10);
+    
     const RobotPose2D<double> initialPose {
         initialPoseX, initialPoseY, initialPoseTheta };
-    
+
     /* Create LiDAR Graph-Based SLAM object */
-    std::shared_ptr<Mapping::LidarGraphSlam> pLidarGraphSlam =
-        std::make_shared<Mapping::LidarGraphSlam>(
-            pGridMapBuilder, pScanMatcher,
-            pPoseGraph, pPoseGraphOptimizer,
-            pLoopClosure, 10, initialPose,
-            updateThresholdTravelDist, updateThresholdAngle,
-            updateThresholdTime);
+    auto pLidarGraphSlam = std::make_shared<Mapping::LidarGraphSlam>(
+        pGridMapBuilder, pScanMatcher,
+        pPoseGraph, pOptimizer, pLoopClosure,
+        loopClosureInterval, initialPose,
+        updateThresholdTravelDist, updateThresholdAngle,
+        updateThresholdTime);
     
     return pLidarGraphSlam;
 }
@@ -313,6 +412,9 @@ int main(int argc, char** argv)
                      pLidarGraphSlam->GetPoseGraph(),
                      outputFilePath, true);
     mapSaver.SavePoseGraph(pLidarGraphSlam->GetPoseGraph(),
+                           outputFilePath);
+    mapSaver.SaveLatestMap(pLidarGraphSlam->GetGridMapBuilder(),
+                           pLidarGraphSlam->GetPoseGraph(),
                            outputFilePath);
     
     /* Wait for key input */

@@ -12,6 +12,11 @@
         "ScalingFactor": 1.0
     },
 
+    "CostSquareError": {
+        "UsableRangeMin": 0.01,
+        "UsableRangeMax": 50.0
+    },
+
     "ScanMatcherGreedyEndpoint": {
         "LinearStep": 0.1,
         "AngularStep": 0.1,
@@ -44,10 +49,19 @@
             "TravelDistThresholdForLocalMap": 10.0
         },
         "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0
+        "UsableRangeMax": 50.0,
+        "ProbabilityHit": 0.9,
+        "ProbabilityMiss": 0.1
     },
 
     "LidarGraphSlam": {
+        "LocalSlam": {
+            "CostType": "SquareError",
+            "ScanMatcherType": "GreedyEndpoint"
+        },
+        "PoseGraphOptimizerType": "SpChol",
+        "LoopClosureType": "GridSearch",
+        "LoopClosureInterval": 10,
         "InitialPose": {
             "X": 0.0,
             "Y": 0.0,
