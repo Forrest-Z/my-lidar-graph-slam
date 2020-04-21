@@ -16,20 +16,19 @@ class CountingGridCell final : public GridCell<T, bool>
 {
 public:
     /* Default constructor */
-    CountingGridCell() :
-        GridCell<T, bool>(),
-        mValue(CountingGridCell::Unknown),
-        mHit(0),
-        mMiss(0) { }
+    CountingGridCell() : GridCell<T, bool>(),
+                         mValue(Unknown),
+                         mHit(0),
+                         mMiss(0) { }
     /* Destructor */
     ~CountingGridCell() = default;
 
     /* Copy constructor */
     CountingGridCell(const CountingGridCell& other);
-    /* Move constructor */
-    CountingGridCell(CountingGridCell&& other) noexcept;
     /* Copy assignment operator */
     CountingGridCell& operator=(const CountingGridCell& other);
+    /* Move constructor */
+    CountingGridCell(CountingGridCell&& other) noexcept;
     /* Move assignment operator */
     CountingGridCell& operator=(CountingGridCell&& other) noexcept;
 
@@ -43,6 +42,9 @@ public:
 
     /* Update the value of the grid cell */
     void Update(const bool& hitOrMiss) override;
+
+    /* Unknown occupancy probability value */
+    using GridCell<T, bool>::Unknown;
 
     /* Smallest possible occupancy probability value,
      * which is slightly larger than the unknown value */
@@ -65,17 +67,6 @@ CountingGridCell<T>::CountingGridCell(
 {
 }
 
-/* Move constructor */
-template <typename T>
-CountingGridCell<T>::CountingGridCell(
-    CountingGridCell<T>&& other) noexcept :
-    GridCell<T, bool>(),
-    mValue(std::move(other.mValue)),
-    mHit(std::move(other.mHit)),
-    mMiss(std::move(other.mMiss))
-{
-}
-
 /* Copy assignment operator */
 template <typename T>
 CountingGridCell<T>& CountingGridCell<T>::operator=(
@@ -89,6 +80,17 @@ CountingGridCell<T>& CountingGridCell<T>::operator=(
     this->mMiss = other.mMiss;
 
     return *this;
+}
+
+/* Move constructor */
+template <typename T>
+CountingGridCell<T>::CountingGridCell(
+    CountingGridCell<T>&& other) noexcept :
+    GridCell<T, bool>(),
+    mValue(std::move(other.mValue)),
+    mHit(std::move(other.mHit)),
+    mMiss(std::move(other.mMiss))
+{
 }
 
 /* Move assignment operator */
@@ -110,7 +112,7 @@ CountingGridCell<T>& CountingGridCell<T>::operator=(
 template <typename T>
 void CountingGridCell<T>::Reset()
 {
-    this->mValue = CountingGridCell::Unknown;
+    this->mValue = Unknown;
     this->mHit = 0;
     this->mMiss = 0;
 }
@@ -131,7 +133,7 @@ void CountingGridCell<T>::Update(const bool& hitOrMiss)
     
     /* If the number of the hits is zero, then add the small value
      * to distinguish from the unknown state */
-    this->mValue = !this->mHit ? CountingGridCell<T>::Epsilon : this->mValue;
+    this->mValue = !this->mHit ? Epsilon : this->mValue;
 }
 
 } /* namespace MyLidarGraphSlam */
