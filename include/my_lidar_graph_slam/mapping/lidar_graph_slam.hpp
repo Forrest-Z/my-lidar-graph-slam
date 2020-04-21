@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "my_lidar_graph_slam/pose.hpp"
-#include "my_lidar_graph_slam/grid_map/counting_grid_cell.hpp"
+#include "my_lidar_graph_slam/grid_map/binary_bayes_grid_cell.hpp"
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
@@ -24,7 +24,7 @@ class LidarGraphSlam
 public:
     /* Type definitions */
     using ScanType = Sensor::ScanDataPtr<double>;
-    using GridMapType = GridMap<CountingGridCell<double>>;
+    using GridMapType = GridMap<BinaryBayesGridCell<double>>;
     using ScanMatcherType = ScanMatcher<GridMapType, ScanType>;
 
     /* Constructor */
