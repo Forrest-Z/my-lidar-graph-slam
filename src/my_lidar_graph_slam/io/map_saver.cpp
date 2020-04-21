@@ -11,7 +11,6 @@
 
 #include "my_lidar_graph_slam/point.hpp"
 #include "my_lidar_graph_slam/pose.hpp"
-#include "my_lidar_graph_slam/grid_map/counting_grid_cell.hpp"
 #include "my_lidar_graph_slam/grid_map/grid_map.hpp"
 #include "my_lidar_graph_slam/io/map_saver.hpp"
 
