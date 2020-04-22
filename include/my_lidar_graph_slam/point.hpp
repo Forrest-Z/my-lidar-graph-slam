@@ -4,6 +4,7 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_POINT_HPP
 #define MY_LIDAR_GRAPH_SLAM_POINT_HPP
 
+#include <cmath>
 #include <iostream>
 #include <type_traits>
 
@@ -98,6 +99,36 @@ template <typename T>
 bool operator!=(const Point2D<T>& lhs, const Point2D<T>& rhs)
 {
     return !operator==(lhs, rhs);
+}
+
+/* Calculate the distance between (0, 0) and the given point */
+template <typename T>
+T Distance(const Point2D<T>& p)
+{
+    return std::sqrt(p.mX * p.mX + p.mY * p.mY);
+}
+
+/* Calculate the distance between two given points */
+template <typename T>
+T Distance(const Point2D<T>& p0, const Point2D<T>& p1)
+{
+    return std::sqrt((p0.mX - p1.mX) * (p0.mX - p1.mX) +
+                     (p0.mY - p1.mY) * (p0.mY - p1.mY));
+}
+
+/* Calculate the squared distance between (0, 0) and the given point */
+template <typename T>
+T SquaredDistance(const Point2D<T>& p)
+{
+    return p.mX * p.mX + p.mY * p.mY;
+}
+
+/* Calculate the squared distance between two given points */
+template <typename T>
+T SquaredDistance(const Point2D<T>& p0, const Point2D<T>& p1)
+{
+    return (p0.mX - p1.mX) * (p0.mX - p1.mX) +
+           (p0.mY - p1.mY) * (p0.mY - p1.mY);
 }
 
 /* Print to an output stream */
