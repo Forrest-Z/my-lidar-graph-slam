@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "my_lidar_graph_slam/point.hpp"
 #include "my_lidar_graph_slam/pose.hpp"
 
 namespace MyLidarGraphSlam {
@@ -115,6 +116,23 @@ public:
     /* Retrieve the range data */
     inline const std::vector<T>& Ranges() const { return this->mRanges; }
 
+    /* Retrieve the scan range at the specified index */
+    inline T RangeAt(std::size_t scanIdx) const
+    { return this->mRanges.at(scanIdx); }
+    /* Retrieve the scan angle at the specified index */
+    inline T AngleAt(std::size_t scanIdx) const;
+
+    /* Compute the hit point of the specified scan */
+    Point2D<double> HitPoint(const RobotPose2D<double>& sensorPose,
+                             std::size_t scanIdx) const;
+    
+    /* Compute the hit point and missed point of the specified scan */
+    void HitAndMissedPoint(const RobotPose2D<double>& sensorPose,
+                           std::size_t scanIdx,
+                           T hitAndMissedDist,
+                           Point2D<double>& hitPoint,
+                           Point2D<double>& missedPoint) const;
+
 private:
     /* Odometry pose in world frame (required) */
     RobotPose2D<T>  mOdomPose;
@@ -135,6 +153,53 @@ private:
     /* Range data */
     std::vector<T>  mRanges;
 };
+
+/* Retrieve the scan angle at the specified index */
+template <typename T>
+T ScanData<T>::AngleAt(std::size_t scanIdx) const
+{
+    return this->mMinAngle + static_cast<T>(scanIdx) * this->mAngleIncrement;
+}
+
+/* Compute the hit point of the specified scan */
+template <typename T>
+Point2D<double> ScanData<T>::HitPoint(
+    const RobotPose2D<double>& sensorPose,
+    std::size_t scanIdx) const
+{
+    const T scanRange = this->RangeAt(scanIdx);
+    const T scanAngle = this->AngleAt(scanIdx);
+    const T cosTheta = std::cos(sensorPose.mTheta + scanAngle);
+    const T sinTheta = std::sin(sensorPose.mTheta + scanAngle);
+
+    return Point2D<double> { sensorPose.mX + scanRange * cosTheta,
+                             sensorPose.mY + scanRange * sinTheta };
+}
+
+/* Compute the hit point and missed point of the specified scan */
+template <typename T>
+void ScanData<T>::HitAndMissedPoint(
+    const RobotPose2D<double>& sensorPose,
+    std::size_t scanIdx,
+    T hitAndMissedDist,
+    Point2D<double>& hitPoint,
+    Point2D<double>& missedPoint) const
+{
+    const T scanRange = this->RangeAt(scanIdx);
+    const T scanAngle = this->AngleAt(scanIdx);
+    const T cosTheta = std::cos(sensorPose.mTheta + scanAngle);
+    const T sinTheta = std::sin(sensorPose.mTheta + scanAngle);
+
+    /* Compute the hit point */
+    hitPoint.mX = sensorPose.mX + scanRange * cosTheta;
+    hitPoint.mY = sensorPose.mY + scanRange * sinTheta;
+
+    /* Compute the missed point */
+    missedPoint.mX = sensorPose.mX + (scanRange - hitAndMissedDist) * cosTheta;
+    missedPoint.mY = sensorPose.mY + (scanRange - hitAndMissedDist) * sinTheta;
+
+    return;
+}
 
 /* Type definitions */
 using SensorDataPtr = std::shared_ptr<SensorData>;
