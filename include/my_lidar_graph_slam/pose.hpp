@@ -116,6 +116,36 @@ bool operator!=(const RobotPose2D<T>& lhs, const RobotPose2D<T>& rhs)
     return !operator==(lhs, rhs);
 }
 
+/* Calculate the distance between (0, 0) and the given pose */
+template <typename T>
+T Distance(const RobotPose2D<T>& p)
+{
+    return std::sqrt(p.mX * p.mX + p.mY * p.mY);
+}
+
+/* Calculate the distance between two given poses */
+template <typename T>
+T Distance(const RobotPose2D<T>& p0, const RobotPose2D<T>& p1)
+{
+    return std::sqrt((p0.mX - p1.mX) * (p0.mX - p1.mX) +
+                     (p0.mY - p1.mY) * (p0.mY - p1.mY));
+}
+
+/* Calculate the squared distance between (0, 0) and the given pose */
+template <typename T>
+T SquaredDistance(const RobotPose2D<T>& p)
+{
+    return p.mX * p.mX + p.mY * p.mY;
+}
+
+/* Calculate the squared distance between two given poses */
+template <typename T>
+T SquaredDistance(const RobotPose2D<T>& p0, const RobotPose2D<T>& p1)
+{
+    return (p0.mX - p1.mX) * (p0.mX - p1.mX) +
+           (p0.mY - p1.mY) * (p0.mY - p1.mY);
+}
+
 /* Compounding operator */
 template <typename T>
 RobotPose2D<T> Compound(const RobotPose2D<T>& startPose,
