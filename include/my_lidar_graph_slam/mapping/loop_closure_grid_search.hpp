@@ -56,6 +56,14 @@ public:
                   int& endNodeIdx,
                   Eigen::Matrix3d& estimatedCovMat) override;
     
+private:
+    /* Find a local map and a pose graph node as loop closure candidates */
+    bool FindLoopClosureCandidates(const GridMapBuilderPtr& gridMapBuilder,
+                                   const PoseGraphPtr& poseGraph,
+                                   const RobotPose2D<double>& robotPose,
+                                   int& candidateMapIdx,
+                                   int& candidateNodeIdx) const;
+
     /* Find a corresponding pose of the current robot pose
      * from the loop-closure candidate local grid map */
     bool FindCorrespondingPose(const GridMapType& gridMap,
