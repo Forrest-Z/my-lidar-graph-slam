@@ -103,21 +103,14 @@ double CostSquareError<T, U>::Cost(const GridMapType& gridMap,
     const std::size_t numOfScans = scanData->Ranges().size();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
-        /* Retrieve the scan range and angle */
-        const double range = scanData->Ranges().at(i);
-        const double angle = scanData->MinAngle() +
-            static_cast<double>(i) * scanData->AngleIncrement();
+        /* Retrieve the scan range */
+        const double scanRange = scanData->RangeAt(i);
         
-        if (range >= maxRange || range <= minRange)
+        if (scanRange >= maxRange || scanRange <= minRange)
             continue;
         
         /* Calculate the grid cell index corresponding to the scan point */
-        const double cosTheta = std::cos(sensorPose.mTheta + angle);
-        const double sinTheta = std::sin(sensorPose.mTheta + angle);
-
-        const Point2D<double> hitPoint {
-            sensorPose.mX + range * cosTheta,
-            sensorPose.mY + range * sinTheta };
+        const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
         
         /* Calculate the smoothed occupancy probability value
          * this must be close to 1 since it corresponds to the hit point */
@@ -155,20 +148,14 @@ Eigen::Vector3d CostSquareError<T, U>::ComputeGradient(
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
         /* Retrieve the scan range and angle */
-        const double range = scanData->Ranges().at(i);
-        const double angle = scanData->MinAngle() +
-            static_cast<double>(i) * scanData->AngleIncrement();
+        const double scanRange = scanData->RangeAt(i);
+        const double scanAngle = scanData->AngleAt(i);
         
-        if (range >= maxRange || range <= minRange)
+        if (scanRange >= maxRange || scanRange <= minRange)
             continue;
         
         /* Calculate the grid cell index corresponding to the scan point */
-        const double cosTheta = std::cos(sensorPose.mTheta + angle);
-        const double sinTheta = std::sin(sensorPose.mTheta + angle);
-
-        const Point2D<double> hitPoint {
-            sensorPose.mX + range * cosTheta,
-            sensorPose.mY + range * sinTheta };
+        const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
         const Point2D<double> floatingIdx =
             gridMap.WorldCoordinateToGridCellIndexFloat(hitPoint);
         
@@ -181,7 +168,7 @@ Eigen::Vector3d CostSquareError<T, U>::ComputeGradient(
         /* Compute a gradient of the smoothed occupancy probability value
          * at the scan point with respect to the robot pose */
         const Eigen::Vector3d gradVec =
-            this->ComputeMapGradient(gridMap, sensorPose, range, angle);
+            this->ComputeMapGradient(gridMap, sensorPose, scanRange, scanAngle);
 
         /* Update gradients */
         gradX += 2.0 * errorValue * (-gradVec(0));

@@ -89,27 +89,20 @@ double CostGreedyEndpoint<T, U>::Cost(const GridMapType& gridMap,
     const std::size_t numOfScans = scanData->Ranges().size();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
-        const double range = scanData->Ranges().at(i);
-        const double angle = scanData->MinAngle() +
-            static_cast<double>(i) * scanData->AngleIncrement();
+        const double scanRange = scanData->RangeAt(i);
         
-        if (range >= maxRange || range <= minRange)
+        if (scanRange >= maxRange || scanRange <= minRange)
             continue;
         
-        /* Calculate the grid cell index corresponding to the scan point */
-        const double cosTheta = std::cos(sensorPose.mTheta + angle);
-        const double sinTheta = std::sin(sensorPose.mTheta + angle);
-
-        const Point2D<double> hitPoint {
-            sensorPose.mX + range * cosTheta,
-            sensorPose.mY + range * sinTheta };
+        /* Calculate the grid cell index corresponding to the
+         * scan point and the missed point */
+        Point2D<double> hitPoint;
+        Point2D<double> missedPoint;
+        scanData->HitAndMissedPoint(sensorPose, i, this->mHitAndMissedDist,
+                                    hitPoint, missedPoint);
+        
         const Point2D<int> hitPointIdx =
             gridMap.WorldCoordinateToGridCellIndex(hitPoint);
-        
-        /* Calculate the index for missed grid cell */
-        const Point2D<double> missedPoint {
-            hitPoint.mX - this->mHitAndMissedDist * cosTheta,
-            hitPoint.mY - this->mHitAndMissedDist * sinTheta };
         const Point2D<int> missedPointIdx =
             gridMap.WorldCoordinateToGridCellIndex(missedPoint);
         

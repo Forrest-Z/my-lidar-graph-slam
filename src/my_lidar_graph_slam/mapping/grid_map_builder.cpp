@@ -259,19 +259,14 @@ void GridMapBuilder::ConstructMapFromScans(
         nodeHitPoints.reserve(numOfScans);
 
         for (std::size_t i = 0; i < numOfScans; ++i) {
-            const double range = scanData->Ranges().at(i);
-            const double angle = scanData->MinAngle() +
-                static_cast<double>(i) * scanData->AngleIncrement();
-            const double cosTheta = std::cos(sensorPose.mTheta + angle);
-            const double sinTheta = std::sin(sensorPose.mTheta + angle);
+            const double scanRange = scanData->RangeAt(i);
 
-            if (range >= maxRange || range <= minRange)
+            if (scanRange >= maxRange || scanRange <= minRange)
                 continue;
             
             /* Compute the hit grid cell point */
-            nodeHitPoints.emplace_back(sensorPose.mX + range * cosTheta,
-                                       sensorPose.mY + range * sinTheta);
-            const Point2D<double>& hitPoint = nodeHitPoints.back();
+            const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
+            nodeHitPoints.push_back(hitPoint);
 
             /* Update the bounding box */
             bottomLeft.mX = std::min(bottomLeft.mX, hitPoint.mX);
@@ -361,19 +356,14 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
     
     /* Calculate the bounding box and scan points */
     for (std::size_t i = 0; i < numOfScans; ++i) {
-        const double range = scanData->Ranges().at(i);
-        const double angle = scanData->MinAngle() +
-            static_cast<double>(i) * scanData->AngleIncrement();
-        const double cosTheta = std::cos(sensorPose.mTheta + angle);
-        const double sinTheta = std::sin(sensorPose.mTheta + angle);
+        const double scanRange = scanData->RangeAt(i);
 
-        if (range >= maxRange || range <= minRange)
+        if (scanRange >= maxRange || scanRange <= minRange)
             continue;
         
         /* Calculate the hit grid cell point */
-        hitPoints.emplace_back(sensorPose.mX + range * cosTheta,
-                               sensorPose.mY + range * sinTheta);
-        const Point2D<double>& hitPoint = hitPoints.back();
+        const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
+        hitPoints.push_back(hitPoint);
 
         /* Update the corner positions (bounding box) */
         bottomLeft.mX = std::min(bottomLeft.mX, hitPoint.mX);
