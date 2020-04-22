@@ -6,7 +6,6 @@
 
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure.hpp"
-#include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -21,11 +20,9 @@ public:
     using LoopClosure::GridMapType;
 
     using CostFuncPtr = std::shared_ptr<CostFunction<GridMapType, ScanPtr>>;
-    using ScanMatcherPtr = std::shared_ptr<ScanMatcher<GridMapType, ScanPtr>>;
 
     /* Constructor */
-    LoopClosureGridSearch(const ScanMatcherPtr& scanMatcher,
-                          const CostFuncPtr& costFunc,
+    LoopClosureGridSearch(const CostFuncPtr& costFunc,
                           double poseGraphNodeDistMax,
                           double rangeX,
                           double rangeY,
@@ -34,7 +31,6 @@ public:
                           double stepY,
                           double stepTheta,
                           double costThreshold) :
-        mScanMatcher(scanMatcher),
         mCostFunc(costFunc),
         mPoseGraphNodeDistMax(poseGraphNodeDistMax),
         mRangeX(rangeX),
@@ -73,8 +69,6 @@ private:
                                Eigen::Matrix3d& estimatedCovMat) const;
 
 private:
-    /* Scan matcher */
-    ScanMatcherPtr mScanMatcher;
     /* Cost function */
     CostFuncPtr    mCostFunc;
     /* Maximum distance between the current robot pose and pose of the

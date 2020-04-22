@@ -42,7 +42,7 @@ bool LoopClosureGridSearch::FindLoop(
     const GridMapType& candidateMap = candidateMapInfo.mMap;
     const auto& candidateNode = poseGraph->NodeAt(candidateNodeIdx);
     const RobotPose2D<double>& candidateNodePose = candidateNode.Pose();
-    
+
     RobotPose2D<double> correspondingPose;
     Eigen::Matrix3d covMat;
     const bool loopFound = this->FindCorrespondingPose(
@@ -159,24 +159,25 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
         }
     }
 
+    /* Loop closure fails if the cost value exceeds the threshold */
+    const double normalizedCost =
+        costMin / static_cast<double>(scanData->NumOfScans());
+    
+    if (normalizedCost >= this->mCostThreshold)
+        return false;
+
+    /* Estimate the covariance matrix */
+    const Eigen::Matrix3d covMat =
+        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
+    
     /* Calculate the robot pose from the sensor pose */
     const RobotPose2D<double> bestPose =
         MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
-
-    /* Perform scan matching at the best pose */
-    double normalizedCostValue;
-    this->mScanMatcher->OptimizePose(
-        gridMap, scanData, bestPose,
-        correspondingPose, normalizedCostValue);
     
-    /* Loop closure fails if the cost value exceeds the threshold */
-    if (normalizedCostValue >= this->mCostThreshold)
-        return false;
+    /* Return the result */
+    correspondingPose = bestPose;
+    estimatedCovMat = covMat;
     
-    /* Estimate the covariance matrix */
-    this->mScanMatcher->ComputeCovariance(
-        gridMap, scanData, correspondingPose, estimatedCovMat);
-
     return true;
 }
 
