@@ -142,7 +142,7 @@ void ScanMatcherGreedyEndpoint<T, U>::OptimizePose(
     /* Set the estimated robot pose */
     estimatedPose = robotPose;
     /* Set the normalized cost value */
-    normalizedCostValue = minCost / scanData->Ranges().size();
+    normalizedCostValue = minCost / scanData->NumOfScans();
 
     return;
 }

@@ -115,6 +115,8 @@ public:
 
     /* Retrieve the range data */
     inline const std::vector<T>& Ranges() const { return this->mRanges; }
+    /* Retrieve the number of scans */
+    inline std::size_t NumOfScans() const { return this->mRanges.size(); }
 
     /* Retrieve the scan range at the specified index */
     inline T RangeAt(std::size_t scanIdx) const

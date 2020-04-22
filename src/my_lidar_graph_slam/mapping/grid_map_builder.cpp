@@ -254,7 +254,7 @@ void GridMapBuilder::ConstructMapFromScans(
             this->mUsableRangeMax, scanData->MaxRange());
 
         /* Compute the scan points and bounding box */
-        const std::size_t numOfScans = scanData->Ranges().size();
+        const std::size_t numOfScans = scanData->NumOfScans();
         std::vector<Point2D<double>> nodeHitPoints;
         nodeHitPoints.reserve(numOfScans);
 
@@ -345,7 +345,7 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
     topRight.mX = sensorPose.mX;
     topRight.mY = sensorPose.mY;
 
-    const std::size_t numOfScans = scanData->Ranges().size();
+    const std::size_t numOfScans = scanData->NumOfScans();
     hitPoints.reserve(numOfScans);
 
     /* Minimum and maximum range of the scan */

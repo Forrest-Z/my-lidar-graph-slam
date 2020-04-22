@@ -86,7 +86,7 @@ double CostGreedyEndpoint<T, U>::Cost(const GridMapType& gridMap,
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
     
-    const std::size_t numOfScans = scanData->Ranges().size();
+    const std::size_t numOfScans = scanData->NumOfScans();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
         const double scanRange = scanData->RangeAt(i);

@@ -100,7 +100,7 @@ double CostSquareError<T, U>::Cost(const GridMapType& gridMap,
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
     
-    const std::size_t numOfScans = scanData->Ranges().size();
+    const std::size_t numOfScans = scanData->NumOfScans();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
         /* Retrieve the scan range */
@@ -144,7 +144,7 @@ Eigen::Vector3d CostSquareError<T, U>::ComputeGradient(
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
     
-    const std::size_t numOfScans = scanData->Ranges().size();
+    const std::size_t numOfScans = scanData->NumOfScans();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
         /* Retrieve the scan range and angle */
