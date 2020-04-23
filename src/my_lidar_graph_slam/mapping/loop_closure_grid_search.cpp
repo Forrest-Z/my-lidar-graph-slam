@@ -87,6 +87,11 @@ bool LoopClosureGridSearch::FindLoopClosureCandidates(
     candidateMapIdx = numOfMaps;
     candidateNodeIdx = numOfNodes;
 
+    const double accumTravelDist = gridMapBuilder->AccumTravelDist();
+    double travelDist = 0.0;
+
+    RobotPose2D<double> prevPose = poseGraph->NodeAt(0).Pose();
+
     /* Exclude the latest local grid map */
     for (int mapIdx = 0; mapIdx < numOfMaps - 1; ++mapIdx) {
         /* Retrieve the local grid map */
@@ -98,6 +103,15 @@ bool LoopClosureGridSearch::FindLoopClosureCandidates(
             /* Retrieve the pose graph node */
             const auto& node = poseGraph->NodeAt(nodeIdx);
             const RobotPose2D<double>& pose = node.Pose();
+
+            /* Calculate the accumulated travel distance */
+            travelDist += Distance(prevPose, pose);
+            prevPose = pose;
+
+            /* Stop the iteration if the travel distance difference falls below
+             * the specified threshold */
+            if (accumTravelDist - travelDist < this->mTravelDistThreshold)
+                return candidateFound;
 
             /* Calculate the distance between the pose graph node and
              * the current pose */

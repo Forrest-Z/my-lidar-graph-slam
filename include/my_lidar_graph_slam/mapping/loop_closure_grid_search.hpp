@@ -23,6 +23,7 @@ public:
 
     /* Constructor */
     LoopClosureGridSearch(const CostFuncPtr& costFunc,
+                          double travelDistThreshold,
                           double poseGraphNodeDistMax,
                           double rangeX,
                           double rangeY,
@@ -32,6 +33,7 @@ public:
                           double stepTheta,
                           double costThreshold) :
         mCostFunc(costFunc),
+        mTravelDistThreshold(travelDistThreshold),
         mPoseGraphNodeDistMax(poseGraphNodeDistMax),
         mRangeX(rangeX),
         mRangeY(rangeY),
@@ -71,6 +73,8 @@ private:
 private:
     /* Cost function */
     CostFuncPtr    mCostFunc;
+    /* Minimum travel distance difference for loop closure */
+    double         mTravelDistThreshold;
     /* Maximum distance between the current robot pose and pose of the
      * loop-closure candidate pose graph node */
     double         mPoseGraphNodeDistMax;
