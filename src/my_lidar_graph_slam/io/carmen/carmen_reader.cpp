@@ -216,14 +216,23 @@ Sensor::ScanDataPtr<double> CarmenLogReader::ReadRawLaserData(
 
     const double maxAngle = startAngle +
         angularResolution * static_cast<double>(numReadings - 1);
+    
+    /* Compute scan angles */
+    std::vector<double> angleValues;
+    angleValues.reserve(static_cast<std::size_t>(numReadings));
+    
+    for (int i = 0; i < numReadings; ++i) {
+        const double scanAngle = startAngle + angularResolution * i;
+        angleValues.emplace_back(scanAngle);
+    }
 
     return std::make_shared<Sensor::ScanData<double>>(
         sensorId, dataHeader.mIpcTimeStamp,
         RobotPose2D<double>(0.0, 0.0, 0.0),
         RobotPose2D<double>(0.0, 0.0, 0.0),
         RobotPose2D<double>(0.0, 0.0, 0.0),
-        0.0, maxRange, startAngle, maxAngle, angularResolution,
-        std::move(rangeValues));
+        0.0, maxRange, startAngle, maxAngle,
+        std::move(angleValues), std::move(rangeValues));
 }
 
 /* Read scan data from log (new format) */
@@ -289,12 +298,21 @@ Sensor::ScanDataPtr<double> CarmenLogReader::ReadRobotLaserData(
     const double maxAngle = startAngle +
         angularResolution * static_cast<double>(numReadings - 1);
     
+    /* Compute scan angles */
+    std::vector<double> angleValues;
+    angleValues.reserve(static_cast<std::size_t>(numReadings));
+
+    for (int i = 0; i < numReadings; ++i) {
+        const double scanAngle = startAngle + angularResolution * i;
+        angleValues.emplace_back(scanAngle);
+    }
+    
     return std::make_shared<Sensor::ScanData<double>>(
         sensorId, dataHeader.mIpcTimeStamp,
         robotPose, laserVelocity,
         InverseCompound(robotPose, laserPose),
-        0.0, maxRange, startAngle, maxAngle, angularResolution,
-        std::move(rangeValues));
+        0.0, maxRange, startAngle, maxAngle,
+        std::move(angleValues), std::move(rangeValues));
 }
 
 /* Read scan data from log (old format) */
@@ -357,13 +375,22 @@ Sensor::ScanDataPtr<double> CarmenLogReader::ReadOldLaserData(
         (paramAngleIncrementIt != paramMap.end()) ?
         minAngle + angleIncrement * static_cast<double>(numReadings) :
         minAngle + this->GuessAngleRange(numReadings);
+    
+    /* Compute scan angles */
+    std::vector<double> angleValues;
+    angleValues.reserve(static_cast<std::size_t>(numReadings));
+
+    for (int i = 0; i < numReadings; ++i) {
+        const double scanAngle = minAngle + angleIncrement * i;
+        angleValues.emplace_back(scanAngle);
+    }
 
     return std::make_shared<Sensor::ScanData<double>>(
         sensorId, dataHeader.mIpcTimeStamp,
         robotPose, RobotPose2D<double>(0.0, 0.0, 0.0),
         InverseCompound(robotPose, laserPose),
-        minRange, maxRange, minAngle, maxAngle, angleIncrement,
-        std::move(rangeValues));
+        minRange, maxRange, minAngle, maxAngle,
+        std::move(angleValues), std::move(rangeValues));
 }
 
 /* Read scan data from log (old format) */
@@ -413,14 +440,23 @@ Sensor::ScanDataPtr<double> CarmenLogReader::ReadOldOtherLaserData(
         (paramAngleIncrementIt != paramMap.end()) ?
         minAngle + angleIncrement * static_cast<double>(numReadings) :
         minAngle + this->GuessAngleRange(numReadings);
+    
+    /* Compute scan angles */
+    std::vector<double> angleValues;
+    angleValues.reserve(static_cast<std::size_t>(numReadings));
+
+    for (int i = 0; i < numReadings; ++i) {
+        const double scanAngle = minAngle + angleIncrement * i;
+        angleValues.emplace_back(scanAngle);
+    }
 
     return std::make_shared<Sensor::ScanData<double>>(
         sensorId, dataHeader.mIpcTimeStamp,
         RobotPose2D<double>(0.0, 0.0, 0.0),
         RobotPose2D<double>(0.0, 0.0, 0.0),
         RobotPose2D<double>(0.0, 0.0, 0.0),
-        minRange, maxRange, minAngle, maxAngle, angleIncrement,
-        std::move(rangeValues));
+        minRange, maxRange, minAngle, maxAngle,
+        std::move(angleValues), std::move(rangeValues));
 }
 
 /* Guess the angle increment from the number of scan points */
