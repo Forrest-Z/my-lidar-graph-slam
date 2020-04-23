@@ -75,7 +75,7 @@ public:
              const T& maxRange,
              const T& minAngle,
              const T& maxAngle,
-             const T& angleIncrement,
+             std::vector<T>&& angles,
              std::vector<T>&& ranges) :
         SensorData(sensorId, timeStamp),
         mOdomPose(odomPose),
@@ -85,7 +85,7 @@ public:
         mMaxRange(maxRange),
         mMinAngle(minAngle),
         mMaxAngle(maxAngle),
-        mAngleIncrement(angleIncrement),
+        mAngles(angles),
         mRanges(ranges) { }
     
     /* Destructor */
@@ -110,8 +110,6 @@ public:
     inline T MinAngle() const { return this->mMinAngle; }
     /* Retrieve the maximum angle in radians */
     inline T MaxAngle() const { return this->mMaxAngle; }
-    /* Retrieve the angle between two measurements in radians */
-    inline T AngleIncrement() const { return this->mAngleIncrement; }
 
     /* Retrieve the range data */
     inline const std::vector<T>& Ranges() const { return this->mRanges; }
@@ -122,7 +120,8 @@ public:
     inline T RangeAt(std::size_t scanIdx) const
     { return this->mRanges.at(scanIdx); }
     /* Retrieve the scan angle at the specified index */
-    inline T AngleAt(std::size_t scanIdx) const;
+    inline T AngleAt(std::size_t scanIdx) const
+    { return this->mAngles.at(scanIdx); }
 
     /* Compute the hit point of the specified scan */
     Point2D<double> HitPoint(const RobotPose2D<double>& sensorPose,
@@ -150,18 +149,11 @@ private:
     T               mMinAngle;
     /* Maximum angle in radians */
     T               mMaxAngle;
-    /* Angle between two measurements in radians */
-    T               mAngleIncrement;
+    /* Angle data */
+    std::vector<T>  mAngles;
     /* Range data */
     std::vector<T>  mRanges;
 };
-
-/* Retrieve the scan angle at the specified index */
-template <typename T>
-T ScanData<T>::AngleAt(std::size_t scanIdx) const
-{
-    return this->mMinAngle + static_cast<T>(scanIdx) * this->mAngleIncrement;
-}
 
 /* Compute the hit point of the specified scan */
 template <typename T>
