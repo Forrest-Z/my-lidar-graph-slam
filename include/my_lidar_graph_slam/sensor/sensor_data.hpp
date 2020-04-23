@@ -111,6 +111,8 @@ public:
     /* Retrieve the maximum angle in radians */
     inline T MaxAngle() const { return this->mMaxAngle; }
 
+    /* Retrieve the angle data */
+    inline const std::vector<T>& Angles() const { return this->mAngles; }
     /* Retrieve the range data */
     inline const std::vector<T>& Ranges() const { return this->mRanges; }
     /* Retrieve the number of scans */
