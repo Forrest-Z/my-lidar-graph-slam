@@ -109,12 +109,8 @@ bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
         /* Append the new pose graph node */
         const RobotPose2D<double>& startNodePose =
             this->mPoseGraph->LatestNode().Pose();
-        const double startNodeTimeStamp =
-            this->mPoseGraph->LatestNode().ScanData()->TimeStamp();
         const int startNodeIdx =
             this->mPoseGraph->LatestNode().Index();
-        
-        const double endNodeTimeStamp = scanData->TimeStamp();
         const int endNodeIdx =
             this->mPoseGraph->AppendNode(estimatedPose, scanData);
 
