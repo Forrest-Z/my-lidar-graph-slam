@@ -95,6 +95,9 @@ public:
     /* Retrieve the grid map constructed from the latest scans */
     inline const GridMapType& LatestMap() const { return this->mLatestMap; }
 
+    /* Get the accumulated travel distance */
+    inline double AccumTravelDist() const { return this->mAccumTravelDist; }
+
     /* Get the minimum index of the latest scans */
     inline int LatestScanIdxMin() const { return this->mLatestScanIdxMin; }
     /* Get the maximum index of the latest scans */
@@ -107,6 +110,10 @@ private:
     
     /* Update the grid map with the latest scans */
     void UpdateLatestMap(
+        const std::shared_ptr<PoseGraph>& poseGraph);
+    
+    /* Update the accumulated travel distance after the loop closure */
+    void UpdateAccumTravelDist(
         const std::shared_ptr<PoseGraph>& poseGraph);
 
     /* Construct the grid map from the specified scans */
@@ -140,6 +147,8 @@ private:
     /* Grid map constructed from the latest scans
      * Used for scan matching and updated when new scan data is available */
     GridMapType                   mLatestMap;
+    /* Accumulated travel distance */
+    double                        mAccumTravelDist;
     /* The number of scans used to construct the latest map */
     int                           mNumOfScansForLatestMap;
     /* The minimum index of the latest scans */
@@ -149,7 +158,7 @@ private:
     /* Last robot pose */
     RobotPose2D<double>           mLastRobotPose;
     /* Accumulated travel distance since the last local grid map is created */
-    double                        mAccumulatedTravelDist;
+    double                        mTravelDistLastLocalMap;
     /* Robot pose when the last local grid map is created */
     RobotPose2D<double>           mRobotPoseLastLocalMap;
     /* Travel distance threshold for creating a new local grid map */

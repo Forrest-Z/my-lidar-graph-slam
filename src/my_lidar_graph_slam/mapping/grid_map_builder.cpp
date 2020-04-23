@@ -57,11 +57,12 @@ GridMapBuilder::GridMapBuilder(
     mMapResolution(mapResolution),
     mPatchSize(patchSize),
     mLatestMap(mapResolution, patchSize, 0, 0, Point2D<double>(0.0, 0.0)),
+    mAccumTravelDist(0.0),
     mNumOfScansForLatestMap(numOfScansForLatestMap),
     mLatestScanIdxMin(0),
     mLatestScanIdxMax(0),
     mLastRobotPose(0.0, 0.0, 0.0),
-    mAccumulatedTravelDist(0.0),
+    mTravelDistLastLocalMap(0.0),
     mRobotPoseLastLocalMap(0.0, 0.0, 0.0),
     mTravelDistThreshold(travelDistThreshold),
     mUsableRangeMin(usableRangeMin),
@@ -94,6 +95,9 @@ void GridMapBuilder::AfterLoopClosure(
 
     /* Update the grid map with latest scans */
     this->UpdateLatestMap(poseGraph);
+
+    /* Update the accumulated travel distance */
+    this->UpdateAccumTravelDist(poseGraph);
 }
 
 /* Construct the global grid map */
@@ -122,12 +126,6 @@ void GridMapBuilder::UpdateGridMap(
     /* Current node index */
     const int nodeIdx = poseGraph->LatestNode().Index();
 
-    /* Compute the sensor pose from the robot pose
-     * Do not calculate the grid cell index corresponding to the sensor pose
-     * here because the map parameters are updated later */
-    const RobotPose2D<double> sensorPose =
-        Compound(robotPose, scanData->RelativeSensorPose());
-
     /* Calculate the relative robot pose since the last method call */
     const RobotPose2D<double> relRobotPose = (this->mLocalMaps.size() == 0) ?
         RobotPose2D<double>(0.0, 0.0, 0.0) :
@@ -135,26 +133,27 @@ void GridMapBuilder::UpdateGridMap(
     
     this->mLastRobotPose = robotPose;
 
+    /* Update the accumulated travel distance */
+    this->mAccumTravelDist += Distance(relRobotPose);
+
     /* Update the accumulated travel distance since the last grid map */
-    this->mAccumulatedTravelDist +=
-        std::sqrt(relRobotPose.mX * relRobotPose.mX +
-                  relRobotPose.mY * relRobotPose.mY);
+    this->mTravelDistLastLocalMap += Distance(relRobotPose);
 
     /* Determine whether to create a new local map */
     const bool travelDistThreshold =
-        this->mAccumulatedTravelDist >= this->mTravelDistThreshold;
+        this->mTravelDistLastLocalMap >= this->mTravelDistThreshold;
     const bool isFirstScan = this->mLocalMaps.size() == 0;
     const bool createNewLocalMap = travelDistThreshold || isFirstScan;
 
     /* Create a new local map if necessary */
     if (createNewLocalMap) {
-        const Point2D<double> centerPos { sensorPose.mX, sensorPose.mY };
+        const Point2D<double> centerPos { robotPose.mX, robotPose.mY };
         GridMapType newLocalMap {
             this->mMapResolution, this->mPatchSize, 0, 0, centerPos };
         this->mLocalMaps.emplace_back(std::move(newLocalMap), nodeIdx);
 
         /* Reset the variables properly */
-        this->mAccumulatedTravelDist = 0.0;
+        this->mTravelDistLastLocalMap = 0.0;
         this->mRobotPoseLastLocalMap = robotPose;
     }
 
@@ -173,8 +172,10 @@ void GridMapBuilder::UpdateGridMap(
     localMap.Expand(scanBottomLeft.mX, scanBottomLeft.mY,
                     scanTopRight.mX, scanTopRight.mY);
     
-    /* Calculate the grid cell index corresponding to the sensor pose here
-     * since the map parameters are updated as above */
+    /* Compute the sensor pose from the robot pose */
+    const RobotPose2D<double> sensorPose =
+        Compound(robotPose, scanData->RelativeSensorPose());
+    /* Calculate the grid cell index corresponding to the sensor pose */
     const Point2D<int> sensorGridCellIdx =
         localMap.WorldCoordinateToGridCellIndex(sensorPose.mX, sensorPose.mY);
 
@@ -215,6 +216,23 @@ void GridMapBuilder::UpdateLatestMap(
     this->ConstructMapFromScans(
         this->mLatestMap, poseGraph,
         this->mLatestScanIdxMin, this->mLatestScanIdxMax);
+}
+
+/* Update the accumulated travel distance after the loop closure */
+void GridMapBuilder::UpdateAccumTravelDist(
+    const std::shared_ptr<PoseGraph>& poseGraph)
+{
+    this->mAccumTravelDist = 0.0;
+
+    const int numOfNodes = static_cast<int>(poseGraph->Nodes().size());
+
+    /* Accumulate the travel distance using pose graph nodes */
+    for (int i = 1; i < numOfNodes; ++i) {
+        const auto& prevNode = poseGraph->NodeAt(i - 1);
+        const auto& node = poseGraph->NodeAt(i);
+
+        this->mAccumTravelDist += Distance(prevNode.Pose(), node.Pose());
+    }
 }
 
 /* Construct the grid map from the specified scans */
