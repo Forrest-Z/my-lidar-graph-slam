@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -80,6 +81,23 @@ RobotPose2D<T> NormalizeAngle(const RobotPose2D<T>& robotPose)
     return RobotPose2D<T> { robotPose.mX,
                             robotPose.mY,
                             NormalizeAngle(robotPose.mTheta) };
+}
+
+/* Convert polar coordinate to cartesian coordinate */
+template <typename T>
+Point2D<T> ToCartesianCoordinate(T radius, T angle)
+{
+    return Point2D<T> { radius * std::cos(angle),
+                        radius * std::sin(angle) };
+}
+
+/* Convert cartesian coordinate to polar coordinate */
+template <typename T>
+std::pair<double, double> ToPolarCoordinate(const Point2D<T>& point)
+{
+    double radius = std::sqrt(point.mX * point.mX + point.mY * point.mY);
+    double angle = std::atan2(point.mY, point.mX);
+    return std::make_pair(radius, angle);
 }
 
 /* Rotate a covariance matrix */
