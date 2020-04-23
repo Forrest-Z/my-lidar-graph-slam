@@ -18,6 +18,7 @@
 
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
+#include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
 namespace MyLidarGraphSlam {
 namespace IO {
@@ -29,18 +30,48 @@ public:
     using GridMapBuilderPtr = std::shared_ptr<Mapping::GridMapBuilder>;
     using PoseGraphPtr = std::shared_ptr<Mapping::PoseGraph>;
     using GridMapType = Mapping::GridMapBuilder::GridMapType;
+    using ScanPtr = Sensor::ScanDataPtr<double>;
 
+    /*
+     * Options struct holds the settings for MapSaver class
+     */
+    struct Options
+    {
+        bool                mDrawTrajectory;
+        std::size_t         mTrajectoryNodeIdxMin;
+        std::size_t         mTrajectoryNodeIdxMax;
+        bool                mDrawScans;
+        RobotPose2D<double> mScanPose;
+        ScanPtr             mScanData;
+        bool                mSaveMetadata;
+        std::string         mFileName;
+    };
+
+private:
     /* Constructor */
     MapSaver() = default;
-
     /* Destructor */
     ~MapSaver() = default;
+
+public:
+    /* Copy constructor (disabled) */
+    MapSaver(const MapSaver&) = delete;
+    /* Copy assignment operator (disabled) */
+    MapSaver& operator=(const MapSaver&) = delete;
+    /* Move constructor (disabled) */
+    MapSaver(MapSaver&&) = delete;
+    /* Move assignment operator (disabled) */
+    MapSaver& operator=(MapSaver&&) = delete;
+
+    /* Get the MapSaver singleton instance */
+    static MapSaver* Instance();
 
     /* Save the entire map */
     bool SaveMap(const GridMapBuilderPtr& gridMapBuilder,
                  const PoseGraphPtr& poseGraph,
                  const std::string& fileName,
-                 bool drawTrajectory) const;
+                 bool drawTrajectory,
+                 bool saveMetadata) const;
     
     /* Save the pose graph as JSON format */
     bool SavePoseGraph(const PoseGraphPtr& poseGraph,
@@ -50,12 +81,34 @@ public:
     bool SaveLocalMaps(const GridMapBuilderPtr& gridMapBuilder,
                        const PoseGraphPtr& poseGraph,
                        const std::string& fileName,
-                       bool drawTrajectory) const;
+                       bool drawTrajectory,
+                       bool saveMetadata) const;
     
     /* Save the grid map constructed from the latest scans */
     bool SaveLatestMap(const GridMapBuilderPtr& gridMapBuilder,
                        const PoseGraphPtr& poseGraph,
-                       const std::string& fileName) const;
+                       const std::string& fileName,
+                       bool drawTrajectory,
+                       bool saveMetadata) const;
+    
+    /* Save the map and the scan */
+    bool SaveLocalMapAndScan(const GridMapBuilderPtr& gridMapBuilder,
+                             const PoseGraphPtr& poseGraph,
+                             const std::size_t localMapIdx,
+                             const RobotPose2D<double>& scanPose,
+                             const ScanPtr& scanData,
+                             bool drawTrajectory,
+                             bool saveMetadata,
+                             const std::string& fileName) const;
+    
+    /* Save the latest map and the scan */
+    bool SaveLatestMapAndScan(const GridMapBuilderPtr& gridMapBuilder,
+                              const PoseGraphPtr& poseGraph,
+                              const RobotPose2D<double>& scanPose,
+                              const ScanPtr& scanData,
+                              bool drawTrajectory,
+                              bool saveMetadata,
+                              const std::string& fileName) const;
     
 private:
     /* Determine the actual map size */
@@ -80,13 +133,18 @@ private:
                         const std::size_t nodeIdxMin,
                         const std::size_t nodeIdxMax) const;
     
+    /* Draw the scans obtained at the specified node to the image */
+    void DrawScan(const GridMapType& gridMap,
+                  const boost::gil::rgb8_view_t& mapImageView,
+                  const Point2D<int>& gridCellIdxMin,
+                  const Point2D<int>& mapSizeInGridCells,
+                  const RobotPose2D<double>& scanPose,
+                  const ScanPtr& scanData) const;
+    
     /* Save the map image and metadata */
     bool SaveMapCore(const GridMapType& gridMap,
                      const PoseGraphPtr& poseGraph,
-                     std::size_t nodeIdxMin,
-                     std::size_t nodeIdxMax,
-                     bool drawTrajectory,
-                     const std::string& fileName) const;
+                     const Options& saveOptions) const;
 
     /* Save the map metadata as JSON format */
     void SaveMapMetadata(double mapResolution,
