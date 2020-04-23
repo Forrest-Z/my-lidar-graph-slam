@@ -5,6 +5,7 @@
 #define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_GRID_SEARCH_HPP
 
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
+#include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure.hpp"
 
 namespace MyLidarGraphSlam {
@@ -20,9 +21,11 @@ public:
     using LoopClosure::GridMapType;
 
     using CostFuncPtr = std::shared_ptr<CostFunction<GridMapType, ScanPtr>>;
+    using ScoreFuncPtr = std::shared_ptr<ScoreFunction>;
 
     /* Constructor */
-    LoopClosureGridSearch(const CostFuncPtr& costFunc,
+    LoopClosureGridSearch(const ScoreFuncPtr& scoreFunc,
+                          const CostFuncPtr& costFunc,
                           double travelDistThreshold,
                           double poseGraphNodeDistMax,
                           double rangeX,
@@ -31,7 +34,9 @@ public:
                           double stepX,
                           double stepY,
                           double stepTheta,
-                          double costThreshold) :
+                          double scoreThreshold,
+                          double matchRateThreshold) :
+        mScoreFunc(scoreFunc),
         mCostFunc(costFunc),
         mTravelDistThreshold(travelDistThreshold),
         mPoseGraphNodeDistMax(poseGraphNodeDistMax),
@@ -41,7 +46,8 @@ public:
         mStepX(stepX),
         mStepY(stepY),
         mStepTheta(stepTheta),
-        mCostThreshold(costThreshold) { }
+        mScoreThreshold(scoreThreshold),
+        mMatchRateThreshold(matchRateThreshold) { }
 
     /* Destructor */
     ~LoopClosureGridSearch() = default;
@@ -71,6 +77,8 @@ private:
                                Eigen::Matrix3d& estimatedCovMat) const;
 
 private:
+    /* Matching score function */
+    ScoreFuncPtr   mScoreFunc;
     /* Cost function */
     CostFuncPtr    mCostFunc;
     /* Minimum travel distance difference for loop closure */
@@ -90,8 +98,10 @@ private:
     double         mStepY;
     /* Angular step size */
     double         mStepTheta;
-    /* Normalized cost threshold for loop closure */
-    double         mCostThreshold;
+    /* Normalized matching score threshold for loop closure */
+    double         mScoreThreshold;
+    /* Match rate threshold for loop closure */
+    double         mMatchRateThreshold;
 };
 
 } /* namespace Mapping */

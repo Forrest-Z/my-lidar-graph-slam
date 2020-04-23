@@ -144,7 +144,7 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
     const RobotPose2D<double> sensorPose =
         Compound(robotPose, scanData->RelativeSensorPose());
     RobotPose2D<double> bestSensorPose = sensorPose;
-    double costMin = std::numeric_limits<double>::max();
+    double scoreMax = std::numeric_limits<double>::min();
     
     const double rx = this->mRangeX / 2.0;
     const double ry = this->mRangeY / 2.0;
@@ -161,23 +161,21 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
                 const RobotPose2D<double> pose { sensorPose.mX + dx,
                                                  sensorPose.mY + dy,
                                                  sensorPose.mTheta + dt };
-                const double cost =
-                    this->mCostFunc->Cost(gridMap, scanData, pose);
+                ScoreFunction::Summary scoreSummary;
+                this->mScoreFunc->Score(gridMap, scanData, pose, scoreSummary);
 
                 /* Update the best pose and minimum cost value */
-                if (cost < costMin) {
-                    costMin = cost;
+                if (scoreSummary.mMatchRate > this->mMatchRateThreshold &&
+                    scoreSummary.mNormalizedScore > scoreMax) {
+                    scoreMax = scoreSummary.mNormalizedScore;
                     bestSensorPose = pose;
                 }
             }
         }
     }
 
-    /* Loop closure fails if the cost value exceeds the threshold */
-    const double normalizedCost =
-        costMin / static_cast<double>(scanData->NumOfScans());
-    
-    if (normalizedCost >= this->mCostThreshold)
+    /* Loop closure fails if the matching score falls below the threshold */
+    if (scoreMax < this->mScoreThreshold)
         return false;
 
     /* Estimate the covariance matrix */
