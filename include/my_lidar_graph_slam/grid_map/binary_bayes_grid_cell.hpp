@@ -24,13 +24,13 @@ public:
     ~BinaryBayesGridCell() = default;
 
     /* Copy constructor */
-    BinaryBayesGridCell(const BinaryBayesGridCell& other);
+    BinaryBayesGridCell(const BinaryBayesGridCell&) = default;
     /* Copy assignment operator */
-    BinaryBayesGridCell& operator=(const BinaryBayesGridCell& other);
+    BinaryBayesGridCell& operator=(const BinaryBayesGridCell&) = default;
     /* Move constructor */
-    BinaryBayesGridCell(BinaryBayesGridCell&& other) noexcept;
+    BinaryBayesGridCell(BinaryBayesGridCell&&) noexcept = default;
     /* Move assignment operator */
-    BinaryBayesGridCell& operator=(BinaryBayesGridCell&& other) noexcept;
+    BinaryBayesGridCell& operator=(BinaryBayesGridCell&&) noexcept = default;
 
     /* Cast operator */
     explicit operator T() const override { return this->mValue; }
@@ -62,48 +62,6 @@ private:
     /* Occupancy probability value */
     T mValue;
 };
-
-/* Copy constructor */
-template <typename T>
-BinaryBayesGridCell<T>::BinaryBayesGridCell(
-    const BinaryBayesGridCell<T>& other) :
-    GridCell<T, double>(),
-    mValue(other.mValue)
-{
-}
-
-/* Copy assignment operator */
-template <typename T>
-BinaryBayesGridCell<T>& BinaryBayesGridCell<T>::operator=(
-    const BinaryBayesGridCell<T>& other)
-{
-    if (this == &other)
-        return *this;
-    
-    this->mValue = other.mValue;
-    return *this;
-}
-
-/* Move constructor */
-template <typename T>
-BinaryBayesGridCell<T>::BinaryBayesGridCell(
-    BinaryBayesGridCell<T>&& other) noexcept :
-    GridCell<T, double>(),
-    mValue(other.mValue)
-{
-}
-
-/* Move constructor */
-template <typename T>
-BinaryBayesGridCell<T>& BinaryBayesGridCell<T>::operator=(
-    BinaryBayesGridCell<T>&& other) noexcept
-{
-    if (this == &other)
-        return *this;
-    
-    this->mValue = other.mValue;
-    return *this;
-}
 
 /* Reset the grid cell state */
 template <typename T>
