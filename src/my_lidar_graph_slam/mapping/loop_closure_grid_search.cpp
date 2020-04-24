@@ -5,6 +5,7 @@
 #include <limits>
 
 #include "my_lidar_graph_slam/util.hpp"
+#include "my_lidar_graph_slam/io/map_saver.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 
 namespace MyLidarGraphSlam {
@@ -26,18 +27,18 @@ bool LoopClosureGridSearch::FindLoop(
     const int currentNodeIdx = currentNode.Index();
 
     /* Find a local map and a pose graph node for loop closure */
-    int candidateMapIdx;
-    int candidateNodeIdx;
-    bool candidateFound = this->FindLoopClosureCandidates(
-        gridMapBuilder, poseGraph, currentPose,
-        candidateMapIdx, candidateNodeIdx);
+    const auto loopClosureCandidates = this->mLoopClosureCandidate.Find(
+        gridMapBuilder, poseGraph, currentPose);
     
     /* Do not perform loop closure if candidate not found */
-    if (!candidateFound)
+    if (loopClosureCandidates.empty())
         return false;
     
     /* Find a corresponding pose of the current pose in the
      * loop-closure candidate local grid map */
+    const int candidateMapIdx = loopClosureCandidates.front().first;
+    const int candidateNodeIdx = loopClosureCandidates.front().second;
+
     const auto& candidateMapInfo = gridMapBuilder->LocalMapAt(candidateMapIdx);
     const GridMapType& candidateMap = candidateMapInfo.mMap;
     const auto& candidateNode = poseGraph->NodeAt(candidateNodeIdx);
@@ -63,71 +64,6 @@ bool LoopClosureGridSearch::FindLoop(
     estimatedCovMat = covMat;
 
     return true;
-}
-
-/* Find a local map and a pose graph node as loop closure candidates */
-bool LoopClosureGridSearch::FindLoopClosureCandidates(
-    const GridMapBuilderPtr& gridMapBuilder,
-    const PoseGraphPtr& poseGraph,
-    const RobotPose2D<double>& robotPose,
-    int& candidateMapIdx,
-    int& candidateNodeIdx) const
-{
-    const int numOfMaps = static_cast<int>(gridMapBuilder->LocalMaps().size());
-    const int numOfNodes = static_cast<int>(poseGraph->Nodes().size());
-
-    assert(numOfMaps > 0);
-    assert(numOfNodes > 0);
-
-    /* Find the index of the local grid map and the pose graph node
-     * that may contain loop-closure point */
-    double nodeDistMinSq = std::pow(this->mPoseGraphNodeDistMax, 2.0);
-    bool candidateFound = false;
-
-    candidateMapIdx = numOfMaps;
-    candidateNodeIdx = numOfNodes;
-
-    const double accumTravelDist = gridMapBuilder->AccumTravelDist();
-    double travelDist = 0.0;
-
-    RobotPose2D<double> prevPose = poseGraph->NodeAt(0).Pose();
-
-    /* Exclude the latest local grid map */
-    for (int mapIdx = 0; mapIdx < numOfMaps - 1; ++mapIdx) {
-        /* Retrieve the local grid map */
-        const auto& localMapInfo = gridMapBuilder->LocalMapAt(mapIdx);
-        const int nodeIdxMin = localMapInfo.mPoseGraphNodeIdxMin;
-        const int nodeIdxMax = localMapInfo.mPoseGraphNodeIdxMax;
-
-        for (int nodeIdx = nodeIdxMin; nodeIdx <= nodeIdxMax; ++nodeIdx) {
-            /* Retrieve the pose graph node */
-            const auto& node = poseGraph->NodeAt(nodeIdx);
-            const RobotPose2D<double>& pose = node.Pose();
-
-            /* Calculate the accumulated travel distance */
-            travelDist += Distance(prevPose, pose);
-            prevPose = pose;
-
-            /* Stop the iteration if the travel distance difference falls below
-             * the specified threshold */
-            if (accumTravelDist - travelDist < this->mTravelDistThreshold)
-                return candidateFound;
-
-            /* Calculate the distance between the pose graph node and
-             * the current pose */
-            const double nodeDistSq = SquaredDistance(pose, robotPose);
-
-            /* Update the candidate map index and node index */
-            if (nodeDistSq < nodeDistMinSq) {
-                candidateFound = true;
-                nodeDistMinSq = nodeDistSq;
-                candidateMapIdx = mapIdx;
-                candidateNodeIdx = nodeIdx;
-            }
-        }
-    }
-
-    return candidateFound;
 }
 
 /* Find a corresponding pose of the current robot pose

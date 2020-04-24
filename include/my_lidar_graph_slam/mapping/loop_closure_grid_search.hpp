@@ -7,6 +7,7 @@
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure.hpp"
+#include "my_lidar_graph_slam/mapping/loop_closure_candidate_nearest.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -27,7 +28,7 @@ public:
     LoopClosureGridSearch(const ScoreFuncPtr& scoreFunc,
                           const CostFuncPtr& costFunc,
                           double travelDistThreshold,
-                          double poseGraphNodeDistMax,
+                          double nodeDistThreshold,
                           double rangeX,
                           double rangeY,
                           double rangeTheta,
@@ -38,8 +39,7 @@ public:
                           double matchRateThreshold) :
         mScoreFunc(scoreFunc),
         mCostFunc(costFunc),
-        mTravelDistThreshold(travelDistThreshold),
-        mPoseGraphNodeDistMax(poseGraphNodeDistMax),
+        mLoopClosureCandidate(travelDistThreshold, nodeDistThreshold),
         mRangeX(rangeX),
         mRangeY(rangeY),
         mRangeTheta(rangeTheta),
@@ -61,13 +61,6 @@ public:
                   Eigen::Matrix3d& estimatedCovMat) override;
     
 private:
-    /* Find a local map and a pose graph node as loop closure candidates */
-    bool FindLoopClosureCandidates(const GridMapBuilderPtr& gridMapBuilder,
-                                   const PoseGraphPtr& poseGraph,
-                                   const RobotPose2D<double>& robotPose,
-                                   int& candidateMapIdx,
-                                   int& candidateNodeIdx) const;
-
     /* Find a corresponding pose of the current robot pose
      * from the loop-closure candidate local grid map */
     bool FindCorrespondingPose(const GridMapType& gridMap,
@@ -78,30 +71,27 @@ private:
 
 private:
     /* Matching score function */
-    ScoreFuncPtr   mScoreFunc;
+    ScoreFuncPtr                mScoreFunc;
     /* Cost function */
-    CostFuncPtr    mCostFunc;
-    /* Minimum travel distance difference for loop closure */
-    double         mTravelDistThreshold;
-    /* Maximum distance between the current robot pose and pose of the
-     * loop-closure candidate pose graph node */
-    double         mPoseGraphNodeDistMax;
+    CostFuncPtr                 mCostFunc;
+    /* Loop closure candidate search */
+    LoopClosureCandidateNearest mLoopClosureCandidate;
     /* Linear (horizontal) size of the search window */
-    double         mRangeX;
+    double                      mRangeX;
     /* Linear (vertical) size of the search window */
-    double         mRangeY;
+    double                      mRangeY;
     /* Angular size of the search window */
-    double         mRangeTheta;
+    double                      mRangeTheta;
     /* Linear (horizontal) step size */
-    double         mStepX;
+    double                      mStepX;
     /* Linear (vertical) step size */
-    double         mStepY;
+    double                      mStepY;
     /* Angular step size */
-    double         mStepTheta;
+    double                      mStepTheta;
     /* Normalized matching score threshold for loop closure */
-    double         mScoreThreshold;
+    double                      mScoreThreshold;
     /* Match rate threshold for loop closure */
-    double         mMatchRateThreshold;
+    double                      mMatchRateThreshold;
 };
 
 } /* namespace Mapping */
