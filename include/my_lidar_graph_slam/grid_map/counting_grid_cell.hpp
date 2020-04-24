@@ -24,13 +24,13 @@ public:
     ~CountingGridCell() = default;
 
     /* Copy constructor */
-    CountingGridCell(const CountingGridCell& other);
+    CountingGridCell(const CountingGridCell&) = default;
     /* Copy assignment operator */
-    CountingGridCell& operator=(const CountingGridCell& other);
+    CountingGridCell& operator=(const CountingGridCell&) = default;
     /* Move constructor */
-    CountingGridCell(CountingGridCell&& other) noexcept;
+    CountingGridCell(CountingGridCell&&) noexcept = default;
     /* Move assignment operator */
-    CountingGridCell& operator=(CountingGridCell&& other) noexcept;
+    CountingGridCell& operator=(CountingGridCell&&) noexcept = default;
 
     /* Cast operator */
     explicit operator T() const override { return this->mValue; }
@@ -55,58 +55,6 @@ private:
     std::uint32_t mHit;
     std::uint32_t mMiss;
 };
-
-/* Copy constructor */
-template <typename T>
-CountingGridCell<T>::CountingGridCell(
-    const CountingGridCell<T>& other) :
-    GridCell<T, bool>(),
-    mValue(other.mValue),
-    mHit(other.mHit),
-    mMiss(other.mMiss)
-{
-}
-
-/* Copy assignment operator */
-template <typename T>
-CountingGridCell<T>& CountingGridCell<T>::operator=(
-    const CountingGridCell<T>& other)
-{
-    if (this == &other)
-        return *this;
-    
-    this->mValue = other.mValue;
-    this->mHit = other.mHit;
-    this->mMiss = other.mMiss;
-
-    return *this;
-}
-
-/* Move constructor */
-template <typename T>
-CountingGridCell<T>::CountingGridCell(
-    CountingGridCell<T>&& other) noexcept :
-    GridCell<T, bool>(),
-    mValue(std::move(other.mValue)),
-    mHit(std::move(other.mHit)),
-    mMiss(std::move(other.mMiss))
-{
-}
-
-/* Move assignment operator */
-template <typename T>
-CountingGridCell<T>& CountingGridCell<T>::operator=(
-    CountingGridCell<T>&& other) noexcept
-{
-    if (this == &other)
-        return *this;
-    
-    this->mValue = std::move(other.mValue);
-    this->mHit = std::move(other.mHit);
-    this->mMiss = std::move(other.mMiss);
-
-    return *this;
-}
 
 /* Reset the grid cell state */
 template <typename T>
