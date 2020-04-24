@@ -4,11 +4,13 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_GRID_MAP_GRID_MAP_BUILDER_HPP
 #define MY_LIDAR_GRAPH_SLAM_GRID_MAP_GRID_MAP_BUILDER_HPP
 
+#include <map>
 #include <vector>
 
 #include "my_lidar_graph_slam/point.hpp"
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/grid_map/binary_bayes_grid_cell.hpp"
+#include "my_lidar_graph_slam/grid_map/const_grid_cell.hpp"
 #include "my_lidar_graph_slam/grid_map/grid_map.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
@@ -22,6 +24,7 @@ public:
     /* Type definitions */
     using GridMapType = GridMap<BinaryBayesGridCell<double>>;
     using PatchType = typename GridMapType::PatchType;
+    using PrecomputedMapType = GridMap<ConstGridCell<double>>;
     using ScanType = Sensor::ScanDataPtr<double>;
 
 public:
@@ -35,7 +38,9 @@ public:
                      int poseGraphNodeIdx) :
             mMap(std::move(gridMap)),
             mPoseGraphNodeIdxMin(poseGraphNodeIdx),
-            mPoseGraphNodeIdxMax(poseGraphNodeIdx) { }
+            mPoseGraphNodeIdxMax(poseGraphNodeIdx),
+            mFinished(false),
+            mPrecomputed(false) { }
         
         /* Destructor */
         ~LocalMapInfo() = default;
@@ -53,11 +58,19 @@ public:
         /* Local grid map, which consists of the scan data
          * from the pose graph nodes within the range of
          * [mPoseGraphNodeIdxMin, mPoseGraphNodeIdxMax] */
-        GridMapType mMap;
+        GridMapType                       mMap;
         /* Minimum index of the pose graph node */
-        int          mPoseGraphNodeIdxMin;
+        int                               mPoseGraphNodeIdxMin;
         /* Maximum index of the pose graph node */
-        int          mPoseGraphNodeIdxMax;
+        int                               mPoseGraphNodeIdxMax;
+        /* Flags to determine whether the grid maps are finished and
+         * will not be changed (no more new scan data will be added) */
+        bool                              mFinished;
+        /* Flags to determine whether the grid maps for the loop closure are
+         * already precomputed */
+        bool                              mPrecomputed;
+        /* List of precomputed grid maps for loop closure */
+        std::map<int, PrecomputedMapType> mPrecomputedMaps;
     };
 
 public:

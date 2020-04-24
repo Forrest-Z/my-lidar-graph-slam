@@ -21,7 +21,10 @@ GridMapBuilder::LocalMapInfo::LocalMapInfo(
     GridMapBuilder::LocalMapInfo&& other) noexcept:
     mMap(std::move(other.mMap)),
     mPoseGraphNodeIdxMin(other.mPoseGraphNodeIdxMin),
-    mPoseGraphNodeIdxMax(other.mPoseGraphNodeIdxMax)
+    mPoseGraphNodeIdxMax(other.mPoseGraphNodeIdxMax),
+    mFinished(other.mFinished),
+    mPrecomputed(other.mPrecomputed),
+    mPrecomputedMaps(std::move(other.mPrecomputedMaps))
 {
 }
 
@@ -36,6 +39,9 @@ GridMapBuilder::LocalMapInfo&
     this->mMap = std::move(other.mMap);
     this->mPoseGraphNodeIdxMin = other.mPoseGraphNodeIdxMin;
     this->mPoseGraphNodeIdxMax = other.mPoseGraphNodeIdxMax;
+    this->mFinished = other.mFinished;
+    this->mPrecomputed = other.mPrecomputed;
+    this->mPrecomputedMaps = std::move(other.mPrecomputedMaps);
 
     return *this;
 }
@@ -147,6 +153,11 @@ void GridMapBuilder::UpdateGridMap(
 
     /* Create a new local map if necessary */
     if (createNewLocalMap) {
+        /* The last local maps are marked as finished */
+        if (this->mLocalMaps.size() > 0)
+            this->mLocalMaps.back().mFinished = true;
+
+        /* Create a new local map */
         const Point2D<double> centerPos { robotPose.mX, robotPose.mY };
         GridMapType newLocalMap {
             this->mMapResolution, this->mPatchSize, 0, 0, centerPos };
