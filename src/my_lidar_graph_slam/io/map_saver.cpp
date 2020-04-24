@@ -171,7 +171,7 @@ bool MapSaver::SaveLatestMap(const GridMapBuilderPtr& gridMapBuilder,
     saveOptions.mTrajectoryNodeIdxMax = gridMapBuilder->LatestScanIdxMax();
     saveOptions.mDrawScans = false;
     saveOptions.mSaveMetadata = saveMetadata;
-    saveOptions.mFileName = fileName;
+    saveOptions.mFileName = latestMapFileName;
 
     /* Save the map image and metadata */
     return this->SaveMapCore(
