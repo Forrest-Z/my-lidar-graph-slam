@@ -31,6 +31,7 @@ public:
     using PoseGraphPtr = std::shared_ptr<Mapping::PoseGraph>;
     using GridMapType = Mapping::GridMapBuilder::GridMapType;
     using ScanPtr = Sensor::ScanDataPtr<double>;
+    using PrecomputedMapType = Mapping::GridMapBuilder::PrecomputedMapType;
 
     /*
      * Options struct holds the settings for MapSaver class
@@ -109,6 +110,12 @@ public:
                               bool drawTrajectory,
                               bool saveMetadata,
                               const std::string& fileName) const;
+
+    /* Save the precomputed grid maps */
+    bool SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
+                                 const PoseGraphPtr& poseGraph,
+                                 const int mapIdx,
+                                 const std::string& fileName) const;
     
 private:
     /* Determine the actual map size */

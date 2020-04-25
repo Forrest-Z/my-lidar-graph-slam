@@ -228,6 +228,65 @@ bool MapSaver::SaveLatestMapAndScan(const GridMapBuilderPtr& gridMapBuilder,
         gridMapBuilder->LatestMap(), poseGraph, saveOptions);
 }
 
+/* Save the precomputed grid maps */
+bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
+                                       const PoseGraphPtr& poseGraph,
+                                       const int mapIdx,
+                                       const std::string& fileName) const
+{
+    Options saveOptions;
+    saveOptions.mDrawTrajectory = false;
+    saveOptions.mDrawScans = false;
+    saveOptions.mSaveMetadata = false;
+
+    const auto& localMapInfo = gridMapBuilder->LocalMapAt(mapIdx);
+    const auto& precompMaps = localMapInfo.mPrecomputedMaps;
+
+    /* Convert the precomputed grid map and save */
+    for (const auto& precompMapInfo : precompMaps) {
+        const int nodeHeight = precompMapInfo.first;
+        const auto& precompMap = precompMapInfo.second;
+
+        /* Create the occupancy grid map */
+        const double mapResolution = precompMap.MapResolution();
+        const Point2D<double>& minPos = precompMap.MinPos();
+        const Point2D<double> maxPos {
+            minPos.mX + mapResolution * precompMap.NumOfGridCellsX(),
+            minPos.mY + mapResolution * precompMap.NumOfGridCellsY() };
+        GridMapType gridMap {
+            precompMap.MapResolution(), precompMap.PatchSize(),
+            minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
+
+        /* Check the size */
+        assert(gridMap.MinPos() == precompMap.MinPos());
+        assert(gridMap.NumOfPatchesX() >= precompMap.NumOfPatchesX());
+        assert(gridMap.NumOfPatchesY() >= precompMap.NumOfPatchesY());
+
+        const double unknownVal = PrecomputedMapType::GridCellType::Unknown;
+        const int numOfGridCellsX = precompMap.NumOfGridCellsX();
+        const int numOfGridCellsY = precompMap.NumOfGridCellsY();
+
+        /* Copy the occupancy probability values */
+        for (int y = 0; y < numOfGridCellsY; ++y) {
+            for (int x = 0; x < numOfGridCellsX; ++x) {
+                const double mapValue = precompMap.Value(x, y, unknownVal);
+
+                if (mapValue != unknownVal)
+                    gridMap.Update(x, y, mapValue);
+            }
+        }
+
+        /* Save the map image */
+        const int winSize = static_cast<int>(std::pow(2, nodeHeight));
+        saveOptions.mFileName = fileName + "-" + std::to_string(winSize);
+
+        if (!this->SaveMapCore(gridMap, poseGraph, saveOptions))
+            return false;
+    }
+
+    return true;
+}
+
 /* Determine the actual map size */
 void MapSaver::ComputeActualMapSize(const GridMapType& gridMap,
                                     Point2D<int>& patchIdxMin,
