@@ -77,8 +77,6 @@ void LoopClosureBranchBound::PrecomputeGridMaps(
     GridMapBuilderPtr& gridMapBuilder,
     int mapIdx) const
 {
-    const int nodeHeightMax = 6;
-
     /* Retrieve the local map */
     auto& localMapInfo = gridMapBuilder->LocalMapAt(mapIdx);
     auto& precomputedMaps = localMapInfo.mPrecomputedMaps;
@@ -104,7 +102,7 @@ void LoopClosureBranchBound::PrecomputeGridMaps(
 
     /* Compute a grid map for each node height */
     for (int nodeHeight = 0, winSize = 1;
-         nodeHeight <= nodeHeightMax; ++nodeHeight, winSize *= 2) {
+         nodeHeight <= this->mNodeHeightMax; ++nodeHeight, winSize *= 2) {
         /* Each pixel stores the maximum of the occupancy probability
          * values of the 2^h * 2^h box of pixels beginning there */
         /* Create a new grid map */
@@ -211,7 +209,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     const RobotPose2D<double> sensorPose =
         Compound(robotPose, scanData->RelativeSensorPose());
     RobotPose2D<double> bestSensorPose = sensorPose;
-    double scoreMax = 0.5;
+    double scoreMax = this->mScoreThreshold;
     bool solutionFound = false;
 
     /* Determine the search window step */
@@ -221,14 +219,14 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
 
     const auto maxRangeIt = std::max_element(
         scanData->Ranges().cbegin(), scanData->Ranges().cend());
-    const double maxRange = std::min(*maxRangeIt, 20.0);
+    const double maxRange = std::min(*maxRangeIt, this->mScanRangeMax);
     const double deltaTheta = std::acos(
         1.0 - 0.5 * (mapResolution / maxRange) * (mapResolution / maxRange));
 
     /* Determine the search window */
-    const double rangeX = 2.0 / 2.0;
-    const double rangeY = 2.0 / 2.0;
-    const double rangeTheta = 1.0 / 2.0;
+    const double rangeX = this->mRangeX / 2.0;
+    const double rangeY = this->mRangeY / 2.0;
+    const double rangeTheta = this->mRangeTheta / 2.0;
     const int winX = static_cast<int>(std::ceil(rangeX / deltaX));
     const int winY = static_cast<int>(std::ceil(rangeY / deltaY));
     const int winTheta = static_cast<int>(std::ceil(rangeTheta / deltaTheta));
@@ -236,13 +234,12 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     std::stack<Node> nodeStack;
 
     /* Initialize a stack with nodes covering the entire search window */
-    const int nodeHeightMax = 6;
-    const int winSizeMax = static_cast<int>(std::pow(2, nodeHeightMax));
+    const int winSizeMax = static_cast<int>(std::pow(2, this->mNodeHeightMax));
 
     for (int x = -winX; x <= winX; x += winSizeMax)
         for (int y = -winY; y <= winY; y += winSizeMax)
             for (int t = -winTheta; t <= winTheta; ++t)
-                nodeStack.emplace(x, y, t, nodeHeightMax);
+                nodeStack.emplace(x, y, t, this->mNodeHeightMax);
 
     /* Find the best solution that maximizes the score value
      * using Branch-and-Bound method */
@@ -261,7 +258,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
 
         /* Ignore the node if the score falls below the threshold */
         if (resultSummary.mNormalizedScore <= scoreMax ||
-            resultSummary.mMatchRate < 0.8) {
+            resultSummary.mMatchRate < this->mMatchRateThreshold) {
             /* Pop the current node from the stack */
             nodeStack.pop();
             continue;

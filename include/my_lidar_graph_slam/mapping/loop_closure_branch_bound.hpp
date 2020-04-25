@@ -54,11 +54,21 @@ public:
                            const CostFuncPtr& costFunc,
                            double travelDistThreshold,
                            double nodeDistThreshold,
+                           int nodeHeightMax,
+                           double rangeX,
+                           double rangeY,
+                           double rangeTheta,
+                           double scanRangeMax,
                            double scoreThreshold,
                            double matchRateThreshold) :
         mScoreFunc(scoreFunc),
         mCostFunc(costFunc),
         mLoopClosureCandidate(travelDistThreshold, nodeDistThreshold),
+        mNodeHeightMax(nodeHeightMax),
+        mRangeX(rangeX),
+        mRangeY(rangeY),
+        mRangeTheta(rangeTheta),
+        mScanRangeMax(scanRangeMax),
         mScoreThreshold(scoreThreshold),
         mMatchRateThreshold(matchRateThreshold) { }
 
@@ -104,6 +114,16 @@ private:
     CostFuncPtr                 mCostFunc;
     /* Loop closure candidate search */
     LoopClosureCandidateNearest mLoopClosureCandidate;
+    /* Maximum height of the tree used in branch-and-bound */
+    int                         mNodeHeightMax;
+    /* Linear (horizontal) size of the search window */
+    double                      mRangeX;
+    /* Linear (vertical) size of the search window */
+    double                      mRangeY;
+    /* Angular size of the search window */
+    double                      mRangeTheta;
+    /* Maximum laser scan range considered for loop closure */
+    double                      mScanRangeMax;
     /* Normalized matching score threshold for loop closure */
     double                      mScoreThreshold;
     /* Match rate threshold for loop closure */
