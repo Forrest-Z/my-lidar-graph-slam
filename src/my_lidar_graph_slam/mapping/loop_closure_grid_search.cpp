@@ -13,7 +13,7 @@ namespace Mapping {
 
 /* Find a loop and return a loop constraint */
 bool LoopClosureGridSearch::FindLoop(
-    const GridMapBuilderPtr& gridMapBuilder,
+    GridMapBuilderPtr& gridMapBuilder,
     const PoseGraphPtr& poseGraph,
     RobotPose2D<double>& relPose,
     int& startNodeIdx,
@@ -76,7 +76,7 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
     Eigen::Matrix3d& estimatedCovMat) const
 {
     /* Find the best pose from the search window
-     * that minimizes the scan matching cost value */
+     * that maximizes the matching score value */
     const RobotPose2D<double> sensorPose =
         Compound(robotPose, scanData->RelativeSensorPose());
     RobotPose2D<double> bestSensorPose = sensorPose;
@@ -97,7 +97,7 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
                 const RobotPose2D<double> pose { sensorPose.mX + dx,
                                                  sensorPose.mY + dy,
                                                  sensorPose.mTheta + dt };
-                ScoreFunction::Summary scoreSummary;
+                ScoreFunctionType::Summary scoreSummary;
                 this->mScoreFunc->Score(gridMap, scanData, pose, scoreSummary);
 
                 /* Update the best pose and minimum cost value */

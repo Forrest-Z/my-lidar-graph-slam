@@ -21,8 +21,10 @@ public:
     using LoopClosure::ScanPtr;
     using LoopClosure::GridMapType;
 
-    using CostFuncPtr = std::shared_ptr<CostFunction<GridMapType, ScanPtr>>;
-    using ScoreFuncPtr = std::shared_ptr<ScoreFunction>;
+    using CostFunctionType = CostFunction<GridMapType, ScanPtr>;
+    using CostFuncPtr = std::shared_ptr<CostFunctionType>;
+    using ScoreFunctionType = ScoreFunction<GridMapType, ScanPtr>;
+    using ScoreFuncPtr = std::shared_ptr<ScoreFunctionType>;
 
     /* Constructor */
     LoopClosureGridSearch(const ScoreFuncPtr& scoreFunc,
@@ -53,7 +55,7 @@ public:
     ~LoopClosureGridSearch() = default;
 
     /* Find a loop and return a loop constraint */
-    bool FindLoop(const GridMapBuilderPtr& gridMapBuilder,
+    bool FindLoop(GridMapBuilderPtr& gridMapBuilder,
                   const PoseGraphPtr& poseGraph,
                   RobotPose2D<double>& relPose,
                   int& startNodeIdx,
