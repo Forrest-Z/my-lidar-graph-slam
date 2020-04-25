@@ -102,6 +102,9 @@ public:
     { return this->mLocalMaps; }
 
     /* Retrieve the local map information of the specified index */
+    inline LocalMapInfo& LocalMapAt(int localMapIdx)
+    { return this->mLocalMaps.at(localMapIdx); }
+    /* Retrieve the local map information of the specified index */
     inline const LocalMapInfo& LocalMapAt(int localMapIdx) const
     { return this->mLocalMaps.at(localMapIdx); }
 
