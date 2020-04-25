@@ -1,7 +1,4 @@
 {
-    "GuiEnabled": "true",
-    "DrawFrameInterval": 5,
-
     "CostGreedyEndpoint": {
         "UsableRangeMin": 0.01,
         "UsableRangeMax": 50.0,
@@ -17,22 +14,88 @@
         "UsableRangeMax": 50.0
     },
 
+    "ScorePixelAccurate": {
+        "UsableRangeMin": 0.01,
+        "UsableRangeMax": 20.0
+    },
+
     "ScanMatcherGreedyEndpoint": {
         "LinearStep": 0.1,
         "AngularStep": 0.1,
         "MaxIterations": 100,
-        "MaxNumOfRefinements": 5
+        "MaxNumOfRefinements": 5,
+        "CostType": "GreedyEndpoint",
+        "CostConfigGroup": "CostGreedyEndpoint"
+    },
+
+    "ScanMatcherLinearSolver": {
+        "NumOfIterationsMax": 100,
+        "ConvergenceThreshold": 1e-3,
+        "UsableRangeMin": 0.01,
+        "UsableRangeMax": 50.0,
+        "TranslationRegularizer": 1e-3,
+        "RotationRegularizer": 1e-3,
+        "CostType": "SquareError",
+        "CostConfigGroup": "CostSquareError"
     },
 
     "LoopClosureGridSearch": {
-        "PoseGraphNodeDistMax": 2.0,
+        "TravelDistThreshold": 10.0,
+        "PoseGraphNodeDistMax": 5.0,
         "SearchRangeX": 2.0,
         "SearchRangeY": 2.0,
+        "SearchRangeTheta": 0.5,
+        "SearchStepX": 0.05,
+        "SearchStepY": 0.05,
+        "SearchStepTheta": 0.005,
+        "ScoreThreshold": 0.5,
+        "MatchRateThreshold": 0.8,
+        "ScoreType": "PixelAccurate",
+        "ScoreConfigGroup": "ScorePixelAccurate",
+        "CostType": "GreedyEndpoint",
+        "CostConfigGroup": "LoopClosureGridSearch.CostGreedyEndpoint",
+        "CostGreedyEndpoint": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 50.0,
+            "HitAndMissedDist": 0.075,
+            "OccupancyThreshold": 0.1,
+            "GaussianSigma": 0.05,
+            "KernelSize": 1,
+            "ScalingFactor": 1.0
+        },
+        "CostSquareError": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 50.0
+        }
+    },
+
+    "LoopClosureBranchBound": {
+        "TravelDistThreshold": 10.0,
+        "PoseGraphNodeDistMax": 5.0,
+        "NodeHeightMax": 6,
+        "SearchRangeX": 5.0,
+        "SearchRangeY": 5.0,
         "SearchRangeTheta": 1.0,
-        "SearchStepX": 0.1,
-        "SearchStepY": 0.1,
-        "SearchStepTheta": 0.05,
-        "CostThreshold": 0.01
+        "ScanRangeMax": 20.0,
+        "ScoreThreshold": 0.6,
+        "MatchRateThreshold": 0.8,
+        "ScoreType": "PixelAccurate",
+        "ScoreConfigGroup": "ScorePixelAccurate",
+        "CostType": "GreedyEndpoint",
+        "CostConfigGroup": "LoopClosureBranchBound.CostGreedyEndpoint",
+        "CostGreedyEndpoint": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 20.0,
+            "HitAndMissedDist": 0.075,
+            "OccupancyThreshold": 0.1,
+            "GaussianSigma": 0.05,
+            "KernelSize": 1,
+            "ScalingFactor": 1.0
+        },
+        "CostSquareError": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 20.0
+        }
     },
 
     "PoseGraphOptimizerSpChol": {
@@ -45,34 +108,39 @@
         "Map": {
             "Resolution": 0.05,
             "PatchSize": 64,
-            "NumOfScansForLatestMap": 5,
-            "TravelDistThresholdForLocalMap": 10.0
+            "NumOfScansForLatestMap": 10,
+            "TravelDistThresholdForLocalMap": 20.0
         },
         "UsableRangeMin": 0.01,
         "UsableRangeMax": 50.0,
-        "ProbabilityHit": 0.9,
-        "ProbabilityMiss": 0.1
+        "ProbabilityHit": 0.95,
+        "ProbabilityMiss": 0.05
     },
 
     "LidarGraphSlam": {
+        "GridMapBuilderConfigGroup": "GridMapBuilder",
         "LocalSlam": {
-            "CostType": "SquareError",
-            "ScanMatcherType": "GreedyEndpoint"
+            "ScanMatcherType": "GreedyEndpoint",
+            "ScanMatcherConfigGroup": "ScanMatcherGreedyEndpoint"
         },
         "PoseGraphOptimizerType": "SpChol",
+        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
         "LoopClosureType": "GridSearch",
+        "LoopClosureConfigGroup": "LoopClosureBranchBound",
         "LoopClosureInterval": 10,
         "InitialPose": {
             "X": 0.0,
             "Y": 0.0,
             "Theta": 0.0
         },
-        "UpdateThresholdTravelDist": 1.0,
+        "UpdateThresholdTravelDist": 0.5,
         "UpdateThresholdAngle": 0.5,
         "UpdateThresholdTime": 5.0
     },
 
     "Launcher": {
+        "GuiEnabled": "true",
+        "DrawFrameInterval": 5,
         "WaitForKey": "false"
     }
 }
