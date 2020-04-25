@@ -94,10 +94,14 @@ void GridMapBuilder::AfterLoopClosure(
     const std::shared_ptr<PoseGraph>& poseGraph)
 {
     /* Update the all local grid maps */
-    for (auto& localMapInfo : this->mLocalMaps)
+    for (auto& localMapInfo : this->mLocalMaps) {
         this->ConstructMapFromScans(localMapInfo.mMap, poseGraph,
                                     localMapInfo.mPoseGraphNodeIdxMin,
                                     localMapInfo.mPoseGraphNodeIdxMax);
+        /* Reset the precomputed grid maps */
+        localMapInfo.mPrecomputedMaps.clear();
+        localMapInfo.mPrecomputed = false;
+    }
 
     /* Update the grid map with latest scans */
     this->UpdateLatestMap(poseGraph);
