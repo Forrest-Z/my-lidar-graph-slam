@@ -6,6 +6,9 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
+#include <deque>
+#include <functional>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -101,10 +104,9 @@ std::pair<double, double> ToPolarCoordinate(const Point2D<T>& point)
 }
 
 /* Rotate a covariance matrix */
-inline void RotateCovariance(
-    const double rotationAngle,
-    const Eigen::Matrix3d& covMat,
-    Eigen::Matrix3d& rotatedCovMat)
+inline void RotateCovariance(const double rotationAngle,
+                             const Eigen::Matrix3d& covMat,
+                             Eigen::Matrix3d& rotatedCovMat)
 {
     const double cosTheta = std::cos(rotationAngle);
     const double sinTheta = std::sin(rotationAngle);
@@ -137,11 +139,68 @@ inline void ConvertCovarianceFromRobotToWorld(
     RotateCovariance(robotPose.mTheta, robotCovMat, worldCovMat);
 }
 
+/* Execute sliding window maximum problem */
+template <typename T>
+void SlidingWindowMax(std::function<T(int)> inFunc,
+                      std::function<void(int, T)> outFunc,
+                      int numOfElements,
+                      int winSize)
+{
+    /* Source code was taken from https://www.geeksforgeeks.org/ and
+     * slightly modified (zero padding added) */
+
+    /* Create a double ended queue, idxQueue that will store indexes of
+     * array elements
+     * idxQueue will store indexes of useful elements in every window and
+     * it will maintain decreasing order of values from front to rear in
+     * idxQueue, i.e., inFunc(idxQueue.front()) to inFunc(idxQueue.back()) are
+     * sorted in decreasing order */
+    std::deque<int> idxQueue;
+
+    int idxIn = 0;
+    int idxOut = 0;
+
+    /* Process the first winSize (or first window) elements of array */
+    for (idxIn = 0; idxIn < winSize; ++idxIn) {
+        /* For every element, the previous smaller elements are useless so
+         * remove them from idxQueue */
+        while ((!idxQueue.empty()) && inFunc(idxIn) >= inFunc(idxQueue.back()))
+            idxQueue.pop_back();
+        
+        /* Add new element at rear of idxQueue */
+        idxQueue.push_back(idxIn);
+    }
+
+    /* Now idxQueue.front() contains the index of the maximum element
+     * in the first window */
+
+    /* Process the rest of the elements */
+    for (; idxIn < numOfElements; ++idxIn) {
+        /* The element at the front of the queue is the maximum element of
+         * the previous window */
+        outFunc(idxOut++, inFunc(idxQueue.front()));
+
+        /* Remove the elements which are out of the current window */
+        while ((!idxQueue.empty()) && idxQueue.front() <= idxIn - winSize)
+            idxQueue.pop_front();
+        
+        /* Remove all elements smaller than the current element */
+        while ((!idxQueue.empty()) && inFunc(idxIn) >= inFunc(idxQueue.back()))
+            idxQueue.pop_back();
+        
+        /* Add the current element at the rear of the queue */
+        idxQueue.push_back(idxIn);
+    }
+
+    /* Repeat the last elements */
+    for (; idxOut < numOfElements; ++idxOut)
+        outFunc(idxOut, inFunc(idxQueue.front()));
+}
+
 /* Execute bresenham algorithm */
 template <typename T>
-std::vector<Point2D<T>> Bresenham(
-    const Point2D<T>& startIdx,
-    const Point2D<T>& endIdx)
+std::vector<Point2D<T>> Bresenham(const Point2D<T>& startIdx,
+                                  const Point2D<T>& endIdx)
 {
     std::vector<Point2D<T>> indices;
 
