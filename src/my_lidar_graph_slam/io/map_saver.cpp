@@ -248,10 +248,7 @@ bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
         const auto& precompMap = precompMapInfo.second;
 
         /* Create the occupancy grid map */
-        GridMapType gridMap {
-            precompMap.Resolution(), precompMap.PatchSize(),
-            precompMap.NumOfPatchesX(), precompMap.NumOfPatchesY(),
-            precompMap.MinPos().mX, precompMap.MinPos().mY };
+        GridMapType gridMap = GridMapType::CreateSameSizeMap(precompMap);
 
         const double unknownVal = PrecomputedMapType::GridCellType::Unknown;
         const int numOfGridCellsX = precompMap.NumOfGridCellsX();
