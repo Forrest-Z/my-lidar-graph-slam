@@ -20,6 +20,7 @@
 #include "my_lidar_graph_slam/mapping/cost_function_square_error.hpp"
 #include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_branch_bound.hpp"
+#include "my_lidar_graph_slam/mapping/loop_closure_empty.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
@@ -227,6 +228,16 @@ std::shared_ptr<ScanMatcherType> CreateScanMatcher(
     return nullptr;
 }
 
+/* Create the dummy loop closure object */
+std::shared_ptr<LoopClosureType> CreateLoopClosureEmpty(
+    const pt::ptree& /* jsonSettings */,
+    const std::string& /* configGroup */)
+{
+    /* Construct dummy loop closure object */
+    auto pLoopClosure = std::make_shared<Mapping::LoopClosureEmpty>();
+    return pLoopClosure;
+}
+
 /* Create the grid search loop closure object */
 std::shared_ptr<LoopClosureType> CreateLoopClosureGridSearch(
     const pt::ptree& jsonSettings,
@@ -324,6 +335,8 @@ std::shared_ptr<LoopClosureType> CreateLoopClosure(
         return CreateLoopClosureGridSearch(jsonSettings, configGroup);
     else if (loopClosureType == "BranchBound")
         return CreateLoopClosureBranchBound(jsonSettings, configGroup);
+    else if (loopClosureType == "Empty")
+        return CreateLoopClosureEmpty(jsonSettings, configGroup);
     
     return nullptr;
 }
