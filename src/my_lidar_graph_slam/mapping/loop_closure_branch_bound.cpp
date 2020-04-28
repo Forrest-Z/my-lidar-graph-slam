@@ -117,7 +117,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     std::stack<Node> nodeStack;
 
     /* Initialize a stack with nodes covering the entire search window */
-    const int winSizeMax = static_cast<int>(std::pow(2, this->mNodeHeightMax));
+    const int winSizeMax = 1 << this->mNodeHeightMax;
 
     for (int x = -winX; x <= winX; x += winSizeMax)
         for (int y = -winY; y <= winY; y += winSizeMax)
@@ -158,7 +158,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
             const int y = currentNode.mY;
             const int theta = currentNode.mTheta;
             const int height = currentNode.mHeight - 1;
-            const int winSize = static_cast<int>(std::pow(2, height));
+            const int winSize = 1 << height;
 
             /* Pop the current node from the stack */
             nodeStack.pop();
