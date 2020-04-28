@@ -9,6 +9,10 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/* Type definitions for convenience */
+class CostGreedyEndpoint;
+using CostGreedyEndpointPtr = std::shared_ptr<CostGreedyEndpoint>;
+
 class CostGreedyEndpoint final : public CostFunction
 {
 public:

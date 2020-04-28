@@ -9,6 +9,10 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/* Type definitions for convenience */
+class CostSquareError;
+using CostSquareErrorPtr = std::shared_ptr<CostSquareError>;
+
 class CostSquareError final : public CostFunction
 {
 public:

@@ -18,6 +18,10 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/* Type definitions for convenience */
+class CostFunction;
+using CostFuncPtr = std::shared_ptr<CostFunction>;
+
 class CostFunction
 {
 public:
