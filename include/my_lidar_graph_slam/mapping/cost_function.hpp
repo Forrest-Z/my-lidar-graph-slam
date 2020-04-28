@@ -6,23 +6,21 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 
 #include <Eigen/Core>
 
 #include "my_lidar_graph_slam/point.hpp"
 #include "my_lidar_graph_slam/pose.hpp"
+#include "my_lidar_graph_slam/grid_map/grid_map_base.hpp"
+#include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-template <typename T, typename U>
 class CostFunction
 {
 public:
-    /* Type definitions */
-    using GridMapType = T;
-    using ScanType = U;
-
     /* Constructor */
     CostFunction() = default;
     /* Destructor */
@@ -38,20 +36,20 @@ public:
     CostFunction& operator=(CostFunction&&) = delete;
 
     /* Calculate cost function (mismatch between scan data and map) */
-    virtual double Cost(const GridMapType& gridMap,
-                        const ScanType& scanData,
+    virtual double Cost(const GridMapBase<double>& gridMap,
+                        const Sensor::ScanDataPtr<double>& scanData,
                         const RobotPose2D<double>& sensorPose) = 0;
     
     /* Calculate a gradient vector */
     virtual Eigen::Vector3d ComputeGradient(
-        const GridMapType& gridMap,
-        const ScanType& scanData,
+        const GridMapBase<double>& gridMap,
+        const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& sensorPose) = 0;
 
     /* Calculate a covariance matrix */
     virtual Eigen::Matrix3d ComputeCovariance(
-        const GridMapType& gridMap,
-        const ScanType& scanData,
+        const GridMapBase<double>& gridMap,
+        const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& sensorPose) = 0;
 };
 
