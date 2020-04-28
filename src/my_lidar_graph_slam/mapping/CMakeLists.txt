@@ -13,4 +13,6 @@ target_sources(lidar_graph_slam PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/motion_model_velocity.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pose_graph_optimizer_spchol.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pose_graph.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/scan_interpolator.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/scan_interpolator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/scan_matcher_greedy_endpoint.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/scan_matcher_linear_solver.cpp)
