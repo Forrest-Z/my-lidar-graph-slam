@@ -38,6 +38,11 @@ public:
     /* Check if the point in world frame is inside the map */
     virtual bool IsInside(const Point2D<double>& mapPos) const = 0;
 
+    /* Check if the grid cell is allocated on the heap */
+    virtual bool IsAllocated(int idxX, int idxY) const = 0;
+    /* Check if the grid cell is allocated on the heap */
+    virtual bool IsAllocated(const Point2D<int>& gridCellIdx) const = 0;
+
     /* Convert the grid cell index into the point in world frame
      * The returned point is the bottom-left of the grid cell */
     virtual Point2D<double> GridCellIndexToWorldCoordinate(

@@ -88,6 +88,14 @@ public:
     bool IsInside(const Point2D<double>& mapPos) const override
     { return this->IsInside(mapPos.mX, mapPos.mY); }
 
+    /* Check if the grid cell is allocated on the heap */
+    bool IsAllocated(int idxX, int idxY) const override
+    { return this->PatchIsAllocated(
+        this->GridCellIndexToPatchIndex(idxX, idxY)); }
+    /* Check if the grid cell is allocated on the heap */
+    bool IsAllocated(const Point2D<int>& gridCellIdx) const override
+    { return this->IsAllocated(gridCellIdx.mX, gridCellIdx.mY); }
+
     /* Convert the grid cell index into the point in world frame
      * The returned point is the bottom-left of the grid cell */
     Point2D<double> GridCellIndexToWorldCoordinate(
@@ -201,12 +209,18 @@ public:
         minIdx.mX, minIdx.mY,
         maxIdx.mX, maxIdx.mY); }
     
-    /* Check if the patch index is inside the map */
+    /* Check if the patch is inside the map */
     bool PatchIsInside(int patchIdxX, int patchIdxY) const;
-    /* Check if the patch index is inside the map */
+    /* Check if the patch is inside the map */
     bool PatchIsInside(const Point2D<int>& patchIdx) const
     { return this->PatchIsInside(patchIdx.mX, patchIdx.mY); }
-    
+
+    /* Check if the patch is allocated on the heap */
+    bool PatchIsAllocated(int patchIdxX, int patchIdxY) const;
+    /* Check if the patch is allocated on the heap */
+    bool PatchIsAllocated(const Point2D<int>& patchIdx) const
+    { return this->PatchIsAllocated(patchIdx.mX, patchIdx.mY); }
+
     /* Get the patch of the specified index */
     Patch<T>& PatchAt(int patchIdxX, int patchIdxY);
     /* Get the patch of the specified index */
@@ -733,6 +747,18 @@ bool GridMap<T>::PatchIsInside(int patchIdxX, int patchIdxY) const
 {
     return (patchIdxX >= 0 && patchIdxX < this->mNumOfPatchesX) &&
            (patchIdxY >= 0 && patchIdxY < this->mNumOfPatchesY);
+}
+
+/* Check if the patch is allocated on the heap */
+template <typename T>
+bool GridMap<T>::PatchIsAllocated(int patchIdxX, int patchIdxY) const
+{
+    assert(this->PatchIsInside(patchIdxX, patchIdxY));
+
+    const int patchIdx = patchIdxY * this->mNumOfPatchesX + patchIdxX;
+    const Patch<T>& patch = this->mPatches[patchIdx];
+
+    return patch.IsAllocated();
 }
 
 /* Get the patch of the specified index */
