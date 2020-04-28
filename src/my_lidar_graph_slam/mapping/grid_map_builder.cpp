@@ -136,35 +136,23 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
     /* The local grid map must be finished */
     assert(localMapInfo.mFinished);
 
-    /* Create the temporary grid map to store the intermediate result */
-    const double mapResolution = localMap.Resolution();
-    const Point2D<double>& minPos = localMap.MinPos();
-    const Point2D<double> maxPos {
-        minPos.mX + mapResolution * localMap.NumOfGridCellsX(),
-        minPos.mY + mapResolution * localMap.NumOfGridCellsY() };
+    /* Create the temporary grid map to store the intermediate result
+     * The map size is as same as the local grid map */
     PrecomputedMapType tmpMap {
         localMap.Resolution(), localMap.PatchSize(),
-        minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
-
-    /* Make sure that the newly created grid map covers the local map */
-    assert(tmpMap.MinPos() == localMap.MinPos());
-    assert(tmpMap.NumOfPatchesX() >= localMap.NumOfPatchesX());
-    assert(tmpMap.NumOfPatchesY() >= localMap.NumOfPatchesY());
+        localMap.NumOfPatchesX(), localMap.NumOfPatchesY(),
+        localMap.MinPos().mX, localMap.MinPos().mY };
 
     /* Compute a grid map for each node height */
     for (int nodeHeight = 0, winSize = 1;
-         nodeHeight <= nodeHeightMax; ++nodeHeight, winSize *= 2) {
+         nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
         /* Each pixel stores the maximum of the occupancy probability
          * values of the 2^h * 2^h box of pixels beginning there */
         /* Create a new grid map */
         PrecomputedMapType precompMap {
             localMap.Resolution(), localMap.PatchSize(),
-            minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
-
-        /* Check the map size */
-        assert(precompMap.MinPos() == tmpMap.MinPos());
-        assert(precompMap.NumOfPatchesX() >= tmpMap.NumOfPatchesX());
-        assert(precompMap.NumOfPatchesY() >= tmpMap.NumOfPatchesY());
+            localMap.NumOfPatchesX(), localMap.NumOfPatchesY(),
+            localMap.MinPos().mX, localMap.MinPos().mY };
 
         /* Store the maximum of the 2^h pixel wide row */
         this->SlidingWindowMaxRow(localMap, tmpMap, winSize);
