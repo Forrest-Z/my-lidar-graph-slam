@@ -41,16 +41,8 @@ using MapType = GridMap<BinaryBayesGridCell<double>>;
 using PrecomputedMapType = GridMap<ConstGridCell<double>>;
 using ScanType = Sensor::ScanDataPtr<double>;
 
-using CostFuncType = Mapping::CostFunction<MapType, ScanType>;
-using ScanMatcherType = Mapping::ScanMatcher<MapType, ScanType>;
-using LoopClosureType = Mapping::LoopClosure;
-using OptimizerType = Mapping::PoseGraphOptimizer;
-
-template <typename T>
-using ScoreFuncType = Mapping::ScoreFunction<T, ScanType>;
-
 /* Create the greedy endpoint cost function object */
-std::shared_ptr<CostFuncType> CreateCostGreedyEndpoint(
+std::shared_ptr<Mapping::CostFunction> CreateCostGreedyEndpoint(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -65,9 +57,7 @@ std::shared_ptr<CostFuncType> CreateCostGreedyEndpoint(
     const double scalingFactor = config.get("ScalingFactor", 1.0);
 
     /* Create greedy endpoint cost function */
-    using CostGreedyEndpointType =
-        Mapping::CostGreedyEndpoint<MapType, ScanType>;
-    auto pCostFunc = std::make_shared<CostGreedyEndpointType>(
+    auto pCostFunc = std::make_shared<Mapping::CostGreedyEndpoint>(
         usableRangeMin, usableRangeMax, hitAndMissedDist,
         occupancyThreshold, kernelSize, scalingFactor);
 
@@ -75,7 +65,7 @@ std::shared_ptr<CostFuncType> CreateCostGreedyEndpoint(
 }
 
 /* Create the square error cost function object */
-std::shared_ptr<CostFuncType> CreateCostSquareError(
+std::shared_ptr<Mapping::CostFunction> CreateCostSquareError(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -86,16 +76,14 @@ std::shared_ptr<CostFuncType> CreateCostSquareError(
     const double usableRangeMax = config.get("UsableRangeMax", 50.0);
     
     /* Create cost function object */
-    using CostSquareErrorType =
-        Mapping::CostSquareError<MapType, ScanType>;
-    auto pCostFunc = std::make_shared<CostSquareErrorType>(
+    auto pCostFunc = std::make_shared<Mapping::CostSquareError>(
         usableRangeMin, usableRangeMax);
     
     return pCostFunc;
 }
 
 /* Create the cost function object */
-std::shared_ptr<CostFuncType> CreateCostFunction(
+std::shared_ptr<Mapping::CostFunction> CreateCostFunction(
     const pt::ptree& jsonSettings,
     const std::string& costType,
     const std::string& configGroup)
@@ -109,8 +97,7 @@ std::shared_ptr<CostFuncType> CreateCostFunction(
 }
 
 /* Create the pixel-accurate score function object */
-template <typename T>
-std::shared_ptr<ScoreFuncType<T>> CreateScorePixelAccurate(
+std::shared_ptr<Mapping::ScoreFunction> CreateScorePixelAccurate(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -121,29 +108,26 @@ std::shared_ptr<ScoreFuncType<T>> CreateScorePixelAccurate(
     const double usableRangeMax = config.get("UsableRangeMax", 50.0);
 
     /* Create score function object */
-    using ScorePixelAccurateType =
-        Mapping::ScorePixelAccurate<T, ScanType>;
-    auto pScoreFunc = std::make_shared<ScorePixelAccurateType>(
+    auto pScoreFunc = std::make_shared<Mapping::ScorePixelAccurate>(
         usableRangeMin, usableRangeMax);
     
     return pScoreFunc;
 }
 
 /* Create the score function object */
-template <typename T>
-std::shared_ptr<ScoreFuncType<T>> CreateScoreFunction(
+std::shared_ptr<Mapping::ScoreFunction> CreateScoreFunction(
     const pt::ptree& jsonSettings,
     const std::string& scoreType,
     const std::string& configGroup)
 {
     if (scoreType == "PixelAccurate")
-        return CreateScorePixelAccurate<T>(jsonSettings, configGroup);
+        return CreateScorePixelAccurate(jsonSettings, configGroup);
     
     return nullptr;
 }
 
 /* Create the greedy endpoint scan matcher object */
-std::shared_ptr<ScanMatcherType> CreateScanMatcherGreedyEndpoint(
+std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherGreedyEndpoint(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -164,9 +148,7 @@ std::shared_ptr<ScanMatcherType> CreateScanMatcherGreedyEndpoint(
         jsonSettings, costType, costConfigGroup);
 
     /* Construct scan matcher */
-    using ScanMatcherGreedyEndpointType =
-        Mapping::ScanMatcherGreedyEndpoint<MapType, ScanType>;
-    auto pScanMatcher = std::make_shared<ScanMatcherGreedyEndpointType>(
+    auto pScanMatcher = std::make_shared<Mapping::ScanMatcherGreedyEndpoint>(
         linearStep, angularStep, maxIterations, maxNumOfRefinements,
         pCostFunc);
     
@@ -174,7 +156,7 @@ std::shared_ptr<ScanMatcherType> CreateScanMatcherGreedyEndpoint(
 }
 
 /* Create the linear solver scan matcher object */
-std::shared_ptr<ScanMatcherType> CreateScanMatcherLinearSolver(
+std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherLinearSolver(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -197,15 +179,11 @@ std::shared_ptr<ScanMatcherType> CreateScanMatcherLinearSolver(
     /* Check if the cost is calculated based on the squared error */
     assert(costType == "SquareError");
 
-    using CostSquareErrorType =
-        Mapping::CostSquareError<MapType, ScanType>;
-    auto pCostFunc = std::dynamic_pointer_cast<CostSquareErrorType>(
+    auto pCostFunc = std::dynamic_pointer_cast<Mapping::CostSquareError>(
         CreateCostSquareError(jsonSettings, costConfigGroup));
 
     /* Construct scan matcher */
-    using ScanMatcherLinearSolverType =
-        Mapping::ScanMatcherLinearSolver<MapType, ScanType>;
-    auto pScanMatcher = std::make_shared<ScanMatcherLinearSolverType>(
+    auto pScanMatcher = std::make_shared<Mapping::ScanMatcherLinearSolver>(
         numOfIterationsMax, errorTolerance, usableRangeMin, usableRangeMax,
         transWeight, rotWeight, pCostFunc);
     
@@ -213,7 +191,7 @@ std::shared_ptr<ScanMatcherType> CreateScanMatcherLinearSolver(
 }
 
 /* Create the scan matcher object */
-std::shared_ptr<ScanMatcherType> CreateScanMatcher(
+std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcher(
     const pt::ptree& jsonSettings,
     const std::string& scanMatcherType,
     const std::string& configGroup)
@@ -227,7 +205,7 @@ std::shared_ptr<ScanMatcherType> CreateScanMatcher(
 }
 
 /* Create the dummy loop closure object */
-std::shared_ptr<LoopClosureType> CreateLoopClosureEmpty(
+std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureEmpty(
     const pt::ptree& /* jsonSettings */,
     const std::string& /* configGroup */)
 {
@@ -237,7 +215,7 @@ std::shared_ptr<LoopClosureType> CreateLoopClosureEmpty(
 }
 
 /* Create the grid search loop closure object */
-std::shared_ptr<LoopClosureType> CreateLoopClosureGridSearch(
+std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureGridSearch(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -260,7 +238,7 @@ std::shared_ptr<LoopClosureType> CreateLoopClosureGridSearch(
         config.get("ScoreType", "PixelAccurate");
     const std::string scoreConfigGroup =
         config.get("ScoreConfigGroup", "ScorePixelAccurate");
-    auto pScoreFunc = CreateScoreFunction<MapType>(
+    auto pScoreFunc = CreateScoreFunction(
         jsonSettings, scoreType, scoreConfigGroup);
     
     /* Construct cost function */
@@ -281,7 +259,7 @@ std::shared_ptr<LoopClosureType> CreateLoopClosureGridSearch(
 }
 
 /* Create the branch-and-bound loop closure object */
-std::shared_ptr<LoopClosureType> CreateLoopClosureBranchBound(
+std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureBranchBound(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -303,7 +281,7 @@ std::shared_ptr<LoopClosureType> CreateLoopClosureBranchBound(
         config.get("ScoreType", "PixelAccurate");
     const std::string scoreConfigGroup =
         config.get("ScoreConfigGroup", "ScorePixelAccurate");
-    auto pScoreFunc = CreateScoreFunction<PrecomputedMapType>(
+    auto pScoreFunc = CreateScoreFunction(
         jsonSettings, scoreType, scoreConfigGroup);
 
     /* Construct cost function */
@@ -324,7 +302,7 @@ std::shared_ptr<LoopClosureType> CreateLoopClosureBranchBound(
 }
 
 /* Create the loop closure object */
-std::shared_ptr<LoopClosureType> CreateLoopClosure(
+std::shared_ptr<Mapping::LoopClosure> CreateLoopClosure(
     const pt::ptree& jsonSettings,
     const std::string& loopClosureType,
     const std::string& configGroup)
@@ -349,7 +327,7 @@ std::shared_ptr<Mapping::PoseGraph> CreatePoseGraph(
 }
 
 /* Create sparse Cholesky pose graph optimizer object */
-std::shared_ptr<OptimizerType> CreatePoseGraphOptimizerSpChol(
+std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerSpChol(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -368,7 +346,7 @@ std::shared_ptr<OptimizerType> CreatePoseGraphOptimizerSpChol(
 }
 
 /* Create pose graph optimizer object */
-std::shared_ptr<OptimizerType> CreatePoseGraphOptimizer(
+std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizer(
     const pt::ptree& jsonSettings,
     const std::string& optimizerType,
     const std::string& configGroup)
