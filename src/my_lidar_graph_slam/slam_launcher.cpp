@@ -61,7 +61,6 @@ std::shared_ptr<CostFuncType> CreateCostGreedyEndpoint(
     const double usableRangeMax = config.get("UsableRangeMax", 50.0);
     const double hitAndMissedDist = config.get("HitAndMissedDist", 0.075);
     const double occupancyThreshold = config.get("OccupancyThreshold", 0.1);
-    const double gaussianSigma = config.get("GaussianSigma", 0.05);
     const int kernelSize = config.get("KernelSize", 1);
     const double scalingFactor = config.get("ScalingFactor", 1.0);
 
@@ -70,8 +69,7 @@ std::shared_ptr<CostFuncType> CreateCostGreedyEndpoint(
         Mapping::CostGreedyEndpoint<MapType, ScanType>;
     auto pCostFunc = std::make_shared<CostGreedyEndpointType>(
         usableRangeMin, usableRangeMax, hitAndMissedDist,
-        occupancyThreshold, gaussianSigma, kernelSize,
-        scalingFactor);
+        occupancyThreshold, kernelSize, scalingFactor);
 
     return pCostFunc;
 }

@@ -23,7 +23,6 @@ public:
                        double usableRangeMax,
                        double hitAndMissedDist,
                        double occupancyThreshold,
-                       double gaussianSigma,
                        int kernelSize,
                        double scalingFactor) :
         CostFunction<T, U>(),
@@ -31,7 +30,6 @@ public:
         mUsableRangeMax(usableRangeMax),
         mHitAndMissedDist(hitAndMissedDist),
         mOccupancyThreshold(occupancyThreshold),
-        mGaussianSigma(gaussianSigma),
         mKernelSize(kernelSize),
         mScalingFactor(scalingFactor) { }
     
@@ -64,8 +62,6 @@ private:
     double mHitAndMissedDist;
     /* Probability threshold for being obstructed */
     double mOccupancyThreshold;
-    /* Normal deviation value for Gaussian distribution */
-    double mGaussianSigma;
     /* Size of searching window (in the number of grid cells) */
     int    mKernelSize;
     /* Scaling factor for cost value */

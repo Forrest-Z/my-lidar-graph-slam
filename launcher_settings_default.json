@@ -4,7 +4,6 @@
         "UsableRangeMax": 50.0,
         "HitAndMissedDist": 0.075,
         "OccupancyThreshold": 0.1,
-        "GaussianSigma": 0.05,
         "KernelSize": 1,
         "ScalingFactor": 1.0
     },
@@ -59,7 +58,6 @@
             "UsableRangeMax": 50.0,
             "HitAndMissedDist": 0.075,
             "OccupancyThreshold": 0.1,
-            "GaussianSigma": 0.05,
             "KernelSize": 1,
             "ScalingFactor": 1.0
         },
@@ -77,7 +75,7 @@
         "SearchRangeY": 5.0,
         "SearchRangeTheta": 1.0,
         "ScanRangeMax": 20.0,
-        "ScoreThreshold": 0.6,
+        "ScoreThreshold": 0.7,
         "MatchRateThreshold": 0.8,
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
@@ -88,7 +86,6 @@
             "UsableRangeMax": 20.0,
             "HitAndMissedDist": 0.075,
             "OccupancyThreshold": 0.1,
-            "GaussianSigma": 0.05,
             "KernelSize": 1,
             "ScalingFactor": 1.0
         },
@@ -125,7 +122,7 @@
         },
         "PoseGraphOptimizerType": "SpChol",
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
-        "LoopClosureType": "GridSearch",
+        "LoopClosureType": "BranchBound",
         "LoopClosureConfigGroup": "LoopClosureBranchBound",
         "LoopClosureInterval": 10,
         "InitialPose": {
