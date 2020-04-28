@@ -71,6 +71,11 @@ public:
     /* Move assignment operator */
     GridMap& operator=(GridMap&& other) noexcept;
 
+    /* Create a new grid map that has the same size as 'gridMap' */
+    template <typename U>
+    static GridMap CreateSameSizeMap(const GridMap<U>& gridMap);
+
+public:
     /* Resize the map */
     void Resize(double minX, double minY,
                 double maxX, double maxY);
@@ -531,6 +536,17 @@ GridMap<T>& GridMap<T>::operator=(GridMap<T>&& other) noexcept
     this->mPatches = std::move(other.mPatches);
 
     return *this;
+}
+
+/* Create a new grid map that has the same size as 'gridMap' */
+template <typename T>
+template <typename U>
+GridMap<T> GridMap<T>::CreateSameSizeMap(const GridMap<U>& gridMap)
+{
+    /* Construct a new grid map with internal parameters */
+    return GridMap<T> { gridMap.Resolution(), gridMap.PatchSize(),
+                        gridMap.NumOfPatchesX(), gridMap.NumOfPatchesY(),
+                        gridMap.MinPos().mX, gridMap.MinPos().mY };
 }
 
 /* Resize the map */
