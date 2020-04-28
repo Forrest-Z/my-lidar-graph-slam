@@ -248,13 +248,13 @@ bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
         const auto& precompMap = precompMapInfo.second;
 
         /* Create the occupancy grid map */
-        const double mapResolution = precompMap.MapResolution();
+        const double mapResolution = precompMap.Resolution();
         const Point2D<double>& minPos = precompMap.MinPos();
         const Point2D<double> maxPos {
             minPos.mX + mapResolution * precompMap.NumOfGridCellsX(),
             minPos.mY + mapResolution * precompMap.NumOfGridCellsY() };
         GridMapType gridMap {
-            precompMap.MapResolution(), precompMap.PatchSize(),
+            precompMap.Resolution(), precompMap.PatchSize(),
             minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
 
         /* Check the size */
@@ -533,10 +533,10 @@ bool MapSaver::SaveMapCore(const GridMapType& gridMap,
         const Point2D<double> bottomLeft =
             gridMap.GridCellIndexToWorldCoordinate(gridCellIdxMin);
         const Point2D<double> topRight {
-            bottomLeft.mX + mapSizeInGridCells.mX * gridMap.MapResolution(),
-            bottomLeft.mY + mapSizeInGridCells.mY * gridMap.MapResolution() };
+            bottomLeft.mX + mapSizeInGridCells.mX * gridMap.Resolution(),
+            bottomLeft.mY + mapSizeInGridCells.mY * gridMap.Resolution() };
         this->SaveMapMetadata(
-            gridMap.MapResolution(), gridMap.PatchSize(),
+            gridMap.Resolution(), gridMap.PatchSize(),
             mapSizeInPatches, mapSizeInGridCells,
             bottomLeft, topRight,
             saveOptions.mTrajectoryNodeIdxMin,

@@ -248,7 +248,7 @@ Eigen::Vector2d CostSquareError<T, U>::ComputeMapGradient(
     const Point2D<double>& mapPos)
 {
     const double deltaIdx = 0.1;
-    const double deltaDist = gridMap.MapResolution() * deltaIdx;
+    const double deltaDist = gridMap.Resolution() * deltaIdx;
     const Point2D<double> deltaX { deltaIdx / 2.0, 0.0 };
     const Point2D<double> deltaY { 0.0, deltaIdx / 2.0 };
 

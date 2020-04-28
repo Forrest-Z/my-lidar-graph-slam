@@ -60,7 +60,7 @@ GridMapBuilder::GridMapBuilder(
     double usableRangeMax,
     double probHit,
     double probMiss) :
-    mMapResolution(mapResolution),
+    mResolution(mapResolution),
     mPatchSize(patchSize),
     mLatestMap(mapResolution, patchSize, 0, 0, Point2D<double>(0.0, 0.0)),
     mAccumTravelDist(0.0),
@@ -118,7 +118,7 @@ GridMapBuilder::GridMapType GridMapBuilder::ConstructGlobalMap(
     const int nodeIdxMax = poseGraph->Nodes().back().Index();
 
     /* Construct the global map */
-    GridMapType gridMap { this->mMapResolution, this->mPatchSize,
+    GridMapType gridMap { this->mResolution, this->mPatchSize,
                           0, 0, Point2D<double>(0.0, 0.0) };
     this->ConstructMapFromScans(gridMap, poseGraph, nodeIdxMin, nodeIdxMax);
 
@@ -137,13 +137,13 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
     assert(localMapInfo.mFinished);
 
     /* Create the temporary grid map to store the intermediate result */
-    const double mapResolution = localMap.MapResolution();
+    const double mapResolution = localMap.Resolution();
     const Point2D<double>& minPos = localMap.MinPos();
     const Point2D<double> maxPos {
         minPos.mX + mapResolution * localMap.NumOfGridCellsX(),
         minPos.mY + mapResolution * localMap.NumOfGridCellsY() };
     PrecomputedMapType tmpMap {
-        localMap.MapResolution(), localMap.PatchSize(),
+        localMap.Resolution(), localMap.PatchSize(),
         minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
 
     /* Make sure that the newly created grid map covers the local map */
@@ -158,7 +158,7 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
          * values of the 2^h * 2^h box of pixels beginning there */
         /* Create a new grid map */
         PrecomputedMapType precompMap {
-            localMap.MapResolution(), localMap.PatchSize(),
+            localMap.Resolution(), localMap.PatchSize(),
             minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
 
         /* Check the map size */
@@ -218,7 +218,7 @@ void GridMapBuilder::UpdateGridMap(
         /* Create a new local map */
         const Point2D<double> centerPos { robotPose.mX, robotPose.mY };
         GridMapType newLocalMap {
-            this->mMapResolution, this->mPatchSize, 0, 0, centerPos };
+            this->mResolution, this->mPatchSize, 0, 0, centerPos };
         this->mLocalMaps.emplace_back(std::move(newLocalMap), nodeIdx);
 
         /* Reset the variables properly */

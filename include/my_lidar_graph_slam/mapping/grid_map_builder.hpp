@@ -169,7 +169,7 @@ private:
 
 private:
     /* Map resolution (in meters) */
-    double                        mMapResolution;
+    double                        mResolution;
     /* Patch size (in the number of grid cells) */
     int                           mPatchSize;
     /* List of the local grid maps */

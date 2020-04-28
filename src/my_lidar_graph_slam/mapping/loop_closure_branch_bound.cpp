@@ -96,7 +96,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     bool solutionFound = false;
 
     /* Determine the search window step */
-    const double mapResolution = localMap.MapResolution();
+    const double mapResolution = localMap.Resolution();
     const double deltaX = mapResolution;
     const double deltaY = mapResolution;
 
