@@ -248,19 +248,10 @@ bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
         const auto& precompMap = precompMapInfo.second;
 
         /* Create the occupancy grid map */
-        const double mapResolution = precompMap.Resolution();
-        const Point2D<double>& minPos = precompMap.MinPos();
-        const Point2D<double> maxPos {
-            minPos.mX + mapResolution * precompMap.NumOfGridCellsX(),
-            minPos.mY + mapResolution * precompMap.NumOfGridCellsY() };
         GridMapType gridMap {
             precompMap.Resolution(), precompMap.PatchSize(),
-            minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
-
-        /* Check the size */
-        assert(gridMap.MinPos() == precompMap.MinPos());
-        assert(gridMap.NumOfPatchesX() >= precompMap.NumOfPatchesX());
-        assert(gridMap.NumOfPatchesY() >= precompMap.NumOfPatchesY());
+            precompMap.NumOfPatchesX(), precompMap.NumOfPatchesY(),
+            precompMap.MinPos().mX, precompMap.MinPos().mY };
 
         const double unknownVal = PrecomputedMapType::GridCellType::Unknown;
         const int numOfGridCellsX = precompMap.NumOfGridCellsX();
@@ -277,7 +268,7 @@ bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
         }
 
         /* Save the map image */
-        const int winSize = static_cast<int>(std::pow(2, nodeHeight));
+        const int winSize = 1 << nodeHeight;
         saveOptions.mFileName = fileName + "-" + std::to_string(winSize);
 
         if (!this->SaveMapCore(gridMap, poseGraph, saveOptions))
