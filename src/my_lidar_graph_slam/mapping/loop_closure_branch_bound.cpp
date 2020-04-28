@@ -48,7 +48,8 @@ bool LoopClosureBranchBound::FindLoop(
 
     /* Precompute local grid maps for efficient loop closure */
     if (!candidateMapInfo.mPrecomputed)
-        this->PrecomputeGridMaps(gridMapBuilder, candidateMapIdx);
+        gridMapBuilder->PrecomputeGridMaps(
+            candidateMapIdx, this->mNodeHeightMax);
 
     RobotPose2D<double> correspondingPose;
     Eigen::Matrix3d covMat;
@@ -70,124 +71,6 @@ bool LoopClosureBranchBound::FindLoop(
     estimatedCovMat = covMat;
 
     return true;
-}
-
-/* Precompute grid maps for efficient loop closure */
-void LoopClosureBranchBound::PrecomputeGridMaps(
-    GridMapBuilderPtr& gridMapBuilder,
-    int mapIdx) const
-{
-    /* Retrieve the local map */
-    auto& localMapInfo = gridMapBuilder->LocalMapAt(mapIdx);
-    auto& precomputedMaps = localMapInfo.mPrecomputedMaps;
-    const GridMapType& localMap = localMapInfo.mMap;
-
-    /* The local grid map must be finished */
-    assert(localMapInfo.mFinished);
-
-    /* Create the temporary grid map to store the intermediate result */
-    const double mapResolution = localMap.MapResolution();
-    const Point2D<double>& minPos = localMap.MinPos();
-    const Point2D<double> maxPos {
-        minPos.mX + mapResolution * localMap.NumOfGridCellsX(),
-        minPos.mY + mapResolution * localMap.NumOfGridCellsY() };
-    PrecomputedMapType tmpMap {
-        localMap.MapResolution(), localMap.PatchSize(),
-        minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
-
-    /* Make sure that the newly created grid map covers the local map */
-    assert(tmpMap.MinPos() == localMap.MinPos());
-    assert(tmpMap.NumOfPatchesX() >= localMap.NumOfPatchesX());
-    assert(tmpMap.NumOfPatchesY() >= localMap.NumOfPatchesY());
-
-    /* Compute a grid map for each node height */
-    for (int nodeHeight = 0, winSize = 1;
-         nodeHeight <= this->mNodeHeightMax; ++nodeHeight, winSize *= 2) {
-        /* Each pixel stores the maximum of the occupancy probability
-         * values of the 2^h * 2^h box of pixels beginning there */
-        /* Create a new grid map */
-        PrecomputedMapType precompMap {
-            localMap.MapResolution(), localMap.PatchSize(),
-            minPos.mX, minPos.mY, maxPos.mX, maxPos.mY };
-
-        /* Check the map size */
-        assert(precompMap.MinPos() == tmpMap.MinPos());
-        assert(precompMap.NumOfPatchesX() >= tmpMap.NumOfPatchesX());
-        assert(precompMap.NumOfPatchesY() >= tmpMap.NumOfPatchesY());
-
-        /* Store the maximum of the 2^h pixel wide row */
-        this->SlidingWindowMaxRow(localMap, tmpMap, winSize);
-        /* Store the maximum of the 2^h pixel wide column */
-        this->SlidingWindowMaxCol(tmpMap, precompMap, winSize);
-
-        /* Append the newly created grid map */
-        precomputedMaps.emplace(nodeHeight, std::move(precompMap));
-    }
-
-    /* Mark the local map as precomputed */
-    localMapInfo.mPrecomputed = true;
-}
-
-/* Compute the maximum of a 2^h pixel wide row starting at each pixel */
-void LoopClosureBranchBound::SlidingWindowMaxRow(
-    const GridMapType& gridMap,
-    PrecomputedMapType& tmpMap,
-    int winSize) const
-{
-    /* Compute the maximum for each column */
-    const double unknownVal = GridMapType::GridCellType::Unknown;
-    int colIdx = 0;
-
-    std::function<double(int)> inFunc =
-        [&colIdx, &gridMap, unknownVal](int rowIdx) {
-        return gridMap.Value(colIdx, rowIdx, unknownVal);
-    };
-
-    std::function<void(int, double)> outFunc =
-        [&colIdx, &gridMap, &tmpMap, unknownVal](int rowIdx, double maxVal) {
-        const Point2D<int> patchIdx =
-            gridMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
-        const bool isAllocated =
-            gridMap.PatchAt(patchIdx).IsAllocated();
-
-        if (isAllocated || maxVal != unknownVal)
-            tmpMap.Update(colIdx, rowIdx, maxVal);
-    };
-
-    /* Apply the sliding window maximum function */
-    for (colIdx = 0; colIdx < gridMap.NumOfGridCellsX(); ++colIdx)
-        SlidingWindowMax(inFunc, outFunc, gridMap.NumOfGridCellsY(), winSize);
-}
-
-/* Compute the maximum of a 2^h pixel wide column starting at each pixel */
-void LoopClosureBranchBound::SlidingWindowMaxCol(
-    const PrecomputedMapType& tmpMap,
-    PrecomputedMapType& precompMap,
-    int winSize) const
-{
-    /* Compute the maximum for each row */
-    const double unknownVal = GridMapType::GridCellType::Unknown;
-    int rowIdx = 0;
-
-    std::function<double(int)> inFunc =
-        [&rowIdx, &tmpMap, unknownVal](int colIdx) {
-        return tmpMap.Value(colIdx, rowIdx, unknownVal);
-    };
-
-    std::function<void(int, double)> outFunc =
-        [&rowIdx, &tmpMap, &precompMap, unknownVal](int colIdx, double maxVal) {
-        const Point2D<int> patchIdx =
-            tmpMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
-        const bool isAllocated =
-            tmpMap.PatchAt(patchIdx).IsAllocated();
-
-        if (isAllocated || maxVal != unknownVal)
-            precompMap.Update(colIdx, rowIdx, maxVal);
-    };
-
-    /* Apply the sliding window maximum function */
-    for (rowIdx = 0; rowIdx < tmpMap.NumOfGridCellsY(); ++rowIdx)
-        SlidingWindowMax(inFunc, outFunc, tmpMap.NumOfGridCellsX(), winSize);
 }
 
 /* Find a corresponding pose of the current robot pose

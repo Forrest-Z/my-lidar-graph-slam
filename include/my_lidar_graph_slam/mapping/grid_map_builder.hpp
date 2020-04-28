@@ -4,6 +4,7 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_GRID_MAP_GRID_MAP_BUILDER_HPP
 #define MY_LIDAR_GRAPH_SLAM_GRID_MAP_GRID_MAP_BUILDER_HPP
 
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -97,6 +98,9 @@ public:
     GridMapType ConstructGlobalMap(
         const std::shared_ptr<PoseGraph>& poseGraph) const;
     
+    /* Precompute grid maps for efficiency */
+    void PrecomputeGridMaps(int localMapIdx, int maxNodeHeight);
+    
     /* Retrieve the local grid maps */
     inline const std::vector<LocalMapInfo>& LocalMaps() const
     { return this->mLocalMaps; }
@@ -152,6 +156,16 @@ private:
     std::vector<Point2D<int>> ComputeMissedGridCellIndices(
         const Point2D<int>& startGridCellIdx,
         const Point2D<int>& endGridCellIdx) const;
+
+    /* Compute the maximum of a 2^h pixel wide row starting at each pixel */
+    void SlidingWindowMaxRow(const GridMapType& gridMap,
+                             PrecomputedMapType& tmpMap,
+                             int winSize);
+
+    /* Compute the maximum of a 2^h pixel wide column starting at each pixel */
+    void SlidingWindowMaxCol(const PrecomputedMapType& tmpMap,
+                             PrecomputedMapType& precompMap,
+                             int winSize);
 
 private:
     /* Map resolution (in meters) */

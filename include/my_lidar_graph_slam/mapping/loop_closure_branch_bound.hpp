@@ -84,20 +84,6 @@ public:
                   Eigen::Matrix3d& estimatedCovMat) override;
 
 private:
-    /* Precompute grid maps for efficient loop closure */
-    void PrecomputeGridMaps(GridMapBuilderPtr& gridMapBuilder,
-                            int mapIdx) const;
-
-    /* Compute the maximum of a 2^h pixel wide row starting at each pixel */
-    void SlidingWindowMaxRow(const GridMapType& gridMap,
-                             PrecomputedMapType& tmpMap,
-                             int winSize) const;
-
-    /* Compute the maximum of a 2^h pixel wide column starting at each pixel */
-    void SlidingWindowMaxCol(const PrecomputedMapType& tmpMap,
-                             PrecomputedMapType& precompMap,
-                             int winSize) const;
-
     /* Find a corresponding pose of the current robot pose
      * from the loop-closure candidate local grid map */
     bool FindCorrespondingPose(
