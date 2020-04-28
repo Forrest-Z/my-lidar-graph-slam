@@ -95,7 +95,7 @@ public:
                                    const Point2D<int>& gridCellIdx1) const = 0;
 
     /* Get the map resolution (grid cell size in meters) */
-    virtual double MapResolution() const = 0;
+    virtual double Resolution() const = 0;
 
     /* Get the number of the grid cells (horizontal) */
     virtual int NumOfGridCellsX() const = 0;

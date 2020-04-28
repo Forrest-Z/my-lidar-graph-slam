@@ -234,8 +234,8 @@ public:
     { return this->PatchAt(patchIdx.mX, patchIdx.mY); }
 
     /* Get the map resolution (grid cell size in meters) */
-    inline double MapResolution() const override
-    { return this->mMapResolution; }
+    inline double Resolution() const override
+    { return this->mResolution; }
 
     /* Get the size of the patch (in number of grid cells) */
     inline int PatchSize() const { return this->mPatchSize; }
@@ -263,7 +263,7 @@ public:
 
 private:
     /* Map resolution (grid cell size in meters) */
-    double                      mMapResolution;
+    double                      mResolution;
     /* Size of the patch (in number of grid cells) */
     int                         mPatchSize;
     /* Number of the patches (horizontal) */
@@ -301,7 +301,7 @@ GridMap<T>::GridMap(double mapResolution,
     assert(initialNumOfCellsY >= 0);
 
     /* Set the map resolution (size of the each grid cell) */
-    this->mMapResolution = mapResolution;
+    this->mResolution = mapResolution;
     /* Set the patch size (in number of grid cells) */
     this->mPatchSize = patchSize;
 
@@ -323,16 +323,16 @@ GridMap<T>::GridMap(double mapResolution,
     this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
     this->mNumOfGridCellsY = this->mNumOfPatchesY * this->mPatchSize;
     /* Calculate the map size in meters */
-    this->mMapSizeX = this->mNumOfGridCellsX * this->mMapResolution;
-    this->mMapSizeY = this->mNumOfGridCellsY * this->mMapResolution;
+    this->mMapSizeX = this->mNumOfGridCellsX * this->mResolution;
+    this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
 
     /* Calculate the minimum position */
     const double idxOffsetX = (this->mNumOfGridCellsX % 2 == 0) ?
         (this->mNumOfGridCellsX / 2) : (this->mNumOfGridCellsX / 2 + 0.5);
     const double idxOffsetY = (this->mNumOfGridCellsY % 2 == 0) ?
         (this->mNumOfGridCellsY / 2) : (this->mNumOfGridCellsY / 2 + 0.5);
-    this->mMinPos.mX = centerPos.mX - idxOffsetX * this->mMapResolution;
-    this->mMinPos.mY = centerPos.mY - idxOffsetY * this->mMapResolution;
+    this->mMinPos.mX = centerPos.mX - idxOffsetX * this->mResolution;
+    this->mMinPos.mY = centerPos.mY - idxOffsetY * this->mResolution;
 
     /* Allocate the memory for map patches */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
@@ -355,12 +355,12 @@ GridMap<T>::GridMap(double mapResolution,
     assert(mapSizeY >= 0.0);
 
     /* Set the map resolution (size of the each grid cell) */
-    this->mMapResolution = mapResolution;
+    this->mResolution = mapResolution;
     /* Set the patch size (in number of grid cells) */
     this->mPatchSize = patchSize;
 
     /* Modify the map size so that the map contains at least one patch */
-    const double patchSizeInMeters = patchSize * this->mMapResolution;
+    const double patchSizeInMeters = patchSize * this->mResolution;
     mapSizeX = std::max(patchSizeInMeters, mapSizeX);
     mapSizeY = std::max(patchSizeInMeters, mapSizeY);
 
@@ -377,8 +377,8 @@ GridMap<T>::GridMap(double mapResolution,
     this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
     this->mNumOfGridCellsY = this->mNumOfPatchesY * this->mPatchSize;
     /* Calculate the map size in meters */
-    this->mMapSizeX = this->mNumOfGridCellsX * this->mMapResolution;
-    this->mMapSizeY = this->mNumOfGridCellsY * this->mMapResolution;
+    this->mMapSizeX = this->mNumOfGridCellsX * this->mResolution;
+    this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
 
     /* Calculate the minimum position
      * which corresponds to the grid cell (0, 0) */
@@ -386,8 +386,8 @@ GridMap<T>::GridMap(double mapResolution,
         (this->mNumOfGridCellsX / 2) : (this->mNumOfGridCellsX / 2 + 0.5);
     const double idxOffsetY = (this->mNumOfGridCellsY % 2 == 0) ?
         (this->mNumOfGridCellsY / 2) : (this->mNumOfGridCellsY / 2 + 0.5);
-    this->mMinPos.mX = centerPos.mX - idxOffsetX * this->mMapResolution;
-    this->mMinPos.mY = centerPos.mY - idxOffsetY * this->mMapResolution;
+    this->mMinPos.mX = centerPos.mX - idxOffsetX * this->mResolution;
+    this->mMinPos.mY = centerPos.mY - idxOffsetY * this->mResolution;
 
     /* Allocate the memory for map patches (not grid cells) */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
@@ -411,7 +411,7 @@ GridMap<T>::GridMap(double mapResolution,
     assert(minY <= maxY);
 
     /* Set the map resolution (size of the each grid cell) */
-    this->mMapResolution = mapResolution;
+    this->mResolution = mapResolution;
     /* Set the patch size (in number of grid cells) */
     this->mPatchSize = patchSize;
 
@@ -433,8 +433,8 @@ GridMap<T>::GridMap(double mapResolution,
     this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
     this->mNumOfGridCellsY = this->mNumOfPatchesY * this->mPatchSize;
     /* Calculate the map size in meters */
-    this->mMapSizeX = this->mNumOfGridCellsX * this->mMapResolution;
-    this->mMapSizeY = this->mNumOfGridCellsY * this->mMapResolution;
+    this->mMapSizeX = this->mNumOfGridCellsX * this->mResolution;
+    this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
 
     /* Set the minimum position */
     this->mMinPos.mX = minX;
@@ -449,7 +449,7 @@ GridMap<T>::GridMap(double mapResolution,
 /* Move constructor */
 template <typename T>
 GridMap<T>::GridMap(GridMap<T>&& other) noexcept :
-    mMapResolution(other.mMapResolution),
+    mResolution(other.mResolution),
     mPatchSize(other.mPatchSize),
     mNumOfPatchesX(other.mNumOfPatchesX),
     mNumOfPatchesY(other.mNumOfPatchesY),
@@ -469,7 +469,7 @@ GridMap<T>& GridMap<T>::operator=(GridMap<T>&& other) noexcept
     if (this == &other)
         return *this;
     
-    this->mMapResolution = other.mMapResolution;
+    this->mResolution = other.mResolution;
     this->mPatchSize = other.mPatchSize;
     this->mNumOfPatchesX = other.mNumOfPatchesX;
     this->mNumOfPatchesY = other.mNumOfPatchesY;
@@ -532,13 +532,13 @@ void GridMap<T>::Resize(double minX, double minY,
     this->mNumOfPatchesY = numOfPatchesY;
     this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
     this->mNumOfGridCellsY = this->mNumOfPatchesY * this->mPatchSize;
-    this->mMapSizeX = this->mNumOfGridCellsX * this->mMapResolution;
-    this->mMapSizeY = this->mNumOfGridCellsY * this->mMapResolution;
+    this->mMapSizeX = this->mNumOfGridCellsX * this->mResolution;
+    this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
 
     this->mMinPos.mX +=
-        (patchIdxMin.mX * this->mPatchSize) * this->mMapResolution;
+        (patchIdxMin.mX * this->mPatchSize) * this->mResolution;
     this->mMinPos.mY +=
-        (patchIdxMin.mY * this->mPatchSize) * this->mMapResolution;
+        (patchIdxMin.mY * this->mPatchSize) * this->mResolution;
 }
 
 /* Expand the map if necessary */
@@ -594,8 +594,8 @@ template <typename T>
 Point2D<double> GridMap<T>::GridCellIndexToWorldCoordinate(
     int idxX, int idxY) const
 {
-    const double mapX = this->mMinPos.mX + this->mMapResolution * idxX;
-    const double mapY = this->mMinPos.mY + this->mMapResolution * idxY;
+    const double mapX = this->mMinPos.mX + this->mResolution * idxX;
+    const double mapY = this->mMinPos.mY + this->mResolution * idxY;
 
     return Point2D<double> { mapX, mapY };
 }
@@ -606,9 +606,9 @@ Point2D<int> GridMap<T>::WorldCoordinateToGridCellIndex(
     double mapX, double mapY) const
 {
     const int cellIdxX = static_cast<int>(std::floor(
-        (mapX - this->mMinPos.mX) / this->mMapResolution));
+        (mapX - this->mMinPos.mX) / this->mResolution));
     const int cellIdxY = static_cast<int>(std::floor(
-        (mapY - this->mMinPos.mY) / this->mMapResolution));
+        (mapY - this->mMinPos.mY) / this->mResolution));
     
     return Point2D<int> { cellIdxX, cellIdxY };
 }
@@ -619,8 +619,8 @@ template <typename T>
 Point2D<double> GridMap<T>::WorldCoordinateToGridCellIndexFloat(
     double mapX, double mapY) const
 {
-    const double cellIdxX = (mapX - this->mMinPos.mX) / this->mMapResolution;
-    const double cellIdxY = (mapY - this->mMinPos.mY) / this->mMapResolution;
+    const double cellIdxX = (mapX - this->mMinPos.mX) / this->mResolution;
+    const double cellIdxY = (mapY - this->mMinPos.mY) / this->mResolution;
 
     return Point2D<double> { cellIdxX, cellIdxY };
 }
@@ -702,8 +702,8 @@ template <typename T>
 double GridMap<T>::Distance(int idxX0, int idxY0,
                             int idxX1, int idxY1) const
 {
-    return std::hypot((idxX1 - idxX0) * this->mMapResolution,
-                      (idxY1 - idxY0) * this->mMapResolution);
+    return std::hypot((idxX1 - idxX0) * this->mResolution,
+                      (idxY1 - idxY0) * this->mResolution);
 }
 
 /* Calculate the squared distance between two grid cells */
@@ -711,8 +711,8 @@ template <typename T>
 double GridMap<T>::SquaredDistance(int idxX0, int idxY0,
                                    int idxX1, int idxY1) const
 {
-    const double deltaX = (idxX1 - idxX0) * this->mMapResolution;
-    const double deltaY = (idxY1 - idxY0) * this->mMapResolution;
+    const double deltaX = (idxX1 - idxX0) * this->mResolution;
+    const double deltaY = (idxY1 - idxY0) * this->mResolution;
     return deltaX * deltaX + deltaY * deltaY;
 }
 
