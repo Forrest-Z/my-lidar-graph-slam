@@ -25,7 +25,7 @@
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
-#include "my_lidar_graph_slam/mapping/scan_matcher_greedy_endpoint.hpp"
+#include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_linear_solver.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/score_function_pixel_accurate.hpp"
@@ -127,7 +127,7 @@ std::shared_ptr<Mapping::ScoreFunction> CreateScoreFunction(
 }
 
 /* Create the greedy endpoint scan matcher object */
-std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherGreedyEndpoint(
+std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherHillClimbing(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -148,7 +148,7 @@ std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherGreedyEndpoint(
         jsonSettings, costType, costConfigGroup);
 
     /* Construct scan matcher */
-    auto pScanMatcher = std::make_shared<Mapping::ScanMatcherGreedyEndpoint>(
+    auto pScanMatcher = std::make_shared<Mapping::ScanMatcherHillClimbing>(
         linearStep, angularStep, maxIterations, maxNumOfRefinements,
         pCostFunc);
     
@@ -196,8 +196,8 @@ std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcher(
     const std::string& scanMatcherType,
     const std::string& configGroup)
 {
-    if (scanMatcherType == "GreedyEndpoint")
-        return CreateScanMatcherGreedyEndpoint(jsonSettings, configGroup);
+    if (scanMatcherType == "HillClimbing")
+        return CreateScanMatcherHillClimbing(jsonSettings, configGroup);
     else if (scanMatcherType == "LinearSolver")
         return CreateScanMatcherLinearSolver(jsonSettings, configGroup);
     
@@ -401,10 +401,10 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
 
     /* Create the scan matcher for local SLAM */
     const std::string localScanMatcherType =
-        config.get("LocalSlam.ScanMatcherType", "GreedyEndpoint");
+        config.get("LocalSlam.ScanMatcherType", "HillClimbing");
     const std::string localScanMatcherConfigGroup =
         config.get("LocalSlam.ScanMatcherConfigGroup",
-                   "ScanMatcherGreedyEndpoint");
+                   "ScanMatcherHillClimbing");
     auto pScanMatcher = CreateScanMatcher(
         jsonSettings, localScanMatcherType, localScanMatcherConfigGroup);
     

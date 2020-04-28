@@ -18,7 +18,7 @@
         "UsableRangeMax": 20.0
     },
 
-    "ScanMatcherGreedyEndpoint": {
+    "ScanMatcherHillClimbing": {
         "LinearStep": 0.1,
         "AngularStep": 0.1,
         "MaxIterations": 100,
@@ -117,8 +117,8 @@
     "LidarGraphSlam": {
         "GridMapBuilderConfigGroup": "GridMapBuilder",
         "LocalSlam": {
-            "ScanMatcherType": "GreedyEndpoint",
-            "ScanMatcherConfigGroup": "ScanMatcherGreedyEndpoint"
+            "ScanMatcherType": "HillClimbing",
+            "ScanMatcherConfigGroup": "ScanMatcherHillClimbing"
         },
         "PoseGraphOptimizerType": "SpChol",
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
