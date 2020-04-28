@@ -129,22 +129,6 @@ public:
     const GridCellType& GridCellAt(const Point2D<int>& gridCellIdx) const
     { return this->GridCellAt(gridCellIdx.mX, gridCellIdx.mY); }
 
-    /* Get the grid cell of the specified point */
-    GridCellType& GridCellAt(double mapX, double mapY)
-    { return this->GridCellAt(
-        this->WorldCoordinateToGridCellIndex(mapX, mapY)); }
-    /* Get the grid cell of the specified point */
-    GridCellType& GridCellAt(const Point2D<double>& mapPos)
-    { return this->GridCellAt(mapPos.mX, mapPos.mY); }
-
-    /* Get the grid cell of the specified point */
-    const GridCellType& GridCellAt(double mapX, double mapY) const
-    { return this->GridCellAt(
-        this->WorldCoordinateToGridCellIndex(mapX, mapY)); }
-    /* Get the grid cell of the specified point */
-    const GridCellType& GridCellAt(const Point2D<double>& mapPos) const
-    { return this->GridCellAt(mapPos.mX, mapPos.mY); }
-
     /* Get the occupancy probability value of the specified grid cell */
     ValueType Value(int idxX, int idxY) const override;
     /* Get the occupancy probability value of the specified grid cell */
