@@ -25,11 +25,6 @@ public:
     using LoopClosure::GridMapType;
     using LoopClosure::PrecomputedMapType;
 
-    using CostFunctionType = CostFunction<GridMapType, ScanPtr>;
-    using CostFuncPtr = std::shared_ptr<CostFunctionType>;
-    using ScoreFunctionType = ScoreFunction<PrecomputedMapType, ScanPtr>;
-    using ScoreFuncPtr = std::shared_ptr<ScoreFunctionType>;
-
     /*
      * Node struct holds the necessary information for Branch-and-Bound method
      */

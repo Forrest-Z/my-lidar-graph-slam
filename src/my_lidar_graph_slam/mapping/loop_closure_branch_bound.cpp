@@ -135,7 +135,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
             sensorPose.mY + currentNode.mY * deltaY,
             sensorPose.mTheta + currentNode.mTheta * deltaTheta };
         /* Calculate node score */
-        ScoreFunctionType::Summary resultSummary;
+        ScoreFunction::Summary resultSummary;
         this->mScoreFunc->Score(precompMaps.at(currentNode.mHeight), scanData,
                                 nodePose, resultSummary);
 

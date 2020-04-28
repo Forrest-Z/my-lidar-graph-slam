@@ -21,11 +21,6 @@ public:
     using LoopClosure::ScanPtr;
     using LoopClosure::GridMapType;
 
-    using CostFunctionType = CostFunction<GridMapType, ScanPtr>;
-    using CostFuncPtr = std::shared_ptr<CostFunctionType>;
-    using ScoreFunctionType = ScoreFunction<GridMapType, ScanPtr>;
-    using ScoreFuncPtr = std::shared_ptr<ScoreFunctionType>;
-
     /* Constructor */
     LoopClosureGridSearch(const ScoreFuncPtr& scoreFunc,
                           const CostFuncPtr& costFunc,

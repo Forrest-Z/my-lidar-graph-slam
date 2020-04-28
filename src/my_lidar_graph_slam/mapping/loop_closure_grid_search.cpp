@@ -97,7 +97,7 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
                 const RobotPose2D<double> pose { sensorPose.mX + dx,
                                                  sensorPose.mY + dy,
                                                  sensorPose.mTheta + dt };
-                ScoreFunctionType::Summary scoreSummary;
+                ScoreFunction::Summary scoreSummary;
                 this->mScoreFunc->Score(gridMap, scanData, pose, scoreSummary);
 
                 /* Update the best pose and minimum cost value */
