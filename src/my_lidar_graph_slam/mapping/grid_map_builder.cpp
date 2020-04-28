@@ -495,8 +495,7 @@ void GridMapBuilder::SlidingWindowMaxRow(
         [&colIdx, &gridMap, &tmpMap, unknownVal](int rowIdx, double maxVal) {
         const Point2D<int> patchIdx =
             gridMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
-        const bool isAllocated =
-            gridMap.PatchAt(patchIdx).IsAllocated();
+        const bool isAllocated = gridMap.PatchIsAllocated(patchIdx);
 
         if (isAllocated || maxVal != unknownVal)
             tmpMap.Update(colIdx, rowIdx, maxVal);
@@ -526,8 +525,7 @@ void GridMapBuilder::SlidingWindowMaxCol(
         [&rowIdx, &tmpMap, &precompMap, unknownVal](int colIdx, double maxVal) {
         const Point2D<int> patchIdx =
             tmpMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
-        const bool isAllocated =
-            tmpMap.PatchAt(patchIdx).IsAllocated();
+        const bool isAllocated = tmpMap.PatchIsAllocated(patchIdx);
 
         if (isAllocated || maxVal != unknownVal)
             precompMap.Update(colIdx, rowIdx, maxVal);

@@ -305,7 +305,7 @@ void MapSaver::ComputeActualMapSize(const GridMapType& gridMap,
     
     for (int y = 0; y < gridMap.NumOfPatchesY(); ++y) {
         for (int x = 0; x < gridMap.NumOfPatchesX(); ++x) {
-            if (!gridMap.PatchAt(x, y).IsAllocated())
+            if (!gridMap.PatchIsAllocated(x, y))
                 continue;
             
             patchIdxMin.mX = std::min(patchIdxMin.mX, x);
