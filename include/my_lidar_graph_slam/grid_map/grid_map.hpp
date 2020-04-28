@@ -13,12 +13,13 @@
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/grid_map/grid_cell.hpp"
+#include "my_lidar_graph_slam/grid_map/grid_map_base.hpp"
 #include "my_lidar_graph_slam/grid_map/grid_map_patch.hpp"
 
 namespace MyLidarGraphSlam {
 
 template <typename T>
-class GridMap final
+class GridMap final : public GridMapBase<typename T::ValueType>
 {
 public:
     /* Type definitions */
@@ -74,172 +75,169 @@ public:
     void Reset();
  
     /* Check if the grid cell index is inside the map */
-    inline bool IsInside(int gridCellX, int gridCellY) const;
+    bool IsInside(int idxX, int idxY) const override;
     /* Check if the grid cell index is inside the map */
-    inline bool IsInside(const Point2D<int>& gridCellIdx) const
+    bool IsInside(const Point2D<int>& gridCellIdx) const override
     { return this->IsInside(gridCellIdx.mX, gridCellIdx.mY); }
 
     /* Check if the point in world frame is inside the map */
-    inline bool IsInside(double mapX, double mapY) const
+    bool IsInside(double mapX, double mapY) const override
     { return this->IsInside(
         this->WorldCoordinateToGridCellIndex(mapX, mapY)); }
     /* Check if the point in world frame is inside the map */
-    inline bool IsInside(const Point2D<double>& mapPos) const
+    bool IsInside(const Point2D<double>& mapPos) const override
     { return this->IsInside(mapPos.mX, mapPos.mY); }
 
     /* Convert the grid cell index into the point in world frame
      * The returned point is the bottom-left of the grid cell */
-    inline Point2D<double> GridCellIndexToWorldCoordinate(
-        int gridCellIdxX, int gridCellIdxY) const;
+    Point2D<double> GridCellIndexToWorldCoordinate(
+        int idxX, int idxY) const override;
     /* Convert the grid cell index into the point in world frame
      * The returned point is the bottom-left of the grid cell */
-    inline Point2D<double> GridCellIndexToWorldCoordinate(
-        const Point2D<int>& gridCellIdx) const
+    Point2D<double> GridCellIndexToWorldCoordinate(
+        const Point2D<int>& gridCellIdx) const override
     { return this->GridCellIndexToWorldCoordinate(
         gridCellIdx.mX, gridCellIdx.mY); }
     
     /* Convert the point in world frame to the grid cell index */
-    inline Point2D<int> WorldCoordinateToGridCellIndex(
-        double mapX, double mapY) const;
+    Point2D<int> WorldCoordinateToGridCellIndex(
+        double mapX, double mapY) const override;
     /* Convert the point in world frame to the grid cell index */
-    inline Point2D<int> WorldCoordinateToGridCellIndex(
-        const Point2D<double>& mapPos) const
+    Point2D<int> WorldCoordinateToGridCellIndex(
+        const Point2D<double>& mapPos) const override
     { return this->WorldCoordinateToGridCellIndex(mapPos.mX, mapPos.mY); }
 
     /* Convert the point in world frame to the
      * floating-point grid cell index */
-    inline Point2D<double> WorldCoordinateToGridCellIndexFloat(
-        double mapX, double mapY) const;
+    Point2D<double> WorldCoordinateToGridCellIndexFloat(
+        double mapX, double mapY) const override;
     /* Convert the point in world frame to the
      * floating-point grid cell index */
-    inline Point2D<double> WorldCoordinateToGridCellIndexFloat(
-        const Point2D<double>& mapPos) const
+    Point2D<double> WorldCoordinateToGridCellIndexFloat(
+        const Point2D<double>& mapPos) const override
     { return this->WorldCoordinateToGridCellIndexFloat(mapPos.mX, mapPos.mY); }
 
     /* Get the grid cell of the specified index */
-    inline GridCellType& GridCellAt(int gridCellX, int gridCellY);
+    GridCellType& GridCellAt(int idxX, int idxY);
     /* Get the grid cell of the specified index */
-    inline GridCellType& GridCellAt(const Point2D<int>& gridCellIdx)
+    GridCellType& GridCellAt(const Point2D<int>& gridCellIdx)
     { return this->GridCellAt(gridCellIdx.mX, gridCellIdx.mY); }
 
     /* Get the grid cell of the specified index */
-    inline const GridCellType& GridCellAt(
-        int gridCellX, int gridCellY) const;
+    const GridCellType& GridCellAt(int idxX, int idxY) const;
     /* Get the grid cell of the specified index */
-    inline const GridCellType& GridCellAt(
-        const Point2D<int>& gridCellIdx) const
+    const GridCellType& GridCellAt(const Point2D<int>& gridCellIdx) const
     { return this->GridCellAt(gridCellIdx.mX, gridCellIdx.mY); }
 
     /* Get the grid cell of the specified point */
-    inline GridCellType& GridCellAt(double mapX, double mapY)
+    GridCellType& GridCellAt(double mapX, double mapY)
     { return this->GridCellAt(
         this->WorldCoordinateToGridCellIndex(mapX, mapY)); }
     /* Get the grid cell of the specified point */
-    inline GridCellType& GridCellAt(const Point2D<double>& mapPos)
+    GridCellType& GridCellAt(const Point2D<double>& mapPos)
     { return this->GridCellAt(mapPos.mX, mapPos.mY); }
 
     /* Get the grid cell of the specified point */
-    inline const GridCellType& GridCellAt(double mapX, double mapY) const
+    const GridCellType& GridCellAt(double mapX, double mapY) const
     { return this->GridCellAt(
         this->WorldCoordinateToGridCellIndex(mapX, mapY)); }
     /* Get the grid cell of the specified point */
-    inline const GridCellType& GridCellAt(const Point2D<double>& mapPos) const
+    const GridCellType& GridCellAt(const Point2D<double>& mapPos) const
     { return this->GridCellAt(mapPos.mX, mapPos.mY); }
 
     /* Get the occupancy probability value of the specified grid cell */
-    inline ValueType Value(int gridCellX, int gridCellY) const;
+    ValueType Value(int idxX, int idxY) const override;
     /* Get the occupancy probability value of the specified grid cell */
-    inline ValueType Value(const Point2D<int>& gridCellIdx) const
+    ValueType Value(const Point2D<int>& gridCellIdx) const override
     { return this->Value(gridCellIdx.mX, gridCellIdx.mY); }
 
     /* Get the occupancy probability value of the specified grid cell
      * The default value is returned if the specified grid cell is
      * out of bounds or is not yet allocated */
-    inline ValueType Value(int gridCellX, int gridCellY,
-                           ValueType defaultValue) const;
+    ValueType Value(int idxX, int idxY, ValueType defaultVal) const override;
     /* Get the occupancy probability value of the specified grid cell */
-    inline ValueType Value(const Point2D<int>& gridCellIdx,
-                           ValueType defaultValue) const
-    { return this->Value(gridCellIdx.mX, gridCellIdx.mY, defaultValue); }
+    ValueType Value(const Point2D<int>& gridCellIdx,
+                    ValueType defaultVal) const override
+    { return this->Value(gridCellIdx.mX, gridCellIdx.mY, defaultVal); }
 
     /* Update the occupancy probability value of the specified grid cell */
-    inline void Update(int gridCellX, int gridCellY,
-                       const ObservationType& latestObservation);
+    void Update(int idxX, int idxY, const ObservationType& updateVal);
     /* Update the occupancy probability value of the specified grid cell */
-    inline void Update(const Point2D<int>& gridCellIdx,
-                       const ObservationType& latestObservation)
-    { this->Update(gridCellIdx.mX, gridCellIdx.mY, latestObservation); }
+    void Update(const Point2D<int>& gridCellIdx,
+                const ObservationType& updateVal)
+    { this->Update(gridCellIdx.mX, gridCellIdx.mY, updateVal); }
 
     /* Update the occupancy probability value of the specified point */
-    inline void Update(double mapX, double mapY,
-                       const ObservationType& latestObservation)
+    void Update(double mapX, double mapY, const ObservationType& updateVal)
     { this->Update(this->WorldCoordinateToGridCellIndex(mapX, mapY),
-                   latestObservation); }
+                   updateVal); }
     /* Update the occupancy probability value of the specified point */
-    inline void Update(const Point2D<double>& mapPos,
-                       const ObservationType& latestObservation)
-    { this->Update(mapPos.mX, mapPos.mY, latestObservation); }
+    void Update(const Point2D<double>& mapPos,
+                const ObservationType& updateVal)
+    { this->Update(mapPos.mX, mapPos.mY, updateVal); }
 
     /* Calculate the distance between two grid cells */
-    inline double Distance(int gridCellX0, int gridCellY0,
-                           int gridCellX1, int gridCellY1) const;
+    double Distance(int idxX0, int idxY0,
+                    int idxX1, int idxY1) const override;
     /* Calculate the distance between two grid cells */
-    inline double Distance(const Point2D<int>& gridCellIdx0,
-                           const Point2D<int>& gridCellIdx1) const
+    double Distance(const Point2D<int>& gridCellIdx0,
+                    const Point2D<int>& gridCellIdx1) const override
     { return this->Distance(gridCellIdx0.mX, gridCellIdx0.mY,
                             gridCellIdx1.mX, gridCellIdx1.mY); }
     
     /* Calculate the squared distance between two grid cells */
-    inline double SquaredDistance(int gridCellX0, int gridCellY0,
-                                  int gridCellX1, int gridCellY1) const;
+    double SquaredDistance(int idxX0, int idxY0,
+                           int idxX1, int idxY1) const override;
     /* Calculate the squared distance between two grid cells */
-    inline double SquaredDistance(const Point2D<int>& gridCellIdx0,
-                                  const Point2D<int>& gridCellIdx1) const
+    double SquaredDistance(const Point2D<int>& gridCellIdx0,
+                           const Point2D<int>& gridCellIdx1) const override
     { return this->SquaredDistance(gridCellIdx0.mX, gridCellIdx0.mY,
                                    gridCellIdx1.mX, gridCellIdx1.mY); }
     
     /* Convert the grid cell index to the patch index */
-    inline Point2D<int> GridCellIndexToPatchIndex(
-        int gridCellX, int gridCellY) const;
+    Point2D<int> GridCellIndexToPatchIndex(int idxX, int idxY) const;
     /* Convert the grid cell index to the patch index */
-    inline Point2D<int> GridCellIndexToPatchIndex(
+    Point2D<int> GridCellIndexToPatchIndex(
         const Point2D<int>& gridCellIdx) const
     { return this->GridCellIndexToPatchIndex(gridCellIdx.mX, gridCellIdx.mY); }
 
-    /* Convert the patch index to the grid cell index range */
+    /* Convert the patch index to the grid cell index range
+     * patch (patchIdxX, patchIdxY) corresponds to the square grid cells
+     * [minIdxX, maxIdxX) * [minIdxY, maxIdxY) */
     void PatchIndexToGridCellIndexRange(
         int patchIdxX, int patchIdxY,
-        int& gridCellMinIdxX, int& gridCellMinIdxY,
-        int& gridCellMaxIdxX, int& gridCellMaxIdxY) const;
+        int& minIdxX, int& minIdxY,
+        int& maxIdxX, int& maxIdxY) const;
     /* Convert the patch index to the grid cell index range */
     void PatchIndexToGridCellIndexRange(const Point2D<int>& patchIdx,
-                                        Point2D<int>& gridCellMinIdx,
-                                        Point2D<int>& gridCellMaxIdx) const
+                                        Point2D<int>& minIdx,
+                                        Point2D<int>& maxIdx) const
     { this->PatchIndexToGridCellIndexRange(
         patchIdx.mX, patchIdx.mY,
-        gridCellMinIdx.mX, gridCellMinIdx.mY,
-        gridCellMaxIdx.mX, gridCellMaxIdx.mY); }
+        minIdx.mX, minIdx.mY,
+        maxIdx.mX, maxIdx.mY); }
     
     /* Check if the patch index is inside the map */
-    inline bool PatchIsInside(int patchIdxX, int patchIdxY) const;
+    bool PatchIsInside(int patchIdxX, int patchIdxY) const;
     /* Check if the patch index is inside the map */
-    inline bool PatchIsInside(const Point2D<int>& patchIdx) const
+    bool PatchIsInside(const Point2D<int>& patchIdx) const
     { return this->PatchIsInside(patchIdx.mX, patchIdx.mY); }
     
     /* Get the patch of the specified index */
-    inline Patch<T>& PatchAt(int patchIdxX, int patchIdxY);
+    Patch<T>& PatchAt(int patchIdxX, int patchIdxY);
     /* Get the patch of the specified index */
-    inline Patch<T>& PatchAt(const Point2D<int>& patchIdx)
+    Patch<T>& PatchAt(const Point2D<int>& patchIdx)
     { return this->PatchAt(patchIdx.mX, patchIdx.mY); }
 
     /* Get the patch of the specified index */
-    inline const Patch<T>& PatchAt(int patchIdxX, int patchIdxY) const;
+    const Patch<T>& PatchAt(int patchIdxX, int patchIdxY) const;
     /* Get the patch of the specified index */
-    inline const Patch<T>& PatchAt(const Point2D<int>& patchIdx) const
+    const Patch<T>& PatchAt(const Point2D<int>& patchIdx) const
     { return this->PatchAt(patchIdx.mX, patchIdx.mY); }
 
     /* Get the map resolution (grid cell size in meters) */
-    inline double MapResolution() const { return this->mMapResolution; }
+    inline double MapResolution() const override
+    { return this->mMapResolution; }
 
     /* Get the size of the patch (in number of grid cells) */
     inline int PatchSize() const { return this->mPatchSize; }
@@ -250,17 +248,20 @@ public:
     inline int NumOfPatchesY() const { return this->mNumOfPatchesY; }
     
     /* Get the number of the grid cells (horizontal) */
-    inline int NumOfGridCellsX() const { return this->mNumOfGridCellsX; }
+    inline int NumOfGridCellsX() const override
+    { return this->mNumOfGridCellsX; }
     /* Get the number of the grid cells (vertical) */
-    inline int NumOfGridCellsY() const { return this->mNumOfGridCellsY; }
+    inline int NumOfGridCellsY() const override
+    { return this->mNumOfGridCellsY; }
 
     /* Get the size of the map in meters (horizontal) */
-    inline double MapSizeX() const { return this->mMapSizeX; }
+    inline double MapSizeX() const override { return this->mMapSizeX; }
     /* Get the size of the map in meters (vertical) */
-    inline double MapSizeY() const { return this->mMapSizeY; }
+    inline double MapSizeY() const override { return this->mMapSizeY; }
 
     /* Get the minimum position of the map in world coordinate */
-    inline const Point2D<double>& MinPos() const { return this->mMinPos; }
+    inline const Point2D<double>& MinPos() const override
+    { return this->mMinPos; }
 
 private:
     /* Map resolution (grid cell size in meters) */
@@ -583,22 +584,20 @@ void GridMap<T>::Reset()
 
 /* Check if the grid cell index is inside the map */
 template <typename T>
-bool GridMap<T>::IsInside(int gridCellX, int gridCellY) const
+bool GridMap<T>::IsInside(int idxX, int idxY) const
 {
-    return (gridCellX >= 0 && gridCellX < this->mNumOfGridCellsX) &&
-           (gridCellY >= 0 && gridCellY < this->mNumOfGridCellsY);
+    return (idxX >= 0 && idxX < this->mNumOfGridCellsX) &&
+           (idxY >= 0 && idxY < this->mNumOfGridCellsY);
 }
 
 /* Convert the grid cell index into the point in world frame
  * The returned point is the bottom-left of the grid cell */
 template <typename T>
 Point2D<double> GridMap<T>::GridCellIndexToWorldCoordinate(
-    int gridCellIdxX, int gridCellIdxY) const
+    int idxX, int idxY) const
 {
-    const double mapX =
-        this->mMinPos.mX + this->mMapResolution * gridCellIdxX;
-    const double mapY =
-        this->mMinPos.mY + this->mMapResolution * gridCellIdxY;
+    const double mapX = this->mMinPos.mX + this->mMapResolution * idxX;
+    const double mapY = this->mMinPos.mY + this->mMapResolution * idxY;
 
     return Point2D<double> { mapX, mapY };
 }
@@ -631,50 +630,47 @@ Point2D<double> GridMap<T>::WorldCoordinateToGridCellIndexFloat(
 /* Get the grid cell of the specified index */
 template <typename T>
 typename GridMap<T>::GridCellType& GridMap<T>::GridCellAt(
-    int gridCellX, int gridCellY)
+    int idxX, int idxY)
 {
-    assert(this->IsInside(gridCellX, gridCellY));
+    assert(this->IsInside(idxX, idxY));
 
-    const Point2D<int> patchIdx =
-        this->GridCellIndexToPatchIndex(gridCellX, gridCellY);
+    const Point2D<int> patchIdx = this->GridCellIndexToPatchIndex(idxX, idxY);
     Patch<T>& patch = this->PatchAt(patchIdx);
 
     /* Allocate patch if necessary */
     if (!patch.IsAllocated())
         patch.Allocate(this->mPatchSize);
     
-    return patch.At(gridCellX % this->mPatchSize,
-                    gridCellY % this->mPatchSize);
+    return patch.At(idxX % this->mPatchSize,
+                    idxY % this->mPatchSize);
 }
 
 /* Get the grid cell of the specified index */
 template <typename T>
 const typename GridMap<T>::GridCellType& GridMap<T>::GridCellAt(
-    int gridCellX, int gridCellY) const
+    int idxX, int idxY) const
 {
-    assert(this->IsInside(gridCellX, gridCellY));
+    assert(this->IsInside(idxX, idxY));
 
-    const Point2D<int> patchIdx =
-        this->GridCellIndexToPatchIndex(gridCellX, gridCellY);
+    const Point2D<int> patchIdx = this->GridCellIndexToPatchIndex(idxX, idxY);
     const Patch<T>& patch = this->PatchAt(patchIdx);
 
-    return patch.At(gridCellX % this->mPatchSize,
-                    gridCellY % this->mPatchSize);
+    return patch.At(idxX % this->mPatchSize,
+                    idxY % this->mPatchSize);
 }
 
 /* Get the occupancy probability value of the specified grid cell */
 template <typename T>
 typename GridMap<T>::ValueType GridMap<T>::Value(
-    int gridCellX, int gridCellY) const
+    int idxX, int idxY) const
 {
-    assert(this->IsInside(gridCellX, gridCellY));
+    assert(this->IsInside(idxX, idxY));
 
-    const Point2D<int> patchIdx =
-        this->GridCellIndexToPatchIndex(gridCellX, gridCellY);
+    const Point2D<int> patchIdx = this->GridCellIndexToPatchIndex(idxX, idxY);
     const Patch<T>& patch = this->PatchAt(patchIdx);
 
-    return patch.Value(gridCellX % this->mPatchSize,
-                       gridCellY % this->mPatchSize);
+    return patch.Value(idxX % this->mPatchSize,
+                       idxY % this->mPatchSize);
 }
 
 /* Get the occupancy probability value of the specified grid cell
@@ -682,70 +678,69 @@ typename GridMap<T>::ValueType GridMap<T>::Value(
  * out of bounds or is not yet allocated */
 template <typename T>
 typename GridMap<T>::ValueType GridMap<T>::Value(
-    int gridCellX, int gridCellY, ValueType defaultValue) const
+    int idxX, int idxY, ValueType defaultVal) const
 {
-    if (!this->IsInside(gridCellX, gridCellY))
-        return defaultValue;
-    
-    const Point2D<int> patchIdx =
-        this->GridCellIndexToPatchIndex(gridCellX, gridCellY);
+    if (!this->IsInside(idxX, idxY))
+        return defaultVal;
+
+    const Point2D<int> patchIdx = this->GridCellIndexToPatchIndex(idxX, idxY);
     const Patch<T>& patch = this->PatchAt(patchIdx);
 
-    return patch.Value(gridCellX % this->mPatchSize,
-                       gridCellY % this->mPatchSize,
-                       defaultValue);
+    return patch.Value(idxX % this->mPatchSize,
+                       idxY % this->mPatchSize,
+                       defaultVal);
 }
 
 /* Update the occupancy probability value of the specified grid cell */
 template <typename T>
-void GridMap<T>::Update(int gridCellX, int gridCellY,
-                        const ObservationType& latestObservation)
+void GridMap<T>::Update(int idxX, int idxY,
+                        const ObservationType& updateVal)
 {
-    this->GridCellAt(gridCellX, gridCellY).Update(latestObservation);
+    this->GridCellAt(idxX, idxY).Update(updateVal);
 }
 
 /* Calculate the distance between two grid cells */
 template <typename T>
-double GridMap<T>::Distance(int gridCellX0, int gridCellY0,
-                            int gridCellX1, int gridCellY1) const
+double GridMap<T>::Distance(int idxX0, int idxY0,
+                            int idxX1, int idxY1) const
 {
-    return std::sqrt(
-        std::pow((gridCellX1 - gridCellX0) * this->mMapResolution, 2.0) +
-        std::pow((gridCellY1 - gridCellY0) * this->mMapResolution, 2.0));
+    return std::hypot((idxX1 - idxX0) * this->mMapResolution,
+                      (idxY1 - idxY0) * this->mMapResolution);
 }
 
 /* Calculate the squared distance between two grid cells */
 template <typename T>
-double GridMap<T>::SquaredDistance(int gridCellX0, int gridCellY0,
-                                   int gridCellX1, int gridCellY1) const
+double GridMap<T>::SquaredDistance(int idxX0, int idxY0,
+                                   int idxX1, int idxY1) const
 {
-    return std::pow((gridCellX1 - gridCellX0) * this->mMapResolution, 2.0) +
-           std::pow((gridCellY1 - gridCellY0) * this->mMapResolution, 2.0);
+    const double deltaX = (idxX1 - idxX0) * this->mMapResolution;
+    const double deltaY = (idxY1 - idxY0) * this->mMapResolution;
+    return deltaX * deltaX + deltaY * deltaY;
 }
 
 /* Convert the grid cell index to the patch index */
 template <typename T>
 Point2D<int> GridMap<T>::GridCellIndexToPatchIndex(
-    int gridCellX, int gridCellY) const
+    int idxX, int idxY) const
 {
     return Point2D<int> {
-        (gridCellX < 0) ? (gridCellX / this->mPatchSize - 1) :
-                          (gridCellX / this->mPatchSize),
-        (gridCellY < 0) ? (gridCellY / this->mPatchSize - 1) :
-                          (gridCellY / this->mPatchSize) };
+        (idxX < 0) ? (idxX / this->mPatchSize - 1) :
+                     (idxX / this->mPatchSize),
+        (idxY < 0) ? (idxY / this->mPatchSize - 1) :
+                     (idxY / this->mPatchSize) };
 }
 
 /* Convert the patch index to the grid cell index range */
 template <typename T>
 void GridMap<T>::PatchIndexToGridCellIndexRange(
     int patchIdxX, int patchIdxY,
-    int& gridCellMinIdxX, int& gridCellMinIdxY,
-    int& gridCellMaxIdxX, int& gridCellMaxIdxY) const
+    int& minIdxX, int& minIdxY,
+    int& maxIdxX, int& maxIdxY) const
 {
-    gridCellMinIdxX = patchIdxX * this->mPatchSize;
-    gridCellMinIdxY = patchIdxY * this->mPatchSize;
-    gridCellMaxIdxX = gridCellMinIdxX + this->mPatchSize;
-    gridCellMaxIdxY = gridCellMinIdxY + this->mPatchSize;
+    minIdxX = patchIdxX * this->mPatchSize;
+    minIdxY = patchIdxY * this->mPatchSize;
+    maxIdxX = minIdxX + this->mPatchSize;
+    maxIdxY = minIdxY + this->mPatchSize;
 }
 
 /* Check if the patch index is inside the map */
