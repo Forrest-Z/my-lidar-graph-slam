@@ -139,17 +139,15 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
     /* Create the temporary grid map to store the intermediate result
      * The map size is as same as the local grid map and is reused for
      * several times below */
-    PrecomputedMapType intermediateMap {
-        localMap.Resolution(), localMap.PatchSize(),
-        localMap.NumOfPatchesX(), localMap.NumOfPatchesY(),
-        localMap.MinPos().mX, localMap.MinPos().mY };
+    PrecomputedMapType intermediateMap =
+        PrecomputedMapType::CreateSameSizeMap(localMap);
 
     /* Compute a grid map for each node height */
     for (int nodeHeight = 0, winSize = 1;
          nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
         /* Precompute a grid map */
         PrecomputedMapType precompMap =
-            this->PrecomputeGridMap(localMap, intermediateMap, winSize);
+            PrecomputeGridMap(localMap, intermediateMap, winSize);
 
         /* Append the newly created map */
         precomputedMaps.emplace(nodeHeight, std::move(precompMap));
@@ -157,28 +155,6 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
 
     /* Mark the local map as precomputed */
     localMapInfo.mPrecomputed = true;
-}
-
-/* Precompute grid map for efficiency */
-GridMapBuilder::PrecomputedMapType GridMapBuilder::PrecomputeGridMap(
-    const GridMapType& gridMap,
-    PrecomputedMapType& intermediateMap,
-    int winSize)
-{
-    /* Create a new grid map
-     * Each pixel stores the maximum of the occupancy probability values of
-     * 'winSize' * 'winSize' box of pixels beginning there */
-    PrecomputedMapType precompMap {
-        gridMap.Resolution(), gridMap.PatchSize(),
-        gridMap.NumOfPatchesX(), gridMap.NumOfPatchesY(),
-        gridMap.MinPos().mX, gridMap.MinPos().mY };
-
-    /* Store the maximum of the 'winSize' pixel wide row */
-    this->SlidingWindowMaxRow(gridMap, intermediateMap, winSize);
-    /* Store the maximum of the 'winSize' pixel wide column */
-    this->SlidingWindowMaxCol(intermediateMap, precompMap, winSize);
-
-    return precompMap;
 }
 
 /* Update the grid map (list of the local grid maps) */
@@ -478,14 +454,18 @@ std::vector<Point2D<int>> GridMapBuilder::ComputeMissedGridCellIndices(
     return gridCellIndices;
 }
 
-/* Compute the maximum of a 2^h pixel wide row starting at each pixel */
-void GridMapBuilder::SlidingWindowMaxRow(
-    const GridMapType& gridMap,
-    PrecomputedMapType& tmpMap,
+/*
+ * Utility function implementations
+ */
+
+/* Compute the maximum of a 'winSize' pixel wide row at each pixel */
+void SlidingWindowMaxRow(
+    const GridMapBuilder::GridMapType& gridMap,
+    GridMapBuilder::PrecomputedMapType& intermediateMap,
     int winSize)
 {
     /* Compute the maximum for each column */
-    const double unknownVal = GridMapType::GridCellType::Unknown;
+    const double unknownVal = gridMap.UnknownValue();
     int colIdx = 0;
 
     std::function<double(int)> inFunc =
@@ -494,48 +474,97 @@ void GridMapBuilder::SlidingWindowMaxRow(
     };
 
     std::function<void(int, double)> outFunc =
-        [&colIdx, &gridMap, &tmpMap, unknownVal](int rowIdx, double maxVal) {
+        [&colIdx, &gridMap, &intermediateMap, unknownVal]
+        (int rowIdx, double maxVal) {
         const Point2D<int> patchIdx =
             gridMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
         const bool isAllocated = gridMap.PatchIsAllocated(patchIdx);
 
         if (isAllocated || maxVal != unknownVal)
-            tmpMap.Update(colIdx, rowIdx, maxVal);
+            intermediateMap.Update(colIdx, rowIdx, maxVal);
     };
 
+    const int numOfGridCellsX = gridMap.NumOfGridCellsX();
+    const int numOfGridCellsY = gridMap.NumOfGridCellsY();
+
     /* Apply the sliding window maximum function */
-    for (colIdx = 0; colIdx < gridMap.NumOfGridCellsX(); ++colIdx)
-        SlidingWindowMax(inFunc, outFunc, gridMap.NumOfGridCellsY(), winSize);
+    for (colIdx = 0; colIdx < numOfGridCellsX; ++colIdx)
+        SlidingWindowMax(inFunc, outFunc, numOfGridCellsY, winSize);
 }
 
-/* Compute the maximum of a 2^h pixel wide column starting at each pixel */
-void GridMapBuilder::SlidingWindowMaxCol(
-    const PrecomputedMapType& tmpMap,
-    PrecomputedMapType& precompMap,
+/* Compute the maximum of a 'winSize' pixel wide column at each pixel */
+void SlidingWindowMaxCol(
+    const GridMapBuilder::PrecomputedMapType& intermediateMap,
+    GridMapBuilder::PrecomputedMapType& precompMap,
     int winSize)
 {
     /* Compute the maximum for each row */
-    const double unknownVal = GridMapType::GridCellType::Unknown;
+    const double unknownVal = intermediateMap.UnknownValue();
     int rowIdx = 0;
 
     std::function<double(int)> inFunc =
-        [&rowIdx, &tmpMap, unknownVal](int colIdx) {
-        return tmpMap.Value(colIdx, rowIdx, unknownVal);
+        [&rowIdx, &intermediateMap, unknownVal](int colIdx) {
+        return intermediateMap.Value(colIdx, rowIdx, unknownVal);
     };
 
     std::function<void(int, double)> outFunc =
-        [&rowIdx, &tmpMap, &precompMap, unknownVal](int colIdx, double maxVal) {
+        [&rowIdx, &intermediateMap, &precompMap, unknownVal]
+        (int colIdx, double maxVal) {
         const Point2D<int> patchIdx =
-            tmpMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
-        const bool isAllocated = tmpMap.PatchIsAllocated(patchIdx);
+            intermediateMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
+        const bool isAllocated = intermediateMap.PatchIsAllocated(patchIdx);
 
         if (isAllocated || maxVal != unknownVal)
             precompMap.Update(colIdx, rowIdx, maxVal);
     };
 
+    const int numOfGridCellsX = intermediateMap.NumOfGridCellsX();
+    const int numOfGridCellsY = intermediateMap.NumOfGridCellsY();
+
     /* Apply the sliding window maximum function */
-    for (rowIdx = 0; rowIdx < tmpMap.NumOfGridCellsY(); ++rowIdx)
-        SlidingWindowMax(inFunc, outFunc, tmpMap.NumOfGridCellsX(), winSize);
+    for (rowIdx = 0; rowIdx < numOfGridCellsY; ++rowIdx)
+        SlidingWindowMax(inFunc, outFunc, numOfGridCellsX, winSize);
+}
+
+/* Precompute grid map for efficiency */
+GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
+    const GridMapBuilder::GridMapType& gridMap,
+    GridMapBuilder::PrecomputedMapType& intermediateMap,
+    int winSize)
+{
+    /* Create a new grid map
+     * Each pixel stores the maximum of the occupancy probability values of
+     * 'winSize' * 'winSize' box of pixels beginning there */
+    GridMapBuilder::PrecomputedMapType precompMap =
+        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(gridMap);
+
+    /* Store the maximum of the 'winSize' pixel wide row */
+    SlidingWindowMaxRow(gridMap, intermediateMap, winSize);
+    /* Store the maximum of the 'winSize' pixel wide column */
+    SlidingWindowMaxCol(intermediateMap, precompMap, winSize);
+
+    return precompMap;
+}
+
+/* Precompute grid map for efficiency */
+GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
+    const GridMapBuilder::GridMapType& gridMap,
+    int winSize)
+{
+    /* Create a temporary map to store the intermediate result */
+    GridMapBuilder::PrecomputedMapType intermediateMap =
+        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(gridMap);
+
+    /* Create a new grid map */
+    GridMapBuilder::PrecomputedMapType precompMap =
+        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(gridMap);
+
+    /* Store the maximum of the 'winSize' pixel wide row */
+    SlidingWindowMaxRow(gridMap, intermediateMap, winSize);
+    /* Store the maximum of the 'winSize' pixel wide column */
+    SlidingWindowMaxCol(intermediateMap, precompMap, winSize);
+
+    return precompMap;
 }
 
 } /* namespace Mapping */

@@ -100,12 +100,6 @@ public:
     
     /* Precompute grid maps for efficiency */
     void PrecomputeGridMaps(int localMapIdx, int maxNodeHeight);
-
-    /* Precompute grid map for efficiency */
-    PrecomputedMapType PrecomputeGridMap(
-        const GridMapType& gridMap,
-        PrecomputedMapType& intermediateMap,
-        int winSize);
     
     /* Retrieve the local grid maps */
     inline const std::vector<LocalMapInfo>& LocalMaps() const
@@ -163,16 +157,6 @@ private:
         const Point2D<int>& startGridCellIdx,
         const Point2D<int>& endGridCellIdx) const;
 
-    /* Compute the maximum of a 2^h pixel wide row starting at each pixel */
-    void SlidingWindowMaxRow(const GridMapType& gridMap,
-                             PrecomputedMapType& tmpMap,
-                             int winSize);
-
-    /* Compute the maximum of a 2^h pixel wide column starting at each pixel */
-    void SlidingWindowMaxCol(const PrecomputedMapType& tmpMap,
-                             PrecomputedMapType& precompMap,
-                             int winSize);
-
 private:
     /* Map resolution (in meters) */
     double                        mResolution;
@@ -210,6 +194,33 @@ private:
      * Used for calculating the probability value with Binary Bayes Filter */
     double                        mProbMiss;
 };
+
+/*
+ * Utility function declarations
+ */
+
+/* Compute the maximum of a 'winSize' pixel wide row at each pixel */
+void SlidingWindowMaxRow(
+    const GridMapBuilder::GridMapType& gridMap,
+    GridMapBuilder::PrecomputedMapType& intermediateMap,
+    int winSize);
+
+/* Compute the maximum of a 'winSize' pixel wide column at each pixel */
+void SlidingWindowMaxCol(
+    const GridMapBuilder::PrecomputedMapType& intermediateMap,
+    GridMapBuilder::PrecomputedMapType& precompMap,
+    int winSize);
+
+/* Precompute grid map for efficiency */
+GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
+    const GridMapBuilder::GridMapType& gridMap,
+    GridMapBuilder::PrecomputedMapType& intermediateMap,
+    int winSize);
+
+/* Precompute grid map for efficiency */
+GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
+    const GridMapBuilder::GridMapType& gridMap,
+    int winSize);
 
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
