@@ -49,6 +49,14 @@ public:
             double minY,
             double maxX,
             double maxY);
+
+    /* Constructor with internal parameters */
+    GridMap(double mapResolution,
+            int patchSize,
+            int numOfPatchesX,
+            int numOfPatchesY,
+            double minX,
+            double minY);
     
     /* Destructor */
     ~GridMap() = default;
@@ -444,6 +452,45 @@ GridMap<T>::GridMap(double mapResolution,
     this->mMinPos.mY = minY;
 
     /* Allocate the memory for map patches */
+    const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
+    this->mPatches.reset(new Patch<T>[numOfPatches]);
+    assert(this->mPatches != nullptr);
+}
+
+/* Constructor with internal parameters */
+template <typename T>
+GridMap<T>::GridMap(double mapResolution,
+                    int patchSize,
+                    int numOfPatchesX,
+                    int numOfPatchesY,
+                    double minX,
+                    double minY)
+{
+    assert(mapResolution > 0.0);
+    assert(patchSize > 0);
+    assert(numOfPatchesX > 0);
+    assert(numOfPatchesY > 0);
+
+    /* Set the map resolution */
+    this->mResolution = mapResolution;
+    /* Set the patch size */
+    this->mPatchSize = patchSize;
+
+    /* Set the number of patches */
+    this->mNumOfPatchesX = numOfPatchesX;
+    this->mNumOfPatchesY = numOfPatchesY;
+    /* Set the number of grid cells */
+    this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
+    this->mNumOfGridCellsY = this->mNumOfPatchesY * this->mPatchSize;
+    /* Set the map size in meters */
+    this->mMapSizeX = this->mNumOfGridCellsX * this->mResolution;
+    this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
+
+    /* Set the minimum position */
+    this->mMinPos.mX = minX;
+    this->mMinPos.mY = minY;
+
+    /* Allocate the memory for patches */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
     this->mPatches.reset(new Patch<T>[numOfPatches]);
     assert(this->mPatches != nullptr);
