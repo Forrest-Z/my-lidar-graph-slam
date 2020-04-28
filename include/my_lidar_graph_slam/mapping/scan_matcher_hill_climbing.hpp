@@ -28,15 +28,8 @@ public:
     void OptimizePose(const GridMapBase<double>& gridMap,
                       const Sensor::ScanDataPtr<double>& scanData,
                       const RobotPose2D<double>& initialPose,
-                      RobotPose2D<double>& estimatedPose,
-                      double& normalizedCostValue) override;
-    
-    /* Calculate a covariance matrix */
-    void ComputeCovariance(const GridMapBase<double>& gridMap,
-                           const Sensor::ScanDataPtr<double>& scanData,
-                           const RobotPose2D<double>& robotPose,
-                           Eigen::Matrix3d& estimatedCovMat) override;
-    
+                      Summary& resultSummary) override;
+
 private:
     /* Initial step of the linear components (x and y) */
     double      mLinearStep;

@@ -27,8 +27,7 @@ void ScanMatcherHillClimbing::OptimizePose(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& initialPose,
-    RobotPose2D<double>& estimatedPose,
-    double& normalizedCostValue)
+    Summary& resultSummary)
 {
     /* Constants used for hill-climbing method */
     static const double moveX[] = { 1.0, -1.0, 0.0, 0.0, 0.0, 0.0 };
@@ -91,31 +90,20 @@ void ScanMatcherHillClimbing::OptimizePose(
     } while ((poseUpdated || numOfRefinements < this->mMaxNumOfRefinements) &&
              (++numOfIterations < this->mMaxIterations));
     
+    /* Calculate the pose covariance matrix */
+    const Eigen::Matrix3d covMat = this->mCostFunc->ComputeCovariance(
+        gridMap, scanData, bestPose);
+
     /* Calculate the robot pose from the updated sensor pose */
     const RobotPose2D<double> robotPose = MoveBackward(bestPose, relPose);
     
-    /* Set the estimated robot pose */
-    estimatedPose = robotPose;
+    /* Setup the result summary */
     /* Set the normalized cost value */
-    normalizedCostValue = minCost / scanData->NumOfScans();
-
-    return;
-}
-
-/* Calculate a covariance matrix */
-void ScanMatcherHillClimbing::ComputeCovariance(
-    const GridMapBase<double>& gridMap,
-    const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& robotPose,
-    Eigen::Matrix3d& estimatedCovMat)
-{
-    /* Calculate the sensor pose from the robot pose */
-    const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
-    const RobotPose2D<double> sensorPose = Compound(robotPose, relPose);
-
-    /* Calculate a covariance matrix */
-    estimatedCovMat = this->mCostFunc->ComputeCovariance(
-        gridMap, scanData, sensorPose);
+    resultSummary.mNormalizedCost = minCost / scanData->NumOfScans();
+    /* Set the estimated robot pose */
+    resultSummary.mEstimatedPose = robotPose;
+    /* Set the estimated pose covariance matrix */
+    resultSummary.mEstimatedCovariance = covMat;
 
     return;
 }

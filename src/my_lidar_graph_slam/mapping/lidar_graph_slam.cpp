@@ -93,19 +93,17 @@ bool LidarGraphSlam::ProcessScan(
             Compound(this->mPoseGraph->LatestNode().Pose(),
                      relPoseFromLastMapUpdate);
         
-        /* Perform scan matching against the grid map
-         * that contains latest scans */
-        RobotPose2D<double> estimatedPose;
-        double normalizedCostValue;
+        /* Perform scan matching against the grid map that contains
+         * the latest scans and obtain the result */
+        ScanMatcher::Summary scanMatchSummary;
         this->mScanMatcher->OptimizePose(
             this->mGridMapBuilder->LatestMap(),
-            scanData, initialPose, estimatedPose, normalizedCostValue);
+            scanData, initialPose, scanMatchSummary);
         
-        /* Estimate a covariance matrix */
-        Eigen::Matrix3d estimatedCovMat;
-        this->mScanMatcher->ComputeCovariance(
-            this->mGridMapBuilder->LatestMap(),
-            scanData, estimatedPose, estimatedCovMat);
+        const RobotPose2D<double>& estimatedPose =
+            scanMatchSummary.mEstimatedPose;
+        const Eigen::Matrix3d& estimatedCovariance =
+            scanMatchSummary.mEstimatedCovariance;
         
         /* Append the new pose graph node */
         const RobotPose2D<double>& startNodePose =
@@ -129,7 +127,7 @@ bool LidarGraphSlam::ProcessScan(
          * must represent the covariance in the node frame (not world frame) */
         Eigen::Matrix3d robotFrameCovMat;
         ConvertCovarianceFromWorldToRobot(
-            startNodePose, estimatedCovMat, robotFrameCovMat);
+            startNodePose, estimatedCovariance, robotFrameCovMat);
         /* Calculate a information matrix by inverting a covariance matrix
          * obtained from the scan matching */
         const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();

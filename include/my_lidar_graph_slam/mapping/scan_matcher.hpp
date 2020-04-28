@@ -25,6 +25,20 @@ using ScanMatcherPtr = std::shared_ptr<ScanMatcher>;
 class ScanMatcher
 {
 public:
+    /*
+     * Summary struct holds the details of the scan matching result
+     */
+    struct Summary
+    {
+        /* Normalized cost value */
+        double              mNormalizedCost;
+        /* Estimated robot pose */
+        RobotPose2D<double> mEstimatedPose;
+        /* Estimated pose covariance */
+        Eigen::Matrix3d     mEstimatedCovariance;
+    };
+
+public:
     /* Constructor */
     ScanMatcher() = default;
     /* Destructor */
@@ -44,15 +58,8 @@ public:
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& initialPose,
-        RobotPose2D<double>& estimatedPose,
-        double& normalizedCostValue) = 0;
-    
-    /* Calculate a covariance matrix */
-    virtual void ComputeCovariance(
-        const GridMapBase<double>& gridMap,
-        const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& robotPose,
-        Eigen::Matrix3d& estimatedCovMat) = 0;
+        Summary& resultSummary) = 0;
+
 };
 
 } /* namespace Mapping */
