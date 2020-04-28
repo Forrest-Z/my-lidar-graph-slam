@@ -100,6 +100,12 @@ public:
     
     /* Precompute grid maps for efficiency */
     void PrecomputeGridMaps(int localMapIdx, int maxNodeHeight);
+
+    /* Precompute grid map for efficiency */
+    PrecomputedMapType PrecomputeGridMap(
+        const GridMapType& gridMap,
+        PrecomputedMapType& intermediateMap,
+        int winSize);
     
     /* Retrieve the local grid maps */
     inline const std::vector<LocalMapInfo>& LocalMaps() const

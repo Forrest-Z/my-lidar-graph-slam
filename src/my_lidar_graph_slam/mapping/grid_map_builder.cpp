@@ -137,8 +137,9 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
     assert(localMapInfo.mFinished);
 
     /* Create the temporary grid map to store the intermediate result
-     * The map size is as same as the local grid map */
-    PrecomputedMapType tmpMap {
+     * The map size is as same as the local grid map and is reused for
+     * several times below */
+    PrecomputedMapType intermediateMap {
         localMap.Resolution(), localMap.PatchSize(),
         localMap.NumOfPatchesX(), localMap.NumOfPatchesY(),
         localMap.MinPos().mX, localMap.MinPos().mY };
@@ -146,25 +147,38 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
     /* Compute a grid map for each node height */
     for (int nodeHeight = 0, winSize = 1;
          nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
-        /* Each pixel stores the maximum of the occupancy probability
-         * values of the 2^h * 2^h box of pixels beginning there */
-        /* Create a new grid map */
-        PrecomputedMapType precompMap {
-            localMap.Resolution(), localMap.PatchSize(),
-            localMap.NumOfPatchesX(), localMap.NumOfPatchesY(),
-            localMap.MinPos().mX, localMap.MinPos().mY };
+        /* Precompute a grid map */
+        PrecomputedMapType precompMap =
+            this->PrecomputeGridMap(localMap, intermediateMap, winSize);
 
-        /* Store the maximum of the 2^h pixel wide row */
-        this->SlidingWindowMaxRow(localMap, tmpMap, winSize);
-        /* Store the maximum of the 2^h pixel wide column */
-        this->SlidingWindowMaxCol(tmpMap, precompMap, winSize);
-
-        /* Append the newly created grid map */
+        /* Append the newly created map */
         precomputedMaps.emplace(nodeHeight, std::move(precompMap));
     }
 
     /* Mark the local map as precomputed */
     localMapInfo.mPrecomputed = true;
+}
+
+/* Precompute grid map for efficiency */
+GridMapBuilder::PrecomputedMapType GridMapBuilder::PrecomputeGridMap(
+    const GridMapType& gridMap,
+    PrecomputedMapType& intermediateMap,
+    int winSize)
+{
+    /* Create a new grid map
+     * Each pixel stores the maximum of the occupancy probability values of
+     * 'winSize' * 'winSize' box of pixels beginning there */
+    PrecomputedMapType precompMap {
+        gridMap.Resolution(), gridMap.PatchSize(),
+        gridMap.NumOfPatchesX(), gridMap.NumOfPatchesY(),
+        gridMap.MinPos().mX, gridMap.MinPos().mY };
+
+    /* Store the maximum of the 'winSize' pixel wide row */
+    this->SlidingWindowMaxRow(gridMap, intermediateMap, winSize);
+    /* Store the maximum of the 'winSize' pixel wide column */
+    this->SlidingWindowMaxCol(intermediateMap, precompMap, winSize);
+
+    return precompMap;
 }
 
 /* Update the grid map (list of the local grid maps) */
