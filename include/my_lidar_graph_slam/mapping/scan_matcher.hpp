@@ -18,6 +18,10 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/* Type definitions for convenience */
+class ScanMatcher;
+using ScanMatcherPtr = std::shared_ptr<ScanMatcher>;
+
 class ScanMatcher
 {
 public:
