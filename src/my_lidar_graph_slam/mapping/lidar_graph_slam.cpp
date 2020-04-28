@@ -16,7 +16,7 @@ namespace Mapping {
 /* Constructor */
 LidarGraphSlam::LidarGraphSlam(
     const std::shared_ptr<GridMapBuilder>& gridMapBuilder,
-    const std::shared_ptr<ScanMatcherType>& scanMatcher,
+    const ScanMatcherPtr& scanMatcher,
     const std::shared_ptr<PoseGraph>& poseGraph,
     const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
     const std::shared_ptr<LoopClosure>& loopClosure,
@@ -45,8 +45,9 @@ LidarGraphSlam::LidarGraphSlam(
 }
 
 /* Process scan data and odometry */
-bool LidarGraphSlam::ProcessScan(const ScanType& scanData,
-                                 const RobotPose2D<double>& odomPose)
+bool LidarGraphSlam::ProcessScan(
+    const Sensor::ScanDataPtr<double>& scanData,
+    const RobotPose2D<double>& odomPose)
 {
     /* Calculate the relative odometry pose */
     const RobotPose2D<double> relOdomPose = (this->mProcessCount == 0) ?

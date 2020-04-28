@@ -23,14 +23,12 @@ class LidarGraphSlam
 {
 public:
     /* Type definitions */
-    using ScanType = Sensor::ScanDataPtr<double>;
     using GridMapType = GridMap<BinaryBayesGridCell<double>>;
-    using ScanMatcherType = ScanMatcher<GridMapType, ScanType>;
 
     /* Constructor */
     LidarGraphSlam(
         const std::shared_ptr<GridMapBuilder>& gridMapBuilder,
-        const std::shared_ptr<ScanMatcherType>& scanMatcher,
+        const ScanMatcherPtr& scanMatcher,
         const std::shared_ptr<PoseGraph>& poseGraph,
         const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
         const std::shared_ptr<LoopClosure>& loopClosure,
@@ -53,7 +51,7 @@ public:
     LidarGraphSlam& operator=(LidarGraphSlam&&) = delete;
 
     /* Process scan data and odometry */
-    bool ProcessScan(const ScanType& scanData,
+    bool ProcessScan(const Sensor::ScanDataPtr<double>& scanData,
                      const RobotPose2D<double>& odomPose);
     
     /* Retrieve the process counter */
@@ -73,7 +71,7 @@ private:
     /* Grid map */
     std::shared_ptr<GridMapBuilder>     mGridMapBuilder;
     /* Scan matcher */
-    std::shared_ptr<ScanMatcherType>    mScanMatcher;
+    ScanMatcherPtr                      mScanMatcher;
     /* Pose graph */
     std::shared_ptr<PoseGraph>          mPoseGraph;
     /* Pose graph optimizer */
