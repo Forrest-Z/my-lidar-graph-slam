@@ -1,8 +1,8 @@
 
-/* scan_matcher_greedy_endpoint.hpp */
+/* scan_matcher_hill_climbing.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_GREEDY_ENDPOINT_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_GREEDY_ENDPOINT_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_HILL_CLIMBING_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_HILL_CLIMBING_HPP
 
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 
@@ -11,18 +11,18 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-class ScanMatcherGreedyEndpoint final : public ScanMatcher
+class ScanMatcherHillClimbing final : public ScanMatcher
 {
 public:
     /* Constructor */
-    ScanMatcherGreedyEndpoint(double linearStep,
-                              double angularStep,
-                              int maxIterations,
-                              int maxNumOfRefinements,
-                              const CostFuncPtr& costFunc);
+    ScanMatcherHillClimbing(double linearStep,
+                            double angularStep,
+                            int maxIterations,
+                            int maxNumOfRefinements,
+                            const CostFuncPtr& costFunc);
     
     /* Destructor */
-    ~ScanMatcherGreedyEndpoint() = default;
+    ~ScanMatcherHillClimbing() = default;
 
     /* Optimize the robot pose by scan matching */
     void OptimizePose(const GridMapBase<double>& gridMap,
@@ -53,4 +53,4 @@ private:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_GREEDY_ENDPOINT_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_MATCHER_HILL_CLIMBING_HPP */

@@ -1,13 +1,13 @@
 
-/* scan_matcher_greedy_endpoint.cpp */
+/* scan_matcher_hill_climbing.cpp */
 
-#include "my_lidar_graph_slam/mapping/scan_matcher_greedy_endpoint.hpp"
+#include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Constructor */
-ScanMatcherGreedyEndpoint::ScanMatcherGreedyEndpoint(
+ScanMatcherHillClimbing::ScanMatcherHillClimbing(
     double linearStep,
     double angularStep,
     int maxIterations,
@@ -23,7 +23,7 @@ ScanMatcherGreedyEndpoint::ScanMatcherGreedyEndpoint(
 }
 
 /* Optimize the robot pose by scan matching */
-void ScanMatcherGreedyEndpoint::OptimizePose(
+void ScanMatcherHillClimbing::OptimizePose(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& initialPose,
@@ -103,7 +103,7 @@ void ScanMatcherGreedyEndpoint::OptimizePose(
 }
 
 /* Calculate a covariance matrix */
-void ScanMatcherGreedyEndpoint::ComputeCovariance(
+void ScanMatcherHillClimbing::ComputeCovariance(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& robotPose,
