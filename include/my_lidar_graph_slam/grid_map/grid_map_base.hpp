@@ -28,6 +28,9 @@ public:
     /* Move assignment operator */
     GridMapBase& operator=(GridMapBase&&) noexcept = default;
 
+    /* Get the unknown occupancy probability value */
+    virtual T UnknownValue() const = 0;
+
     /* Check if the grid cell index is inside the map */
     virtual bool IsInside(int idxX, int idxY) const = 0;
     /* Check if the grid cell index is inside the map */

@@ -73,6 +73,9 @@ public:
     
     /* Reset occupancy probability values of all grid cells */
     void Reset();
+
+    /* Get the unknown occupancy probability value */
+    ValueType UnknownValue() const override { return GridCellType::Unknown; }
  
     /* Check if the grid cell index is inside the map */
     bool IsInside(int idxX, int idxY) const override;
