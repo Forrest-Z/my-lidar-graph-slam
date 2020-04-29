@@ -149,6 +149,10 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
 
         /* If the current node is a leaf node, update the solution */
         if (currentNode.IsLeafNode()) {
+            /* Pop the current node from the stack */
+            nodeStack.pop();
+
+            /* Update the solution */
             bestSensorPose = nodePose;
             scoreMax = resultSummary.mNormalizedScore;
             solutionFound = true;
