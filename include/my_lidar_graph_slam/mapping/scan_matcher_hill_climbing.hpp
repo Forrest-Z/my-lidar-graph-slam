@@ -25,7 +25,7 @@ public:
     ~ScanMatcherHillClimbing() = default;
 
     /* Optimize the robot pose by scan matching */
-    void OptimizePose(const GridMapBase<double>& gridMap,
+    void OptimizePose(const GridMapType& gridMap,
                       const Sensor::ScanDataPtr<double>& scanData,
                       const RobotPose2D<double>& initialPose,
                       Summary& resultSummary) override;

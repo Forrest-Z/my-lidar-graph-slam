@@ -28,7 +28,7 @@ public:
     ~ScanMatcherLinearSolver() = default;
 
     /* Optimize the robot pose by scan matching */
-    void OptimizePose(const GridMapBase<double>& gridMap,
+    void OptimizePose(const GridMapType& gridMap,
                       const Sensor::ScanDataPtr<double>& scanData,
                       const RobotPose2D<double>& initialPose,
                       Summary& resultSummary) override;
@@ -36,7 +36,7 @@ public:
 private:
     /* Perform one optimization step */
     RobotPose2D<double> OptimizeStep(
-        const GridMapBase<double>& gridMap,
+        const GridMapType& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& sensorPose);
 

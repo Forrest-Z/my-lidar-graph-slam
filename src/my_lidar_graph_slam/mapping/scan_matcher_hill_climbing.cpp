@@ -24,7 +24,7 @@ ScanMatcherHillClimbing::ScanMatcherHillClimbing(
 
 /* Optimize the robot pose by scan matching */
 void ScanMatcherHillClimbing::OptimizePose(
-    const GridMapBase<double>& gridMap,
+    const GridMapType& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& initialPose,
     Summary& resultSummary)

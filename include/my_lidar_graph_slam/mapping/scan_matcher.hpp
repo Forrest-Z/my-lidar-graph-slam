@@ -12,7 +12,7 @@
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/util.hpp"
-#include "my_lidar_graph_slam/grid_map/grid_map_base.hpp"
+#include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
 namespace MyLidarGraphSlam {
@@ -39,6 +39,10 @@ public:
     };
 
 public:
+    /* Type definitions */
+    using GridMapType = GridMapBuilder::GridMapType;
+    using PrecomputedMapType = GridMapBuilder::PrecomputedMapType;
+
     /* Constructor */
     ScanMatcher() = default;
     /* Destructor */
@@ -55,7 +59,7 @@ public:
 
     /* Optimize the robot pose by scan matching */
     virtual void OptimizePose(
-        const GridMapBase<double>& gridMap,
+        const GridMapType& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& initialPose,
         Summary& resultSummary) = 0;

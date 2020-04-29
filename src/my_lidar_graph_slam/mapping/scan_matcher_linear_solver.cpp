@@ -36,7 +36,7 @@ ScanMatcherLinearSolver::ScanMatcherLinearSolver(
 
 /* Optimize the robot pose by scan matching */
 void ScanMatcherLinearSolver::OptimizePose(
-    const GridMapBase<double>& gridMap,
+    const GridMapType& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& initialPose,
     Summary& resultSummary)
@@ -85,7 +85,7 @@ void ScanMatcherLinearSolver::OptimizePose(
 
 /* Perform one optimization step */
 RobotPose2D<double> ScanMatcherLinearSolver::OptimizeStep(
-    const GridMapBase<double>& gridMap,
+    const GridMapType& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& sensorPose)
 {
