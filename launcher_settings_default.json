@@ -38,6 +38,16 @@
         "CostConfigGroup": "CostSquareError"
     },
 
+    "ScanMatcherRealTimeCorrelative": {
+        "LowResolutionMapWinSize": 5,
+        "SearchRangeX": 0.2,
+        "SearchRangeY": 0.2,
+        "SearchRangeTheta": 0.5,
+        "ScanRangeMax": 20.0,
+        "CostType": "GreedyEndpoint",
+        "CostConfigGroup": "CostGreedyEndpoint"
+    },
+
     "LoopClosureGridSearch": {
         "TravelDistThreshold": 10.0,
         "PoseGraphNodeDistMax": 5.0,
@@ -110,15 +120,15 @@
         },
         "UsableRangeMin": 0.01,
         "UsableRangeMax": 50.0,
-        "ProbabilityHit": 0.95,
-        "ProbabilityMiss": 0.05
+        "ProbabilityHit": 0.6,
+        "ProbabilityMiss": 0.4
     },
 
     "LidarGraphSlam": {
         "GridMapBuilderConfigGroup": "GridMapBuilder",
         "LocalSlam": {
-            "ScanMatcherType": "HillClimbing",
-            "ScanMatcherConfigGroup": "ScanMatcherHillClimbing"
+            "ScanMatcherType": "RealTimeCorrelative",
+            "ScanMatcherConfigGroup": "ScanMatcherRealTimeCorrelative"
         },
         "PoseGraphOptimizerType": "SpChol",
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",

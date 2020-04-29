@@ -27,6 +27,7 @@
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_linear_solver.hpp"
+#include "my_lidar_graph_slam/mapping/scan_matcher_real_time_correlative.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/score_function_pixel_accurate.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
@@ -190,6 +191,36 @@ std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherLinearSolver(
     return pScanMatcher;
 }
 
+/* Create the real-time correlative scan matcher object */
+std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherRealTimeCorrelative(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Load settings for real-time correlative scan matcher */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    const int lowResolution = config.get("LowResolutionMapWinSize", 10);
+    const double rangeX = config.get("SearchRangeX", 0.75);
+    const double rangeY = config.get("SearchRangeY", 0.75);
+    const double rangeTheta = config.get("SearchRangeTheta", 0.5);
+    const double scanRangeMax = config.get("ScanRangeMax", 20.0);
+
+    /* Construct cost function */
+    const std::string costType =
+        config.get("CostType", "GreedyEndpoint");
+    const std::string costConfigGroup =
+        config.get("CostConfigGroup", "CostGreedyEndpoint");
+    auto pCostFunc = CreateCostFunction(
+        jsonSettings, costType, costConfigGroup);
+
+    /* Construct the real-time correlative scan matcher */
+    auto pScanMatcher = std::make_shared<
+        Mapping::ScanMatcherRealTimeCorrelative>(
+            pCostFunc, lowResolution, rangeX, rangeY, rangeTheta, scanRangeMax);
+
+    return pScanMatcher;
+}
+
 /* Create the scan matcher object */
 std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcher(
     const pt::ptree& jsonSettings,
@@ -200,6 +231,8 @@ std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcher(
         return CreateScanMatcherHillClimbing(jsonSettings, configGroup);
     else if (scanMatcherType == "LinearSolver")
         return CreateScanMatcherLinearSolver(jsonSettings, configGroup);
+    else if (scanMatcherType == "RealTimeCorrelative")
+        return CreateScanMatcherRealTimeCorrelative(jsonSettings, configGroup);
     
     return nullptr;
 }
