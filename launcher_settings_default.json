@@ -111,6 +111,7 @@
     },
 
     "PoseGraphOptimizerLM": {
+        "SolverType": "ConjugateGradient",
         "NumOfIterationsMax": 10,
         "ErrorTolerance": 1e-3,
         "InitialLambda": 1e-4

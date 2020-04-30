@@ -368,13 +368,22 @@ std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerLM(
     /* Read settings for Levenberg-Marquardt based pose graph optimizer */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
+    /* Convert linear solver type string to enum */
+    using SolverType = Mapping::PoseGraphOptimizerLM::SolverType;
+    const std::string solverTypeStr =
+        config.get("SolverType", "SparseCholesky");
+    const SolverType solverType =
+        solverTypeStr == "SparseCholesky" ? SolverType::SparseCholesky :
+        solverTypeStr == "ConjugateGradient" ? SolverType::ConjugateGradient :
+        SolverType::SparseCholesky;
+
     const int numOfIterationsMax = config.get("NumOfIterationsMax", 10);
     const double errorTolerance = config.get("ErrorTolerance", 1e-3);
     const double initialLambda = config.get("InitialLambda", 1e-4);
 
     /* Construct pose graph optimizer object */
     auto pOptimizer = std::make_shared<Mapping::PoseGraphOptimizerLM>(
-        numOfIterationsMax, errorTolerance, initialLambda);
+        solverType, numOfIterationsMax, errorTolerance, initialLambda);
     
     return pOptimizer;
 }
