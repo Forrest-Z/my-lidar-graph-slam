@@ -10,6 +10,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/util.hpp"
@@ -31,10 +32,22 @@ namespace Mapping {
 class PoseGraphOptimizerLM final : public PoseGraphOptimizer
 {
 public:
+    /*
+     * SolverType enum specifies the linear solver used in this class
+     */
+    enum class SolverType
+    {
+        SparseCholesky,
+        ConjugateGradient,
+    };
+
+public:
     /* Constructor */
-    PoseGraphOptimizerLM(int numOfIterationsMax,
+    PoseGraphOptimizerLM(SolverType solverType,
+                         int numOfIterationsMax,
                          double errorTolerance,
                          double initialLambda) :
+        mSolverType(solverType),
         mNumOfIterationsMax(numOfIterationsMax),
         mErrorTolerance(errorTolerance),
         mLambda(initialLambda) { }
@@ -70,14 +83,16 @@ private:
     double ComputeTotalError(const std::shared_ptr<PoseGraph>& poseGraph) const;
 
 private:
+    /* Linear solver type */
+    SolverType mSolverType;
     /* Maximum number of the optimization iterations */
-    int    mNumOfIterationsMax;
+    int        mNumOfIterationsMax;
     /* Error tolerance to check the convergence */
-    double mErrorTolerance;
+    double     mErrorTolerance;
     /* Damping factor used in Levenberg-Marquardt method
      * The method is almost the same as Gauss-Newton method when small,
      * and is gradient descent method when large */
-    double mLambda;
+    double     mLambda;
 };
 
 } /* namespace Mapping */

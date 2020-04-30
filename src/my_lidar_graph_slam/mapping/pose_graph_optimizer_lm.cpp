@@ -162,13 +162,39 @@ void PoseGraphOptimizerLM::OptimizeStep(
     /* Create a sparse matrix H */
     matA.setFromTriplets(matATriplets.cbegin(), matATriplets.cend());
 
-    /* Solve the linear system using sparse Cholesky factorization
-     * and obtain the node pose increments */
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> spCholSolver;
-    /* Compute a sparse Cholesky decomposition of matrix H */
-    spCholSolver.compute(matA);
-    /* Solve the linear system for increment */
-    vecDelta = spCholSolver.solve(-vecB);
+    /* Solve the linear system */
+    switch (this->mSolverType) {
+        case SolverType::SparseCholesky: {
+            /* Solve the linear system using sparse Cholesky factorization
+             * and obtain the node pose increments */
+            Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> spCholSolver;
+            /* Compute a sparse Cholesky decomposition of matrix H */
+            spCholSolver.compute(matA);
+            /* Solve the linear system for increment */
+            vecDelta = spCholSolver.solve(-vecB);
+            break;
+        }
+
+        case SolverType::ConjugateGradient: {
+            /* Solve the linear system using conjugate gradient method
+             * and obtain the node pose increments */
+            Eigen::ConjugateGradient<Eigen::SparseMatrix<double>> cgSolver;
+            /* Initialize a conjugate gradient linear solver with matrix A */
+            cgSolver.compute(matA);
+            /* Solve the linear system for increment */
+            vecDelta = cgSolver.solve(-vecB);
+
+            std::cerr << "Iterations: " << cgSolver.iterations() << ", "
+                      << "Estimated error: " << cgSolver.error() << std::endl;
+            break;
+        }
+
+        default: {
+            /* Unknown solver type and program is aborted */
+            assert(false && "Unknown linear solver type for optimization");
+            break;
+        }
+    }
 
     /* Update the poses stored in pose graph */
     for (int i = 0; i < numOfNodes; ++i) {
