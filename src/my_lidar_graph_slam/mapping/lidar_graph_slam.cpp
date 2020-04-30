@@ -21,6 +21,7 @@ LidarGraphSlam::LidarGraphSlam(
     const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
     const std::shared_ptr<LoopClosure>& loopClosure,
     int loopClosureInterval,
+    const std::shared_ptr<ScanInterpolator>& scanInterpolator,
     const RobotPose2D<double>& initialPose,
     double updateThresholdTravelDist,
     double updateThresholdAngle,
@@ -32,6 +33,7 @@ LidarGraphSlam::LidarGraphSlam(
     mPoseGraphOptimizer(poseGraphOptimizer),
     mLoopClosure(loopClosure),
     mLoopClosureInterval(loopClosureInterval),
+    mScanInterpolator(scanInterpolator),
     mInitialPose(initialPose),
     mLastOdomPose(0.0, 0.0, 0.0),
     mAccumulatedTravelDist(0.0),
@@ -46,9 +48,13 @@ LidarGraphSlam::LidarGraphSlam(
 
 /* Process scan data and odometry */
 bool LidarGraphSlam::ProcessScan(
-    const Sensor::ScanDataPtr<double>& scanData,
+    const Sensor::ScanDataPtr<double>& rawScanData,
     const RobotPose2D<double>& odomPose)
 {
+    /* Interpolate scan data if necessary */
+    auto scanData = (this->mScanInterpolator != nullptr) ?
+        this->mScanInterpolator->Interpolate(rawScanData) : rawScanData;
+
     /* Calculate the relative odometry pose */
     const RobotPose2D<double> relOdomPose = (this->mProcessCount == 0) ?
         RobotPose2D<double>(0.0, 0.0, 0.0) :

@@ -48,6 +48,11 @@
         "CostConfigGroup": "CostGreedyEndpoint"
     },
 
+    "ScanInterpolator": {
+        "DistScans": 0.05,
+        "DistThresholdEmpty": 0.25
+    },
+
     "LoopClosureGridSearch": {
         "TravelDistThreshold": 10.0,
         "PoseGraphNodeDistMax": 5.0,
@@ -85,8 +90,8 @@
         "SearchRangeY": 5.0,
         "SearchRangeTheta": 1.0,
         "ScanRangeMax": 20.0,
-        "ScoreThreshold": 0.7,
-        "MatchRateThreshold": 0.8,
+        "ScoreThreshold": 0.5,
+        "MatchRateThreshold": 0.5,
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
         "CostType": "GreedyEndpoint",
@@ -134,7 +139,9 @@
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
         "LoopClosureType": "BranchBound",
         "LoopClosureConfigGroup": "LoopClosureBranchBound",
-        "LoopClosureInterval": 10,
+        "LoopClosureInterval": 5,
+        "UseScanInterpolator": "true",
+        "ScanInterpolatorConfigGroup": "ScanInterpolator",
         "InitialPose": {
             "X": 0.0,
             "Y": 0.0,

@@ -13,6 +13,7 @@
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
+#include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
@@ -33,6 +34,7 @@ public:
         const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
         const std::shared_ptr<LoopClosure>& loopClosure,
         int loopClosureInterval,
+        const std::shared_ptr<ScanInterpolator>& scanInterpolator,
         const RobotPose2D<double>& initialPose,
         double updateThresholdTravelDist,
         double updateThresholdAngle,
@@ -51,7 +53,7 @@ public:
     LidarGraphSlam& operator=(LidarGraphSlam&&) = delete;
 
     /* Process scan data and odometry */
-    bool ProcessScan(const Sensor::ScanDataPtr<double>& scanData,
+    bool ProcessScan(const Sensor::ScanDataPtr<double>& rawScanData,
                      const RobotPose2D<double>& odomPose);
     
     /* Retrieve the process counter */
@@ -80,6 +82,8 @@ private:
     std::shared_ptr<LoopClosure>        mLoopClosure;
     /* Frame interval for loop closure */
     int                                 mLoopClosureInterval;
+    /* Scan interpolator */
+    std::shared_ptr<ScanInterpolator>   mScanInterpolator;
     /* Initial pose */
     RobotPose2D<double>                 mInitialPose;
     /* Last odometry pose */

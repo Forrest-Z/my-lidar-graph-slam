@@ -24,6 +24,7 @@
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
+#include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_linear_solver.hpp"
@@ -390,6 +391,24 @@ std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizer(
     return nullptr;
 }
 
+/* Create scan interpolator object */
+std::shared_ptr<Mapping::ScanInterpolator> CreateScanInterpolator(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for scan interpolator */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    const double distScans = config.get("DistScans", 0.05);
+    const double distThresholdEmpty = config.get("DistThresholdEmpty", 0.25);
+
+    /* Construct scan interpolator object */
+    auto pScanInterpolator = std::make_shared<Mapping::ScanInterpolator>(
+        distScans, distThresholdEmpty);
+
+    return pScanInterpolator;
+}
+
 /* Create grid map builder object */
 std::shared_ptr<Mapping::GridMapBuilder> CreateGridMapBuilder(
     const pt::ptree& jsonSettings,
@@ -464,6 +483,16 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     /* Load settings for LiDAR Graph-Based SLAM */
     const int loopClosureInterval = config.get("LoopClosureInterval", 10);
 
+    /* Create scan interpolator object if necessary */
+    const bool useInterpolator =
+        config.get("UseScanInterpolator", true);
+    const std::string interpolatorConfigGroup =
+        config.get("ScanInterpolatorConfigGroup", "ScanInterpolator");
+
+    auto pScanInterpolator = useInterpolator ?
+        CreateScanInterpolator(jsonSettings, interpolatorConfigGroup) :
+        nullptr;
+
     const double initialPoseX = config.get("InitialPose.X", 0.0);
     const double initialPoseY = config.get("InitialPose.Y", 0.0);
     const double initialPoseTheta = config.get("InitialPose.Theta", 0.0);
@@ -481,8 +510,8 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     /* Create LiDAR Graph-Based SLAM object */
     auto pLidarGraphSlam = std::make_shared<Mapping::LidarGraphSlam>(
         pGridMapBuilder, pScanMatcher, pPoseGraph, pOptimizer, pLoopClosure,
-        loopClosureInterval, initialPose, updateThresholdTravelDist,
-        updateThresholdAngle, updateThresholdTime);
+        loopClosureInterval, pScanInterpolator, initialPose,
+        updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime);
     
     return pLidarGraphSlam;
 }
