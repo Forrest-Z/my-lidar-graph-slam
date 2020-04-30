@@ -111,7 +111,7 @@
         }
     },
 
-    "PoseGraphOptimizerSpChol": {
+    "PoseGraphOptimizerLM": {
         "NumOfIterationsMax": 10,
         "ErrorTolerance": 1e-3,
         "InitialLambda": 1e-4
@@ -149,8 +149,8 @@
     },
 
     "Backend": {
-        "PoseGraphOptimizerType": "SpChol",
-        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
+        "PoseGraphOptimizerType": "LM",
+        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerLM",
         "LoopSearcherType": "Nearest",
         "LoopSearcherConfigGroup": "LoopSearcherNearest",
         "LoopDetectorType": "BranchBound",

@@ -1,14 +1,14 @@
 
-/* pose_graph_optimizer_spchol.cpp */
+/* pose_graph_optimizer_lm.cpp */
 
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Optimize a pose graph using the combination of
- * Sparse Cholesky Factorization and Levenberg-Marquardt method */
-void PoseGraphOptimizerSpChol::Optimize(
+ * linear solver and Levenberg-Marquardt method */
+void PoseGraphOptimizerLM::Optimize(
     std::vector<PoseGraph::Node>& poseGraphNodes,
     const std::vector<PoseGraph::Edge>& poseGraphEdges)
 {
@@ -63,7 +63,7 @@ void PoseGraphOptimizerSpChol::Optimize(
 }
 
 /* Perform one optimization step and return the total error */
-void PoseGraphOptimizerSpChol::OptimizeStep(
+void PoseGraphOptimizerLM::OptimizeStep(
     std::vector<PoseGraph::Node>& poseGraphNodes,
     const std::vector<PoseGraph::Edge>& poseGraphEdges,
     Eigen::SparseMatrix<double>& matA,
@@ -189,7 +189,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
 
 /* Compute Jacobian matrices of the error function with respect to the
  * starting pose and ending pose of the pose graph edge */
-void PoseGraphOptimizerSpChol::ComputeErrorJacobians(
+void PoseGraphOptimizerLM::ComputeErrorJacobians(
     const RobotPose2D<double>& startNodePose,
     const RobotPose2D<double>& endNodePose,
     Eigen::Matrix3d& startNodeErrorJacobian,
@@ -248,7 +248,7 @@ void PoseGraphOptimizerSpChol::ComputeErrorJacobians(
 }
 
 /* Compute error function */
-void PoseGraphOptimizerSpChol::ComputeErrorFunction(
+void PoseGraphOptimizerLM::ComputeErrorFunction(
     const RobotPose2D<double>& startNodePose,
     const RobotPose2D<double>& endNodePose,
     const RobotPose2D<double>& edgeRelPose,
@@ -267,7 +267,7 @@ void PoseGraphOptimizerSpChol::ComputeErrorFunction(
 }
 
 /* Compute total error */
-double PoseGraphOptimizerSpChol::ComputeTotalError(
+double PoseGraphOptimizerLM::ComputeTotalError(
     const std::vector<PoseGraph::Node>& poseGraphNodes,
     const std::vector<PoseGraph::Edge>& poseGraphEdges) const
 {

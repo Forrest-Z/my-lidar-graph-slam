@@ -29,7 +29,7 @@
 #include "my_lidar_graph_slam/mapping/loop_searcher.hpp"
 #include "my_lidar_graph_slam/mapping/loop_searcher_nearest.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
 #include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
@@ -388,12 +388,12 @@ std::shared_ptr<Mapping::PoseGraph> CreatePoseGraph(
     return pPoseGraph;
 }
 
-/* Create sparse Cholesky pose graph optimizer object */
-std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerSpChol(
+/* Create Levenberg-Marquardt method based pose graph optimizer object */
+std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerLM(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
-    /* Read settings for sparse Cholesky pose graph optimizer */
+    /* Read settings for Levenberg-Marquardt based pose graph optimizer */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
     const int numOfIterationsMax = config.get("NumOfIterationsMax", 10);
@@ -401,7 +401,7 @@ std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerSpChol(
     const double initialLambda = config.get("InitialLambda", 1e-4);
 
     /* Construct pose graph optimizer object */
-    auto pOptimizer = std::make_shared<Mapping::PoseGraphOptimizerSpChol>(
+    auto pOptimizer = std::make_shared<Mapping::PoseGraphOptimizerLM>(
         numOfIterationsMax, errorTolerance, initialLambda);
     
     return pOptimizer;
@@ -413,8 +413,8 @@ std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizer(
     const std::string& optimizerType,
     const std::string& configGroup)
 {
-    if (optimizerType == "SpChol")
-        return CreatePoseGraphOptimizerSpChol(jsonSettings, configGroup);
+    if (optimizerType == "LM")
+        return CreatePoseGraphOptimizerLM(jsonSettings, configGroup);
     
     return nullptr;
 }
@@ -532,10 +532,10 @@ std::shared_ptr<Mapping::LidarGraphSlamBackend> CreateSlamBackend(
 
     /* Create pose graph optimizer */
     const std::string optimizerType =
-        config.get("PoseGraphOptimizerType", "SpChol");
+        config.get("PoseGraphOptimizerType", "LM");
     const std::string optimizerConfigGroup =
         config.get("PoseGraphOptimizerConfigGroup",
-                   "PoseGraphOptimizerSpChol");
+                   "PoseGraphOptimizerLM");
     auto pOptimizer = CreatePoseGraphOptimizer(
         jsonSettings, optimizerType, optimizerConfigGroup);
 
