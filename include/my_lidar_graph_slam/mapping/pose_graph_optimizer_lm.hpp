@@ -1,8 +1,8 @@
 
-/* pose_graph_optimizer_spchol.hpp */
+/* pose_graph_optimizer_lm.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_SPCHOL_HPP
-#define MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_SPCHOL_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
+#define MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
 
 #include <cmath>
 #include <limits>
@@ -19,8 +19,8 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
- * PoseGraphOptimizerSpChol class optimizes the pose graph using the
- * combination of Sparse Cholesky Factorization and Levenberg-Marquardt method
+ * PoseGraphOptimizerLM class optimizes the pose graph using the
+ * combination of linear solver and Levenberg-Marquardt method
  * which is also called Sparse Pose Adjustment (SPA) as proposed in the
  * following paper:
  * K. Konolige, G. Grisetti, R. Kuemmerle, W. Burgard, B. Limketkai, and
@@ -28,21 +28,21 @@ namespace Mapping {
  * Proceedings of the IEEE/RSJ International Conference on Intelligent Robots
  * and Systems (IROS), 2010.
  */
-class PoseGraphOptimizerSpChol final : public PoseGraphOptimizer
+class PoseGraphOptimizerLM final : public PoseGraphOptimizer
 {
 public:
     /* Constructor */
-    PoseGraphOptimizerSpChol(int numOfIterationsMax,
-                             double errorTolerance,
-                             double initialLambda) :
+    PoseGraphOptimizerLM(int numOfIterationsMax,
+                         double errorTolerance,
+                         double initialLambda) :
         mNumOfIterationsMax(numOfIterationsMax),
         mErrorTolerance(errorTolerance),
         mLambda(initialLambda) { }
     /* Destructor */
-    ~PoseGraphOptimizerSpChol() = default;
+    ~PoseGraphOptimizerLM() = default;
 
     /* Optimize a pose graph using the combination of
-     * Sparse Cholesky Factorization and Levenberg-Marquardt method */
+     * linear solver and Levenberg-Marquardt method */
     void Optimize(std::shared_ptr<PoseGraph>& poseGraph) override;
 
 private:
@@ -83,4 +83,4 @@ private:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_SPCHOL_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP */

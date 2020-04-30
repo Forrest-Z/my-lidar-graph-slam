@@ -110,7 +110,7 @@
         }
     },
 
-    "PoseGraphOptimizerSpChol": {
+    "PoseGraphOptimizerLM": {
         "NumOfIterationsMax": 10,
         "ErrorTolerance": 1e-3,
         "InitialLambda": 1e-4
@@ -135,8 +135,8 @@
             "ScanMatcherType": "RealTimeCorrelative",
             "ScanMatcherConfigGroup": "ScanMatcherRealTimeCorrelative"
         },
-        "PoseGraphOptimizerType": "SpChol",
-        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
+        "PoseGraphOptimizerType": "LM",
+        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerLM",
         "LoopClosureType": "BranchBound",
         "LoopClosureConfigGroup": "LoopClosureBranchBound",
         "LoopClosureInterval": 5,

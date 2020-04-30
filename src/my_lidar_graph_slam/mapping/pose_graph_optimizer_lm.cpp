@@ -1,15 +1,14 @@
 
-/* pose_graph_optimizer_spchol.cpp */
+/* pose_graph_optimizer_lm.cpp */
 
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Optimize a pose graph using the combination of
- * Sparse Cholesky Factorization and Levenberg-Marquardt method */
-void PoseGraphOptimizerSpChol::Optimize(
-    std::shared_ptr<PoseGraph>& poseGraph)
+ * linear solver and Levenberg-Marquardt method */
+void PoseGraphOptimizerLM::Optimize(std::shared_ptr<PoseGraph>& poseGraph)
 {
     double prevTotalError = std::numeric_limits<double>::max();
     double totalError = std::numeric_limits<double>::max();
@@ -28,7 +27,7 @@ void PoseGraphOptimizerSpChol::Optimize(
     Eigen::SparseMatrix<double> matA { numOfVariables, numOfVariables };
     /* Right-hand side vector of the linear system */
     Eigen::VectorXd vecB { numOfVariables };
-    /* Result of the Sparse Cholesky factorization */
+    /* Result of the linear solver */
     Eigen::VectorXd vecDelta { numOfVariables };
 
     /* Initialize triplets */
@@ -60,7 +59,7 @@ void PoseGraphOptimizerSpChol::Optimize(
 }
 
 /* Perform one optimization step and return the total error */
-void PoseGraphOptimizerSpChol::OptimizeStep(
+void PoseGraphOptimizerLM::OptimizeStep(
     std::shared_ptr<PoseGraph>& poseGraph,
     Eigen::SparseMatrix<double>& matA,
     Eigen::VectorXd& vecB,
@@ -187,7 +186,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
 
 /* Compute Jacobian matrices of the error function with respect to the
  * starting pose and ending pose of the pose graph edge */
-void PoseGraphOptimizerSpChol::ComputeErrorJacobians(
+void PoseGraphOptimizerLM::ComputeErrorJacobians(
     const RobotPose2D<double>& startNodePose,
     const RobotPose2D<double>& endNodePose,
     Eigen::Matrix3d& startNodeErrorJacobian,
@@ -246,7 +245,7 @@ void PoseGraphOptimizerSpChol::ComputeErrorJacobians(
 }
 
 /* Compute error function */
-void PoseGraphOptimizerSpChol::ComputeErrorFunction(
+void PoseGraphOptimizerLM::ComputeErrorFunction(
     const RobotPose2D<double>& startNodePose,
     const RobotPose2D<double>& endNodePose,
     const RobotPose2D<double>& edgeRelPose,
@@ -265,7 +264,7 @@ void PoseGraphOptimizerSpChol::ComputeErrorFunction(
 }
 
 /* Compute total error */
-double PoseGraphOptimizerSpChol::ComputeTotalError(
+double PoseGraphOptimizerLM::ComputeTotalError(
     const std::shared_ptr<PoseGraph>& poseGraph) const
 {
     double totalError = 0.0;
