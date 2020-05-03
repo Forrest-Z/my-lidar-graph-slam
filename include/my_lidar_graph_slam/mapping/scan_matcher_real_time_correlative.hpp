@@ -37,7 +37,7 @@ private:
                            const Sensor::ScanDataPtr<double>& scanData,
                            double& stepX,
                            double& stepY,
-                           double& stepTheta);
+                           double& stepTheta) const;
 
     /* Compute the grid cell indices for scan points */
     void ComputeScanIndices(const PrecomputedMapType& precompMap,
