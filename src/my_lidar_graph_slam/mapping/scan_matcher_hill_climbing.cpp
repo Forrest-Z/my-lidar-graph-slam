@@ -3,6 +3,8 @@
 
 #include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
 
+#include "my_lidar_graph_slam/metric/metric.hpp"
+
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
@@ -104,6 +106,11 @@ void ScanMatcherHillClimbing::OptimizePose(
     resultSummary.mEstimatedPose = robotPose;
     /* Set the estimated pose covariance matrix */
     resultSummary.mEstimatedCovariance = covMat;
+
+    /* Update metrics */
+    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
+    auto& distMetrics = pMetric->DistributionMetrics();
+    distMetrics("LocalSlamCost")->Observe(minCost / scanData->NumOfScans());
 
     return;
 }

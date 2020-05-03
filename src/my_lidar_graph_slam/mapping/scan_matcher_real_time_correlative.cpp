@@ -7,6 +7,8 @@
 #include <limits>
 #include <numeric>
 
+#include "my_lidar_graph_slam/metric/metric.hpp"
+
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
@@ -121,6 +123,12 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
     resultSummary.mEstimatedPose = robotPose;
     /* Set the estimated pose covariance matrix */
     resultSummary.mEstimatedCovariance = covMat;
+
+    /* Update metrics */
+    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
+    auto& distMetrics = pMetric->DistributionMetrics();
+    distMetrics("LocalSlamMaxScore")->Observe(scoreMax);
+    distMetrics("LocalSlamCost")->Observe(costVal / scanData->NumOfScans());
 
     return;
 }

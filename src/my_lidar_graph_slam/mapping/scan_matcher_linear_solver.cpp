@@ -8,6 +8,8 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include "my_lidar_graph_slam/metric/metric.hpp"
+
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
@@ -79,6 +81,11 @@ void ScanMatcherLinearSolver::OptimizePose(
     resultSummary.mEstimatedPose = robotPose;
     /* Set the estimated pose covariance matrix */
     resultSummary.mEstimatedCovariance = covMat;
+
+    /* Update metrics */
+    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
+    auto& distMetrics = pMetric->DistributionMetrics();
+    distMetrics("LocalSlamCost")->Observe(cost / scanData->NumOfScans());
 
     return;
 }
