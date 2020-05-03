@@ -31,6 +31,7 @@
 #include "my_lidar_graph_slam/mapping/scan_matcher_real_time_correlative.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/score_function_pixel_accurate.hpp"
+#include "my_lidar_graph_slam/metric/metric.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
 using namespace MyLidarGraphSlam;
@@ -525,6 +526,60 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     return pLidarGraphSlam;
 }
 
+/* Register metrics */
+void RegisterMetrics()
+{
+    /* Register metrics */
+    Metric::MetricManager* const pMetricManager =
+        Metric::MetricManager::Instance();
+
+    /* Register counter metrics */
+    pMetricManager->CounterMetrics().Append(
+        new Metric::Counter("AllProcessCount"));
+    pMetricManager->CounterMetrics().Append(
+        new Metric::Counter("IgnoredProcessCount"));
+    pMetricManager->CounterMetrics().Append(
+        new Metric::Counter("ProcessCount"));
+
+    /* Register mean and variance metrics */
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("OverallProcessTime"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("KeyFrameProcessTime"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("ProcessTimeNoLoopClosure"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("ProcessTimeWithLoopClosure"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("LocalSlamTime"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("LocalSlamScanMatchingTime"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("MapUpdateTime"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("LoopDetectionTime"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("PoseGraphOptimizationTime"));
+    pMetricManager->DistributionMetrics().Append(
+        new Metric::Distribution("RegenerateMapTime"));
+}
+
+/* Save metrics */
+void SaveMetrics(const std::string& fileName)
+{
+    /* Save metrics to JSON file */
+    Metric::MetricManager* const pMetricManager =
+        Metric::MetricManager::Instance();
+    
+    /* Convert all metrics to Boost property tree */
+    const pt::ptree metricTree =
+        pMetricManager->ToPropertyTree();
+
+    /* Write JSON file */
+    const std::string metricFileName = fileName + ".metric.json";
+    pt::write_json(metricFileName, metricTree);
+}
+
 int main(int argc, char** argv)
 {
     namespace fs = std::filesystem;
@@ -569,18 +624,14 @@ int main(int argc, char** argv)
     /* Construct LiDAR Graph-Based SLAM */
     auto pLidarGraphSlam = CreateLidarGraphSlam(jsonSettings);
 
+    /* Register metrics */
+    RegisterMetrics();
+
     /* Read the settings for Gnuplot GUI */
     const bool guiEnabled =
         jsonSettings.get("Launcher.GuiEnabled", true);
     const int drawFrameInterval =
         jsonSettings.get("Launcher.DrawFrameInterval", 5);
-    
-    std::cerr << "Carmen log file loaded: "
-              << logFilePath.c_str() << std::endl
-              << "JSON setting file loaded: "
-              << settingsFilePath.c_str() << std::endl
-              << "Output name: "
-              << outputFilePath.c_str() << std::endl;
 
     IO::GnuplotHelper gnuplotHelper;
 
@@ -614,6 +665,9 @@ int main(int argc, char** argv)
                              pLidarGraphSlam->GetPoseGraph(),
                              outputFilePath, true, true);
     
+    /* Save metrics */
+    SaveMetrics(outputFilePath);
+
     /* Wait for key input */
     const bool waitKey = jsonSettings.get("Launcher.WaitForKey", false);
 

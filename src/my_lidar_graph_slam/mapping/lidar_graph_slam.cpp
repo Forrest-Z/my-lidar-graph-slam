@@ -5,10 +5,13 @@
 #include <cmath>
 #include <iostream>
 
+#include <boost/timer/timer.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/LU>
 
 #include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
+#include "my_lidar_graph_slam/metric/metric.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -51,6 +54,13 @@ bool LidarGraphSlam::ProcessScan(
     const Sensor::ScanDataPtr<double>& rawScanData,
     const RobotPose2D<double>& odomPose)
 {
+    Metric::MetricManager* pMetric = Metric::MetricManager::Instance();
+    auto& distMetrics = pMetric->DistributionMetrics();
+    auto& counterMetrics = pMetric->CounterMetrics();
+
+    /* Measure processing time */
+    boost::timer::cpu_timer cpuTimer;
+
     /* Interpolate scan data if necessary */
     auto scanData = (this->mScanInterpolator != nullptr) ?
         this->mScanInterpolator->Interpolate(rawScanData) : rawScanData;
@@ -83,8 +93,21 @@ bool LidarGraphSlam::ProcessScan(
     const bool mapUpdateNeeded =
         travelDistThreshold || angleThreshold || timeThreshold || isFirstScan;
     
+    /* Update counter metrics */
+    counterMetrics("AllProcessCount")->Increment();
+
+    if (!mapUpdateNeeded)
+        counterMetrics("IgnoredProcessCount")->Increment();
+    else
+        counterMetrics("ProcessCount")->Increment();
+    
     if (!mapUpdateNeeded)
         return false;
+    
+    const bool loopDetectionNeeded =
+        this->mProcessCount > this->mLoopClosureInterval &&
+        this->mProcessCount % this->mLoopClosureInterval == 0;
+    bool loopFound = false;
     
     /* Update the pose graph */
     if (this->mProcessCount == 0) {
@@ -93,6 +116,9 @@ bool LidarGraphSlam::ProcessScan(
         /* Append the new pose graph node */
         this->mPoseGraph->AppendNode(estimatedPose, scanData);
     } else {
+        /* Measure processing time */
+        boost::timer::cpu_timer localSlamTimer;
+
         const RobotPose2D<double> relPoseFromLastMapUpdate =
             InverseCompound(this->mLastMapUpdateOdomPose, odomPose);
         const RobotPose2D<double> initialPose =
@@ -101,11 +127,14 @@ bool LidarGraphSlam::ProcessScan(
         
         /* Perform scan matching against the grid map that contains
          * the latest scans and obtain the result */
+        boost::timer::cpu_timer localScanMatchingTimer;
         ScanMatcher::Summary scanMatchSummary;
         this->mScanMatcher->OptimizePose(
             this->mGridMapBuilder->LatestMap(),
             scanData, initialPose, scanMatchSummary);
-        
+        distMetrics("LocalSlamScanMatchingTime")->Observe(
+            localScanMatchingTimer.elapsed().wall / 1e6);
+
         const RobotPose2D<double>& estimatedPose =
             scanMatchSummary.mEstimatedPose;
         const Eigen::Matrix3d& estimatedCovariance =
@@ -141,14 +170,20 @@ bool LidarGraphSlam::ProcessScan(
         /* Append the new pose graph edge for odometric constraint */
         this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
                                      edgeRelPose, edgeInfoMat);
+        
+        /* Measure processing time */
+        distMetrics("LocalSlamTime")->Observe(
+            localSlamTimer.elapsed().wall / 1e6);
     }
 
     /* Integrate the scan data into the grid map */
+    boost::timer::cpu_timer mapUpdateTimer;
     this->mGridMapBuilder->AppendScan(this->mPoseGraph);
+    distMetrics("MapUpdateTime")->Observe(
+        mapUpdateTimer.elapsed().wall / 1e6);
     
     /* Perform loop closure (pose graph optimization) */
-    if (this->mProcessCount > this->mLoopClosureInterval &&
-        this->mProcessCount % this->mLoopClosureInterval == 0) {
+    if (loopDetectionNeeded) {
         /* Relative pose of the pose graph edge */
         RobotPose2D<double> relPose;
         /* Index of the pose graph node for starting pose */
@@ -159,9 +194,12 @@ bool LidarGraphSlam::ProcessScan(
         Eigen::Matrix3d estimatedCovMat;
 
         /* Find a loop using a pose graph and local grid maps */
-        const bool loopFound = this->mLoopClosure->FindLoop(
+        boost::timer::cpu_timer loopDetectionTimer;
+        loopFound = this->mLoopClosure->FindLoop(
             this->mGridMapBuilder, this->mPoseGraph,
             relPose, startNodeIdx, endNodeIdx, estimatedCovMat);
+        distMetrics("LoopDetectionTime")->Observe(
+            loopDetectionTimer.elapsed().wall / 1e6);
         
         if (loopFound) {
             /* Setup the pose graph edge parameters */
@@ -184,10 +222,16 @@ bool LidarGraphSlam::ProcessScan(
                                          relPose, edgeInfoMat);
             
             /* Perform loop closure */
+            boost::timer::cpu_timer optimizationTimer;
             this->mPoseGraphOptimizer->Optimize(this->mPoseGraph);
+            distMetrics("PoseGraphOptimizationTime")->Observe(
+                optimizationTimer.elapsed().wall / 1e6);
 
             /* Re-create the grid maps */
+            boost::timer::cpu_timer regenerateMapTimer;
             this->mGridMapBuilder->AfterLoopClosure(this->mPoseGraph);
+            distMetrics("RegenerateMapTime")->Observe(
+                regenerateMapTimer.elapsed().wall / 1e6);
         }
     }
 
@@ -199,6 +243,20 @@ bool LidarGraphSlam::ProcessScan(
     this->mLastMapUpdateTime = scanData->TimeStamp();
 
     std::cerr << "Processing frame: " << this->mProcessCount << std::endl;
+
+    /* Measure processing time */
+    const auto processTimeCpu = cpuTimer.elapsed();
+    const double processTime = processTimeCpu.wall / 1e6;
+
+    /* Update process time metrics */
+    if (this->mProcessCount > 0)
+        distMetrics("OverallProcessTime")->Observe(processTime);
+    if (loopDetectionNeeded)
+        distMetrics("KeyFrameProcessTime")->Observe(processTime);
+    if (loopDetectionNeeded && !loopFound)
+        distMetrics("ProcessTimeNoLoopClosure")->Observe(processTime);
+    if (loopDetectionNeeded && loopFound)
+        distMetrics("ProcessTimeWithLoopClosure")->Observe(processTime);
 
     return true;
 }
