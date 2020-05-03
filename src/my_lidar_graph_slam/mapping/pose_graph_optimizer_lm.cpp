@@ -3,6 +3,8 @@
 
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
 
+#include "my_lidar_graph_slam/metric/metric.hpp"
+
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
@@ -56,6 +58,13 @@ void PoseGraphOptimizerLM::Optimize(std::shared_ptr<PoseGraph>& poseGraph)
 
         prevTotalError = totalError;
     }
+
+    /* Update metrics */
+    auto* const pMetric = Metric::MetricManager::Instance();
+    auto& distMetrics = pMetric->DistributionMetrics();
+    distMetrics("PoseGraphOptimizationIteration")->Observe(numOfIterations);
+    const double normalizedError = totalError / poseGraph->Edges().size();
+    distMetrics("PoseGraphOptimizationError")->Observe(normalizedError);
 }
 
 /* Perform one optimization step and return the total error */
@@ -183,9 +192,6 @@ void PoseGraphOptimizerLM::OptimizeStep(
             cgSolver.compute(matA);
             /* Solve the linear system for increment */
             vecDelta = cgSolver.solve(-vecB);
-
-            std::cerr << "Iterations: " << cgSolver.iterations() << ", "
-                      << "Estimated error: " << cgSolver.error() << std::endl;
             break;
         }
 
