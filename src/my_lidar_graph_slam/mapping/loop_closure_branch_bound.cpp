@@ -1,12 +1,14 @@
 
 /* loop_closure_branch_bound.cpp */
 
+#include "my_lidar_graph_slam/mapping/loop_closure_branch_bound.hpp"
+
 #include <cassert>
 #include <deque>
 #include <limits>
 
 #include "my_lidar_graph_slam/io/map_saver.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_branch_bound.hpp"
+#include "my_lidar_graph_slam/metric/metric.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -115,6 +117,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
         Compound(robotPose, scanData->RelativeSensorPose());
     RobotPose2D<double> bestSensorPose = sensorPose;
     double scoreMax = this->mScoreThreshold;
+    double matchRateMax = 0.0;
     bool solutionFound = false;
 
     /* Determine the search window step */
@@ -172,6 +175,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
             /* Update the solution */
             bestSensorPose = nodePose;
             scoreMax = resultSummary.mNormalizedScore;
+            matchRateMax = resultSummary.mMatchRate;
             solutionFound = true;
         } else {
             /* Otherwise, split the current node into four new nodes */
@@ -192,6 +196,12 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
         }
     }
 
+    /* Update metrics */
+    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
+    auto& histMetrics = pMetric->HistogramMetrics();
+    histMetrics("LoopClosureMaxScore")->Observe(scoreMax);
+    histMetrics("LoopClosureMaxMatchRate")->Observe(matchRateMax);
+
     /* Loop closure fails if the solution is not found */
     if (!solutionFound)
         return false;
@@ -207,6 +217,10 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     /* Return the result */
     correspondingPose = bestPose;
     estimatedCovMat = covMat;
+
+    /* Update metrics */
+    histMetrics("LoopClosureMaxScoreSuccess")->Observe(scoreMax);
+    histMetrics("LoopClosureMaxMatchRateSuccess")->Observe(matchRateMax);
 
     return true;
 }

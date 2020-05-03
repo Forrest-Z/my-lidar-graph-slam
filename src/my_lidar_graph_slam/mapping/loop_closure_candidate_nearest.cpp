@@ -5,6 +5,8 @@
 
 #include "my_lidar_graph_slam/mapping/loop_closure_candidate_nearest.hpp"
 
+#include "my_lidar_graph_slam/metric/metric.hpp"
+
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
@@ -30,6 +32,7 @@ LoopClosureCandidate::CandidateVector LoopClosureCandidateNearest::Find(
     double nodeDistMinSq = std::pow(this->mNodeDistThreshold, 2.0);
     int candidateMapIdx = numOfMaps;
     int candidateNodeIdx = numOfNodes;
+    bool candidateFound = false;
     
     const double accumTravelDist = gridMapBuilder->AccumTravelDist();
     double nodeTravelDist = 0.0;
@@ -63,6 +66,7 @@ LoopClosureCandidate::CandidateVector LoopClosureCandidateNearest::Find(
 
             /* Update the candidate map index and node index */
             if (nodeDistSq < nodeDistMinSq) {
+                candidateFound = true;
                 nodeDistMinSq = nodeDistSq;
                 candidateMapIdx = mapIdx;
                 candidateNodeIdx = nodeIdx;
@@ -73,9 +77,16 @@ LoopClosureCandidate::CandidateVector LoopClosureCandidateNearest::Find(
 Done:
     /* Set the closest pose graph node index and its corresponding
      * local grid map index */
-    if ((candidateMapIdx >= 0 && candidateMapIdx < numOfMaps) &&
-        (candidateNodeIdx >= 0 && candidateNodeIdx < numOfNodes))
+    if (candidateFound)
         loopClosureCandidates.emplace_back(candidateMapIdx, candidateNodeIdx);
+
+    /* Update metrics */
+    if (candidateFound) {
+        auto* const pMetric = Metric::MetricManager::Instance();
+        auto& distMetrics = pMetric->DistributionMetrics();
+        const double nodeDistMin = std::sqrt(nodeDistMinSq);
+        distMetrics("LoopDetectionPoseGraphNodeDist")->Observe(nodeDistMin);
+    }
 
     return loopClosureCandidates;
 }

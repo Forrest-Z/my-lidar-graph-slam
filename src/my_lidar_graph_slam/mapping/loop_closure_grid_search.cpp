@@ -1,12 +1,14 @@
 
 /* loop_closure_grid_search.cpp */
 
+#include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
+
 #include <cassert>
 #include <limits>
 
 #include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/io/map_saver.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
+#include "my_lidar_graph_slam/metric/metric.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -81,6 +83,7 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
         Compound(robotPose, scanData->RelativeSensorPose());
     RobotPose2D<double> bestSensorPose = sensorPose;
     double scoreMax = std::numeric_limits<double>::min();
+    double matchRateMax = 0.0;
     
     const double rx = this->mRangeX / 2.0;
     const double ry = this->mRangeY / 2.0;
@@ -104,11 +107,18 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
                 if (scoreSummary.mMatchRate > this->mMatchRateThreshold &&
                     scoreSummary.mNormalizedScore > scoreMax) {
                     scoreMax = scoreSummary.mNormalizedScore;
+                    matchRateMax = scoreSummary.mMatchRate;
                     bestSensorPose = pose;
                 }
             }
         }
     }
+
+    /* Update metrics */
+    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
+    auto& histMetrics = pMetric->HistogramMetrics();
+    histMetrics("LoopClosureMaxScore")->Observe(scoreMax);
+    histMetrics("LoopClosureMaxMatchRate")->Observe(matchRateMax);
 
     /* Loop closure fails if the matching score falls below the threshold */
     if (scoreMax < this->mScoreThreshold)
@@ -125,6 +135,10 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
     /* Return the result */
     correspondingPose = bestPose;
     estimatedCovMat = covMat;
+
+    /* Update metrics */
+    histMetrics("LoopClosureMaxScoreSuccess")->Observe(scoreMax);
+    histMetrics("LoopClosureMaxMatchRateSuccess")->Observe(matchRateMax);
     
     return true;
 }
