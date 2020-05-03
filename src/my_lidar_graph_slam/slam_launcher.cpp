@@ -529,39 +529,50 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
 /* Register metrics */
 void RegisterMetrics()
 {
+    using namespace Metric;
+
     /* Register metrics */
-    Metric::MetricManager* const pMetricManager =
-        Metric::MetricManager::Instance();
+    MetricManager* const pMetricManager = MetricManager::Instance();
 
     /* Register counter metrics */
-    pMetricManager->CounterMetrics().Append(
-        new Metric::Counter("AllProcessCount"));
-    pMetricManager->CounterMetrics().Append(
-        new Metric::Counter("IgnoredProcessCount"));
-    pMetricManager->CounterMetrics().Append(
-        new Metric::Counter("ProcessCount"));
+    auto& counterMetrics = pMetricManager->CounterMetrics();
+    counterMetrics.Append(new Counter("AllProcessCount"));
+    counterMetrics.Append(new Counter("IgnoredProcessCount"));
+    counterMetrics.Append(new Counter("ProcessCount"));
 
     /* Register mean and variance metrics */
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("OverallProcessTime"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("KeyFrameProcessTime"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("ProcessTimeNoLoopClosure"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("ProcessTimeWithLoopClosure"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("LocalSlamTime"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("LocalSlamScanMatchingTime"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("MapUpdateTime"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("LoopDetectionTime"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("PoseGraphOptimizationTime"));
-    pMetricManager->DistributionMetrics().Append(
-        new Metric::Distribution("RegenerateMapTime"));
+    auto& distMetrics = pMetricManager->DistributionMetrics();
+    distMetrics.Append(new Distribution("OverallProcessTime"));
+    distMetrics.Append(new Distribution("KeyFrameProcessTime"));
+    distMetrics.Append(new Distribution("ProcessTimeNoLoopClosure"));
+    distMetrics.Append(new Distribution("ProcessTimeWithLoopClosure"));
+    distMetrics.Append(new Distribution("LocalSlamTime"));
+    distMetrics.Append(new Distribution("LocalSlamScanMatchingTime"));
+    distMetrics.Append(new Distribution("MapUpdateTime"));
+    distMetrics.Append(new Distribution("LoopDetectionTime"));
+    distMetrics.Append(new Distribution("PoseGraphOptimizationTime"));
+    distMetrics.Append(new Distribution("RegenerateMapTime"));
+
+    distMetrics.Append(new Distribution("LocalSlamMaxScore"));
+    distMetrics.Append(new Distribution("LocalSlamCost"));
+
+    distMetrics.Append(new Distribution("LoopDetectionPoseGraphNodeDist"));
+
+    distMetrics.Append(new Distribution("PoseGraphOptimizationIteration"));
+    distMetrics.Append(new Distribution("PoseGraphOptimizationError"));
+
+    /* Register histogram metrics */
+    auto& histMetrics = pMetricManager->HistogramMetrics();
+    const auto bucketBoundaries =
+        Histogram::CreateFixedWidthBoundaries(0.05, 0.05, 18);
+    histMetrics.Append(new Histogram(
+        "LoopClosureMaxScore", bucketBoundaries));
+    histMetrics.Append(new Histogram(
+        "LoopClosureMaxMatchRate", bucketBoundaries));
+    histMetrics.Append(new Histogram(
+        "LoopClosureMaxScoreSuccess", bucketBoundaries));
+    histMetrics.Append(new Histogram(
+        "LoopClosureMaxMatchRateSuccess", bucketBoundaries));
 }
 
 /* Save metrics */
