@@ -74,6 +74,28 @@ void LoopDetectorBranchBound::Detect(
     return;
 }
 
+/* Compute the search window step */
+void LoopClosureBranchBound::ComputeSearchStep(
+    const GridMapBuilder::LocalMapInfo& localMapInfo,
+    const ScanPtr& scanData,
+    double& stepX,
+    double& stepY,
+    double& stepTheta) const
+{
+    /* Determine the search step */
+    const double mapResolution = localMapInfo.mMap.Resolution();
+    const auto maxRangeIt = std::max_element(
+        scanData->Ranges().cbegin(), scanData->Ranges().cend());
+    const double maxRange = std::min(*maxRangeIt, this->mScanRangeMax);
+    const double theta = mapResolution / maxRange;
+
+    stepX = mapResolution;
+    stepY = mapResolution;
+    stepTheta = std::acos(1.0 - 0.5 * theta * theta);
+
+    return;
+}
+
 /* Find a corresponding pose of the current robot pose
  * from the local grid map */
 bool LoopDetectorBranchBound::FindCorrespondingPose(
@@ -93,23 +115,18 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
     bool solutionFound = false;
 
     /* Determine the search window step */
-    const double mapResolution = localMap.Resolution();
-    const double deltaX = mapResolution;
-    const double deltaY = mapResolution;
-
-    const auto maxRangeIt = std::max_element(
-        scanData->Ranges().cbegin(), scanData->Ranges().cend());
-    const double maxRange = std::min(*maxRangeIt, this->mScanRangeMax);
-    const double deltaTheta = std::acos(
-        1.0 - 0.5 * (mapResolution / maxRange) * (mapResolution / maxRange));
+    double stepX;
+    double stepY;
+    double stepTheta;
+    this->ComputeSearchStep(localMapInfo, scanData, stepX, stepY, stepTheta);
 
     /* Determine the search window */
-    const double rangeX = this->mRangeX / 2.0;
-    const double rangeY = this->mRangeY / 2.0;
-    const double rangeTheta = this->mRangeTheta / 2.0;
-    const int winX = static_cast<int>(std::ceil(rangeX / deltaX));
-    const int winY = static_cast<int>(std::ceil(rangeY / deltaY));
-    const int winTheta = static_cast<int>(std::ceil(rangeTheta / deltaTheta));
+    const int winX = static_cast<int>(
+        std::ceil(0.5 * this->mRangeX / stepX));
+    const int winY = static_cast<int>(
+        std::ceil(0.5 * this->mRangeY / stepY));
+    const int winTheta = static_cast<int>(
+        std::ceil(0.5 * this->mRangeTheta / stepTheta));
 
     std::stack<Node> nodeStack;
 
@@ -128,9 +145,9 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
         const Node& currentNode = nodeStack.top();
         /* Compute the corresponding node pose */
         const RobotPose2D<double> nodePose {
-            sensorPose.mX + currentNode.mX * deltaX,
-            sensorPose.mY + currentNode.mY * deltaY,
-            sensorPose.mTheta + currentNode.mTheta * deltaTheta };
+            sensorPose.mX + currentNode.mX * stepX,
+            sensorPose.mY + currentNode.mY * stepY,
+            sensorPose.mTheta + currentNode.mTheta * stepTheta };
         /* Calculate node score */
         ScoreFunction::Summary resultSummary;
         this->mScoreFunc->Score(precompMaps.at(currentNode.mHeight), scanData,

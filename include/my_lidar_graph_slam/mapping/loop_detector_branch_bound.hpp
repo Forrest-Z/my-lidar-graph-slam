@@ -66,6 +66,14 @@ public:
         LoopDetectionResultVector& loopDetectionResults) override;
 
 private:
+    /* Compute the search window step */
+    void ComputeSearchStep(
+        const GridMapBuilder::LocalMapInfo& localMapInfo,
+        const ScanPtr& scanData,
+        double& stepX,
+        double& stepY,
+        double& stepTheta) const;
+
     /* Find a corresponding pose of the current robot pose
      * from the local grid map */
     bool FindCorrespondingPose(
