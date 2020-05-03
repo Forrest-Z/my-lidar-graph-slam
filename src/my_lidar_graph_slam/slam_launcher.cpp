@@ -536,8 +536,6 @@ void RegisterMetrics()
 
     /* Register counter metrics */
     auto& counterMetrics = pMetricManager->CounterMetrics();
-    counterMetrics.Append(new Counter("AllProcessCount"));
-    counterMetrics.Append(new Counter("IgnoredProcessCount"));
     counterMetrics.Append(new Counter("ProcessCount"));
 
     /* Register mean and variance metrics */
