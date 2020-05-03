@@ -68,40 +68,60 @@ public:
     { return this->mPoseGraph; }
 
 private:
+    /* Accumulate the travel distance since the last map update */
+    void UpdateAccumTravelDistance(const RobotPose2D<double>& odomPose);
+
+    /* Check if the grid map needs to be updated */
+    bool MapUpdateNeeded(double currentTime) const;
+
+    /* Perform Local SLAM */
+    void PerformLocalSlam(const Sensor::ScanDataPtr<double>& scanData,
+                          const RobotPose2D<double>& odomPose);
+
+    /* Integrate the scan data into the grid map */
+    void AppendScan();
+
+    /* Perform loop closure */
+    void PerformLoopClosure(bool& loopDetectionPerformed,
+                            bool& loopFound);
+
+private:
     /* Process counter (the total number of input data) */
-    int                                 mProcessCount;
+    int                                      mProcessCount;
     /* Grid map */
-    std::shared_ptr<GridMapBuilder>     mGridMapBuilder;
+    std::shared_ptr<GridMapBuilder>          mGridMapBuilder;
     /* Scan matcher */
-    ScanMatcherPtr                      mScanMatcher;
+    ScanMatcherPtr                           mScanMatcher;
     /* Pose graph */
-    std::shared_ptr<PoseGraph>          mPoseGraph;
+    std::shared_ptr<PoseGraph>               mPoseGraph;
     /* Pose graph optimizer */
-    std::shared_ptr<PoseGraphOptimizer> mPoseGraphOptimizer;
+    std::shared_ptr<PoseGraphOptimizer>      mPoseGraphOptimizer;
     /* Loop closure */
-    std::shared_ptr<LoopClosure>        mLoopClosure;
+    std::shared_ptr<LoopClosure>             mLoopClosure;
     /* Frame interval for loop closure */
-    int                                 mLoopClosureInterval;
+    int                                      mLoopClosureInterval;
+    /* Accumulated scans */
+    std::vector<Sensor::ScanDataPtr<double>> mAccumulatedScanData;
     /* Scan interpolator */
-    std::shared_ptr<ScanInterpolator>   mScanInterpolator;
+    std::shared_ptr<ScanInterpolator>        mScanInterpolator;
     /* Initial pose */
-    RobotPose2D<double>                 mInitialPose;
+    RobotPose2D<double>                      mInitialPose;
     /* Last odometry pose */
-    RobotPose2D<double>                 mLastOdomPose;
+    RobotPose2D<double>                      mLastOdomPose;
     /* Accumulated travel distance since the last map update */
-    double                              mAccumulatedTravelDist;
+    double                                   mAccumulatedTravelDist;
     /* Accumulated angle since the last map update */
-    double                              mAccumulatedAngle;
+    double                                   mAccumulatedAngle;
     /* Odometry pose at the last map update */
-    RobotPose2D<double>                 mLastMapUpdateOdomPose;
+    RobotPose2D<double>                      mLastMapUpdateOdomPose;
     /* Time of the last map update */
-    double                              mLastMapUpdateTime;
+    double                                   mLastMapUpdateTime;
     /* Map update threshold for accumulated travel distance */
-    double                              mUpdateThresholdTravelDist;
+    double                                   mUpdateThresholdTravelDist;
     /* Map update threshold for accumulated angle */
-    double                              mUpdateThresholdAngle;
+    double                                   mUpdateThresholdAngle;
     /* Map update threshold for the elapsed time since the last map update */
-    double                              mUpdateThresholdTime;
+    double                                   mUpdateThresholdTime;
 };
 
 } /* namespace Mapping */
