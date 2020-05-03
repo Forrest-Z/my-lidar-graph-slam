@@ -79,6 +79,14 @@ public:
                   Eigen::Matrix3d& estimatedCovMat) override;
 
 private:
+    /* Compute the search window step */
+    void ComputeSearchStep(
+        const GridMapBuilder::LocalMapInfo& localMapInfo,
+        const ScanPtr& scanData,
+        double& stepX,
+        double& stepY,
+        double& stepTheta) const;
+
     /* Find a corresponding pose of the current robot pose
      * from the loop-closure candidate local grid map */
     bool FindCorrespondingPose(
