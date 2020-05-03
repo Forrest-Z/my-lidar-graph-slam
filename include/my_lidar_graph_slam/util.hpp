@@ -4,6 +4,7 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_UTIL_HPP
 #define MY_LIDAR_GRAPH_SLAM_UTIL_HPP
 
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -54,6 +55,15 @@ inline std::uint8_t UInt32ToG(std::uint32_t rgb)
 inline std::uint8_t UInt32ToB(std::uint32_t rgb)
 {
     return static_cast<std::uint8_t>((rgb & 0x000000FF));
+}
+
+/* Convert nanoseconds to milliseconds */
+inline double ToMilliSeconds(std::int_least64_t nanoSec)
+{
+    const auto nanoSeconds = std::chrono::nanoseconds(nanoSec);
+    const auto milliSeconds = std::chrono::duration_cast<
+        std::chrono::milliseconds>(nanoSeconds);
+    return milliSeconds.count();
 }
 
 /* Check if the number is power of 2 */
