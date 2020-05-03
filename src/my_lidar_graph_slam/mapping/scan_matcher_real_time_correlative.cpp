@@ -131,18 +131,18 @@ void ScanMatcherRealTimeCorrelative::ComputeSearchStep(
     const Sensor::ScanDataPtr<double>& scanData,
     double& stepX,
     double& stepY,
-    double& stepTheta)
+    double& stepTheta) const
 {
     /* Determine the search step */
     const double mapResolution = gridMap.Resolution();
     const auto maxRangeIt = std::max_element(
         scanData->Ranges().cbegin(), scanData->Ranges().cend());
     const double maxRange = std::min(*maxRangeIt, this->mScanRangeMax);
-    const double cosTheta = mapResolution / maxRange;
+    const double theta = mapResolution / maxRange;
 
     stepX = mapResolution;
     stepY = mapResolution;
-    stepTheta = std::acos(1.0 - 0.5 * cosTheta * cosTheta);
+    stepTheta = std::acos(1.0 - 0.5 * theta * theta);
 
     return;
 }
