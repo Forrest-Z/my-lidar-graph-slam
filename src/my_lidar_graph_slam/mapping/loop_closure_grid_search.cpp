@@ -15,8 +15,8 @@ namespace Mapping {
 
 /* Find a loop and return a loop constraint */
 bool LoopClosureGridSearch::FindLoop(
-    GridMapBuilderPtr& gridMapBuilder,
-    const PoseGraphPtr& poseGraph,
+    std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+    const std::shared_ptr<PoseGraph>& poseGraph,
     RobotPose2D<double>& relPose,
     int& startNodeIdx,
     int& endNodeIdx,
@@ -25,7 +25,7 @@ bool LoopClosureGridSearch::FindLoop(
     /* Retrieve the current robot pose and scan data */
     const auto& currentNode = poseGraph->LatestNode();
     const RobotPose2D<double>& currentPose = currentNode.Pose();
-    const ScanPtr& currentScanData = currentNode.ScanData();
+    const Sensor::ScanDataPtr<double>& currentScanData = currentNode.ScanData();
     const int currentNodeIdx = currentNode.Index();
 
     /* Find a local map and a pose graph node for loop closure */
@@ -42,7 +42,7 @@ bool LoopClosureGridSearch::FindLoop(
     const int candidateNodeIdx = loopClosureCandidates.front().second;
 
     const auto& candidateMapInfo = gridMapBuilder->LocalMapAt(candidateMapIdx);
-    const GridMapType& candidateMap = candidateMapInfo.mMap;
+    const auto& candidateMap = candidateMapInfo.mMap;
     const auto& candidateNode = poseGraph->NodeAt(candidateNodeIdx);
     const RobotPose2D<double>& candidateNodePose = candidateNode.Pose();
 
@@ -71,8 +71,8 @@ bool LoopClosureGridSearch::FindLoop(
 /* Find a corresponding pose of the current robot pose
  * from the loop-closure candidate local grid map */
 bool LoopClosureGridSearch::FindCorrespondingPose(
-    const GridMapType& gridMap,
-    const ScanPtr& scanData,
+    const GridMapBuilder::GridMapType& gridMap,
+    const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& robotPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const

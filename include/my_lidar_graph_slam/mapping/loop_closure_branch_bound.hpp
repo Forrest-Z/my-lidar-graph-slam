@@ -18,13 +18,6 @@ namespace Mapping {
 class LoopClosureBranchBound final : public LoopClosure
 {
 public:
-    /* Type definitions */
-    using LoopClosure::GridMapBuilderPtr;
-    using LoopClosure::PoseGraphPtr;
-    using LoopClosure::ScanPtr;
-    using LoopClosure::GridMapType;
-    using LoopClosure::PrecomputedMapType;
-
     /*
      * Node struct holds the necessary information for Branch-and-Bound method
      */
@@ -71,8 +64,8 @@ public:
     ~LoopClosureBranchBound() = default;
 
     /* Find a loop and return a loop constraint */
-    bool FindLoop(GridMapBuilderPtr& gridMapBuilder,
-                  const PoseGraphPtr& poseGraph,
+    bool FindLoop(std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+                  const std::shared_ptr<PoseGraph>& poseGraph,
                   RobotPose2D<double>& relPose,
                   int& startNodeIdx,
                   int& endNodeIdx,
@@ -82,7 +75,7 @@ private:
     /* Compute the search window step */
     void ComputeSearchStep(
         const GridMapBuilder::LocalMapInfo& localMapInfo,
-        const ScanPtr& scanData,
+        const Sensor::ScanDataPtr<double>& scanData,
         double& stepX,
         double& stepY,
         double& stepTheta) const;
@@ -91,7 +84,7 @@ private:
      * from the loop-closure candidate local grid map */
     bool FindCorrespondingPose(
         const GridMapBuilder::LocalMapInfo& localMapInfo,
-        const ScanPtr& scanData,
+        const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& robotPose,
         RobotPose2D<double>& correspondingPose,
         Eigen::Matrix3d& estimatedCovMat) const;

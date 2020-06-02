@@ -12,18 +12,14 @@ namespace Mapping {
 class LoopClosureEmpty final : public LoopClosure
 {
 public:
-    /* Type definitions */
-    using LoopClosure::GridMapBuilderPtr;
-    using LoopClosure::PoseGraphPtr;
-
     /* Constructor */
     LoopClosureEmpty() = default;
     /* Destructor */
     ~LoopClosureEmpty() = default;
 
     /* Do nothing for a loop closure */
-    bool FindLoop(GridMapBuilderPtr& gridMapBuilder,
-                  const PoseGraphPtr& poseGraph,
+    bool FindLoop(std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+                  const std::shared_ptr<PoseGraph>& poseGraph,
                   RobotPose2D<double>& relPose,
                   int& startNodeIdx,
                   int& endNodeIdx,

@@ -15,12 +15,6 @@ namespace Mapping {
 class LoopClosureGridSearch final : public LoopClosure
 {
 public:
-    /* Type definitions */
-    using LoopClosure::GridMapBuilderPtr;
-    using LoopClosure::PoseGraphPtr;
-    using LoopClosure::ScanPtr;
-    using LoopClosure::GridMapType;
-
     /* Constructor */
     LoopClosureGridSearch(const ScoreFuncPtr& scoreFunc,
                           const CostFuncPtr& costFunc,
@@ -50,18 +44,18 @@ public:
     ~LoopClosureGridSearch() = default;
 
     /* Find a loop and return a loop constraint */
-    bool FindLoop(GridMapBuilderPtr& gridMapBuilder,
-                  const PoseGraphPtr& poseGraph,
+    bool FindLoop(std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+                  const std::shared_ptr<PoseGraph>& poseGraph,
                   RobotPose2D<double>& relPose,
                   int& startNodeIdx,
                   int& endNodeIdx,
                   Eigen::Matrix3d& estimatedCovMat) override;
-    
+
 private:
     /* Find a corresponding pose of the current robot pose
      * from the loop-closure candidate local grid map */
-    bool FindCorrespondingPose(const GridMapType& gridMap,
-                               const ScanPtr& scanData,
+    bool FindCorrespondingPose(const GridMapBuilder::GridMapType& gridMap,
+                               const Sensor::ScanDataPtr<double>& scanData,
                                const RobotPose2D<double>& robotPose,
                                RobotPose2D<double>& correspondingPose,
                                Eigen::Matrix3d& estimatedCovMat) const;

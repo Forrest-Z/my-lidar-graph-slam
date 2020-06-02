@@ -15,8 +15,8 @@ namespace Mapping {
 
 /* Find a loop and return a loop constraint */
 bool LoopClosureBranchBound::FindLoop(
-    GridMapBuilderPtr& gridMapBuilder,
-    const PoseGraphPtr& poseGraph,
+    std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+    const std::shared_ptr<PoseGraph>& poseGraph,
     RobotPose2D<double>& relPose,
     int& startNodeIdx,
     int& endNodeIdx,
@@ -25,7 +25,7 @@ bool LoopClosureBranchBound::FindLoop(
     /* Retrieve the current robot pose and scan data */
     const auto& currentNode = poseGraph->LatestNode();
     const RobotPose2D<double>& currentPose = currentNode.Pose();
-    const ScanPtr& currentScanData = currentNode.ScanData();
+    const Sensor::ScanDataPtr<double>& currentScanData = currentNode.ScanData();
     const int currentNodeIdx = currentNode.Index();
 
     /* Find a local map and a pose graph node for loop closure */
@@ -78,7 +78,7 @@ bool LoopClosureBranchBound::FindLoop(
 /* Compute the search window step */
 void LoopClosureBranchBound::ComputeSearchStep(
     const GridMapBuilder::LocalMapInfo& localMapInfo,
-    const ScanPtr& scanData,
+    const Sensor::ScanDataPtr<double>& scanData,
     double& stepX,
     double& stepY,
     double& stepTheta) const
@@ -101,13 +101,13 @@ void LoopClosureBranchBound::ComputeSearchStep(
  * from the loop-closure candidate local grid map */
 bool LoopClosureBranchBound::FindCorrespondingPose(
     const GridMapBuilder::LocalMapInfo& localMapInfo,
-    const ScanPtr& scanData,
+    const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& robotPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
     /* Retrieve the local grid map */
-    const GridMapType& localMap = localMapInfo.mMap;
+    const GridMapBuilder::GridMapType& localMap = localMapInfo.mMap;
     /* Retrieve the precomputed grid maps */
     const auto& precompMaps = localMapInfo.mPrecomputedMaps;
 

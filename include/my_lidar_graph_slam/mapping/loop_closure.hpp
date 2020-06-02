@@ -19,24 +19,16 @@ namespace Mapping {
 class LoopClosure
 {
 public:
-    /* Type definitions */
-    using GridMapBuilderPtr = std::shared_ptr<GridMapBuilder>;
-    using PoseGraphPtr = std::shared_ptr<Mapping::PoseGraph>;
-    using ScanPtr = Sensor::ScanDataPtr<double>;
-    using GridMapType = GridMapBuilder::GridMapType;
-    using PrecomputedMapType = GridMapBuilder::PrecomputedMapType;
-
     /* Constructor */
     LoopClosure() = default;
-
     /* Destructor */
     virtual ~LoopClosure() = default;
 
     /* Find a loop and return a loop constraint
      * Current scan data stored in the latest pose graph node is
      * matched against the previous local grid map */
-    virtual bool FindLoop(GridMapBuilderPtr& gridMapBuilder,
-                          const PoseGraphPtr& poseGraph,
+    virtual bool FindLoop(std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+                          const std::shared_ptr<PoseGraph>& poseGraph,
                           RobotPose2D<double>& relPose,
                           int& startNodeIdx,
                           int& endNodeIdx,
