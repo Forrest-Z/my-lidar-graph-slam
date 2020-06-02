@@ -111,10 +111,6 @@ bool LidarGraphSlam::ProcessScan(
         distMetrics("OverallProcessTime")->Observe(processTime);
     if (loopDetectionPerformed)
         distMetrics("KeyFrameProcessTime")->Observe(processTime);
-    if (loopDetectionPerformed && !loopFound)
-        distMetrics("ProcessTimeNoLoopClosure")->Observe(processTime);
-    if (loopDetectionPerformed && loopFound)
-        distMetrics("ProcessTimeWithLoopClosure")->Observe(processTime);
 
     std::cerr << "Processing frame: " << this->mProcessCount << std::endl;
 
@@ -177,9 +173,6 @@ void LidarGraphSlam::PerformLocalSlam(
         return;
     }
 
-    /* Measure processing time */
-    boost::timer::cpu_timer localSlamTimer;
-
     const RobotPose2D<double> relPoseFromLastMapUpdate =
         InverseCompound(this->mLastMapUpdateOdomPose, odomPose);
     const RobotPose2D<double> initialPose =
@@ -193,13 +186,16 @@ void LidarGraphSlam::PerformLocalSlam(
     this->mScanMatcher->OptimizePose(
         this->mGridMapBuilder->LatestMap(),
         scanData, initialPose, scanMatchSummary);
-    distMetrics("LocalSlamScanMatchingTime")->Observe(
+    distMetrics("LocalScanMatchingTime")->Observe(
         ToMilliSeconds(localScanMatchingTimer.elapsed().wall));
 
     const RobotPose2D<double>& estimatedPose =
         scanMatchSummary.mEstimatedPose;
     const Eigen::Matrix3d& estimatedCovariance =
         scanMatchSummary.mEstimatedCovariance;
+
+    /* Measure processing time */
+    boost::timer::cpu_timer poseGraphUpdateTimer;
 
     /* Append the new pose graph node */
     const RobotPose2D<double>& startNodePose =
@@ -210,22 +206,22 @@ void LidarGraphSlam::PerformLocalSlam(
         this->mPoseGraph->AppendNode(estimatedPose, scanData);
 
     /* Two pose graph node indexes must be adjacent
-        * since the edge represents the odometry constraint */
+     * since the edge represents the odometry constraint */
     assert(endNodeIdx == startNodeIdx + 1);
 
     /* Setup the pose graph edge parameters */
     /* Relative pose in the frame of the start node
-        * Angular component must be normalized from -pi to pi */
+     * Angular component must be normalized from -pi to pi */
     const RobotPose2D<double> edgeRelPose =
         NormalizeAngle(InverseCompound(startNodePose, estimatedPose));
 
     /* Covariance matrix must be rotated beforehand since the matrix
-        * must represent the covariance in the node frame (not world frame) */
+     * must represent the covariance in the node frame (not world frame) */
     Eigen::Matrix3d robotFrameCovMat;
     ConvertCovarianceFromWorldToRobot(
         startNodePose, estimatedCovariance, robotFrameCovMat);
     /* Calculate a information matrix by inverting a covariance matrix
-        * obtained from the scan matching */
+     * obtained from the scan matching */
     const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();
 
     /* Append the new pose graph edge for odometric constraint */
@@ -233,8 +229,8 @@ void LidarGraphSlam::PerformLocalSlam(
                                  edgeRelPose, edgeInfoMat);
 
     /* Measure processing time */
-    distMetrics("LocalSlamTime")->Observe(
-        ToMilliSeconds(localSlamTimer.elapsed().wall));
+    distMetrics("PoseGraphUpdateTime")->Observe(
+        ToMilliSeconds(poseGraphUpdateTimer.elapsed().wall));
 
     return;
 }
@@ -245,6 +241,7 @@ void LidarGraphSlam::AppendScan()
     auto* const pMetric = Metric::MetricManager::Instance();
     auto& distMetrics = pMetric->DistributionMetrics();
 
+    /* Measure processing time */
     boost::timer::cpu_timer mapUpdateTimer;
     this->mGridMapBuilder->AppendScan(this->mPoseGraph);
     distMetrics("MapUpdateTime")->Observe(

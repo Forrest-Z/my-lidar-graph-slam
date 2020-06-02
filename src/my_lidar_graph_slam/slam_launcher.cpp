@@ -571,10 +571,8 @@ void RegisterMetrics()
     auto& distMetrics = pMetricManager->DistributionMetrics();
     distMetrics.Append(new Distribution("OverallProcessTime"));
     distMetrics.Append(new Distribution("KeyFrameProcessTime"));
-    distMetrics.Append(new Distribution("ProcessTimeNoLoopClosure"));
-    distMetrics.Append(new Distribution("ProcessTimeWithLoopClosure"));
-    distMetrics.Append(new Distribution("LocalSlamTime"));
-    distMetrics.Append(new Distribution("LocalSlamScanMatchingTime"));
+    distMetrics.Append(new Distribution("LocalScanMatchingTime"));
+    distMetrics.Append(new Distribution("PoseGraphUpdateTime"));
     distMetrics.Append(new Distribution("MapUpdateTime"));
     distMetrics.Append(new Distribution("LoopDetectionTime"));
     distMetrics.Append(new Distribution("PoseGraphOptimizationTime"));
