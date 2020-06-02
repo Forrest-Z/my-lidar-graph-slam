@@ -48,6 +48,10 @@
         "CostConfigGroup": "CostGreedyEndpoint"
     },
 
+    "ScanAccumulator": {
+        "NumOfAccumulatedScans": 3
+    },
+
     "ScanInterpolator": {
         "DistScans": 0.05,
         "DistThresholdEmpty": 0.25
@@ -84,14 +88,14 @@
 
     "LoopClosureBranchBound": {
         "TravelDistThreshold": 10.0,
-        "PoseGraphNodeDistMax": 5.0,
+        "PoseGraphNodeDistMax": 10.0,
         "NodeHeightMax": 6,
         "SearchRangeX": 5.0,
         "SearchRangeY": 5.0,
         "SearchRangeTheta": 1.0,
         "ScanRangeMax": 20.0,
-        "ScoreThreshold": 0.5,
-        "MatchRateThreshold": 0.5,
+        "ScoreThreshold": 0.55,
+        "MatchRateThreshold": 0.0,
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
         "CostType": "GreedyEndpoint",
@@ -125,9 +129,9 @@
             "TravelDistThresholdForLocalMap": 20.0
         },
         "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0,
-        "ProbabilityHit": 0.6,
-        "ProbabilityMiss": 0.4
+        "UsableRangeMax": 20.0,
+        "ProbabilityHit": 0.65,
+        "ProbabilityMiss": 0.45
     },
 
     "LidarGraphSlam": {
@@ -141,6 +145,8 @@
         "LoopClosureType": "BranchBound",
         "LoopClosureConfigGroup": "LoopClosureBranchBound",
         "LoopClosureInterval": 5,
+        "UseScanAccumulator": "false",
+        "ScanAccumulatorConfigGroup": "ScanAccumulator",
         "UseScanInterpolator": "true",
         "ScanInterpolatorConfigGroup": "ScanInterpolator",
         "InitialPose": {

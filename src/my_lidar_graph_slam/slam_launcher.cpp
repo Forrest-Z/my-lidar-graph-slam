@@ -24,6 +24,7 @@
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
+#include "my_lidar_graph_slam/mapping/scan_accumulator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
@@ -401,6 +402,24 @@ std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizer(
     return nullptr;
 }
 
+/* Create scan accumulator object */
+std::shared_ptr<Mapping::ScanAccumulator> CreateScanAccumulator(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for scan accumulator */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    const std::size_t numOfAccumulatedScans =
+        config.get<std::size_t>("NumOfAccumulatedScans", 3);
+
+    /* Construct scan accumulator object */
+    auto pScanAccumulator = std::make_shared<Mapping::ScanAccumulator>(
+        numOfAccumulatedScans);
+
+    return pScanAccumulator;
+}
+
 /* Create scan interpolator object */
 std::shared_ptr<Mapping::ScanInterpolator> CreateScanInterpolator(
     const pt::ptree& jsonSettings,
@@ -493,14 +512,24 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     /* Load settings for LiDAR Graph-Based SLAM */
     const int loopClosureInterval = config.get("LoopClosureInterval", 10);
 
+    /* Create scan accumulator object if necessary */
+    const bool useScanAccumulator =
+        config.get("UseScanAccumulator", true);
+    const std::string scanAccumulatorConfigGroup =
+        config.get("ScanAccumulatorConfigGroup", "ScanAccumulator");
+
+    auto pScanAccumulator = useScanAccumulator ?
+        CreateScanAccumulator(jsonSettings, scanAccumulatorConfigGroup) :
+        nullptr;
+
     /* Create scan interpolator object if necessary */
-    const bool useInterpolator =
+    const bool useScanInterpolator =
         config.get("UseScanInterpolator", true);
-    const std::string interpolatorConfigGroup =
+    const std::string scanInterpolatorConfigGroup =
         config.get("ScanInterpolatorConfigGroup", "ScanInterpolator");
 
-    auto pScanInterpolator = useInterpolator ?
-        CreateScanInterpolator(jsonSettings, interpolatorConfigGroup) :
+    auto pScanInterpolator = useScanInterpolator ?
+        CreateScanInterpolator(jsonSettings, scanInterpolatorConfigGroup) :
         nullptr;
 
     const double initialPoseX = config.get("InitialPose.X", 0.0);
@@ -520,7 +549,7 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     /* Create LiDAR Graph-Based SLAM object */
     auto pLidarGraphSlam = std::make_shared<Mapping::LidarGraphSlam>(
         pGridMapBuilder, pScanMatcher, pPoseGraph, pOptimizer, pLoopClosure,
-        loopClosureInterval, pScanInterpolator, initialPose,
+        loopClosureInterval, pScanAccumulator, pScanInterpolator, initialPose,
         updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime);
     
     return pLidarGraphSlam;
