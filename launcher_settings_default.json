@@ -48,6 +48,10 @@
         "CostConfigGroup": "CostGreedyEndpoint"
     },
 
+    "ScanAccumulator": {
+        "NumOfAccumulatedScans": 3
+    },
+
     "ScanInterpolator": {
         "DistScans": 0.05,
         "DistThresholdEmpty": 0.25
@@ -91,8 +95,8 @@
         "SearchRangeY": 5.0,
         "SearchRangeTheta": 1.0,
         "ScanRangeMax": 20.0,
-        "ScoreThreshold": 0.5,
-        "MatchRateThreshold": 0.5,
+        "ScoreThreshold": 0.55,
+        "MatchRateThreshold": 0.0,
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
         "CostType": "GreedyEndpoint",
@@ -132,6 +136,8 @@
     },
 
     "Frontend": {
+        "UseScanAccumulator": "false",
+        "ScanAccumulatorConfigGroup": "ScanAccumulator",
         "UseScanInterpolator": "true",
         "ScanInterpolatorConfigGroup": "ScanInterpolator",
         "LocalSlam": {
