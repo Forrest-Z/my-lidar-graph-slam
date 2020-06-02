@@ -1,6 +1,8 @@
 
 /* lidar_graph_slam.cpp */
 
+#include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -10,7 +12,7 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 
-#include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
+#include "my_lidar_graph_slam/io/map_saver.hpp"
 #include "my_lidar_graph_slam/metric/metric.hpp"
 
 namespace MyLidarGraphSlam {
@@ -24,6 +26,7 @@ LidarGraphSlam::LidarGraphSlam(
     const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
     const std::shared_ptr<LoopClosure>& loopClosure,
     int loopClosureInterval,
+    const std::shared_ptr<ScanAccumulator>& scanAccumulator,
     const std::shared_ptr<ScanInterpolator>& scanInterpolator,
     const RobotPose2D<double>& initialPose,
     double updateThresholdTravelDist,
@@ -36,6 +39,7 @@ LidarGraphSlam::LidarGraphSlam(
     mPoseGraphOptimizer(poseGraphOptimizer),
     mLoopClosure(loopClosure),
     mLoopClosureInterval(loopClosureInterval),
+    mScanAccumulator(scanAccumulator),
     mScanInterpolator(scanInterpolator),
     mInitialPose(initialPose),
     mLastOdomPose(0.0, 0.0, 0.0),
@@ -61,16 +65,24 @@ bool LidarGraphSlam::ProcessScan(
     /* Measure processing time */
     boost::timer::cpu_timer cpuTimer;
 
-    /* Interpolate scan data if necessary */
-    auto scanData = (this->mScanInterpolator != nullptr) ?
-        this->mScanInterpolator->Interpolate(rawScanData) : rawScanData;
-
     /* Accumulate the travel distance since the last map update */
     this->UpdateAccumTravelDistance(odomPose);
 
+    /* Accumulate scan data */
+    if (this->mScanAccumulator != nullptr)
+        this->mScanAccumulator->AppendScan(rawScanData);
+
     /* Check if the map should be updated */
-    if (!this->MapUpdateNeeded(scanData->TimeStamp()))
+    if (!this->MapUpdateNeeded(rawScanData->TimeStamp()))
         return false;
+
+    /* Interpolate scan data if necessary */
+    auto accumulatedScanData = (this->mScanAccumulator != nullptr) ?
+        this->mScanAccumulator->ComputeConcatenatedScan() :
+        rawScanData;
+    auto scanData = (this->mScanInterpolator != nullptr) ?
+        this->mScanInterpolator->Interpolate(accumulatedScanData) :
+        accumulatedScanData;
 
     /* Perform Local SLAM */
     this->PerformLocalSlam(scanData, odomPose);
@@ -247,6 +259,7 @@ void LidarGraphSlam::PerformLoopClosure(
     auto* const pMetric = Metric::MetricManager::Instance();
     auto& distMetrics = pMetric->DistributionMetrics();
 
+    /* Check if the loop detection needs to be performed */
     loopDetectionPerformed =
         this->mProcessCount > this->mLoopClosureInterval &&
         this->mProcessCount % this->mLoopClosureInterval == 0;
