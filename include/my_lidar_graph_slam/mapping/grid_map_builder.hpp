@@ -26,7 +26,6 @@ public:
     using GridMapType = GridMap<BinaryBayesGridCell<double>>;
     using PatchType = typename GridMapType::PatchType;
     using PrecomputedMapType = GridMap<ConstGridCell<double>>;
-    using ScanType = Sensor::ScanDataPtr<double>;
 
 public:
     /*
@@ -146,7 +145,7 @@ private:
     /* Compute the bounding box of the scan and scan points */
     void ComputeBoundingBoxAndScanPoints(
         const RobotPose2D<double>& robotPose,
-        const ScanType& scanData,
+        const Sensor::ScanDataPtr<double>& scanData,
         Point2D<double>& bottomLeft,
         Point2D<double>& topRight,
         std::vector<Point2D<double>>& hitPoints);

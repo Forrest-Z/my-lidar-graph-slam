@@ -162,9 +162,11 @@ void GridMapBuilder::UpdateGridMap(
     const std::shared_ptr<PoseGraph>& poseGraph)
 {
     /* Current robot pose (stored in the latest pose graph node) */
-    const RobotPose2D<double>& robotPose = poseGraph->LatestNode().Pose();
+    const RobotPose2D<double>& robotPose =
+        poseGraph->LatestNode().Pose();
     /* Current scan data (stored in the latest pose graph node) */
-    const ScanType& scanData = poseGraph->LatestNode().ScanData();
+    const Sensor::ScanDataPtr<double>& scanData =
+        poseGraph->LatestNode().ScanData();
     /* Current node index */
     const int nodeIdx = poseGraph->LatestNode().Index();
 
@@ -301,7 +303,7 @@ void GridMapBuilder::ConstructMapFromScans(
         /* Retrieve the pose and scan data in the node */
         const PoseGraph::Node& node = poseGraph->NodeAt(nodeIdx);
         const RobotPose2D<double>& nodePose = node.Pose();
-        const ScanType& scanData = node.ScanData();
+        const Sensor::ScanDataPtr<double>& scanData = node.ScanData();
 
         /* Compute the sensor pose from the node pose */
         const RobotPose2D<double> sensorPose =
@@ -354,7 +356,7 @@ void GridMapBuilder::ConstructMapFromScans(
         /* Retrieve the pose in the node */
         const PoseGraph::Node& node = poseGraph->NodeAt(nodeIdx);
         const RobotPose2D<double>& nodePose = node.Pose();
-        const ScanType& scanData = node.ScanData();
+        const Sensor::ScanDataPtr<double>& scanData = node.ScanData();
 
         /* Compute the sensor pose from the node pose */
         const RobotPose2D<double> sensorPose =
@@ -393,7 +395,7 @@ void GridMapBuilder::ConstructMapFromScans(
 /* Compute the bounding box of the scan and scan points */
 void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
     const RobotPose2D<double>& robotPose,
-    const ScanType& scanData,
+    const Sensor::ScanDataPtr<double>& scanData,
     Point2D<double>& bottomLeft,
     Point2D<double>& topRight,
     std::vector<Point2D<double>>& hitPoints)
