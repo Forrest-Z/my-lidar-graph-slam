@@ -194,6 +194,8 @@ public:
 
     /* Retrieve the number of the observed values */
     virtual int NumOfSamples() const = 0;
+    /* Retrieve the sum of the observed values */
+    virtual double Sum() const = 0;
     /* Retrieve the mean of the observed values */
     virtual double Mean() const = 0;
     /* Retrieve the unbiased variance of the observed values */
@@ -219,6 +221,8 @@ public:
 
     /* Retrieve the number of the observed values */
     int NumOfSamples() const override { return 0; }
+    /* Retrieve the sum of the observed values */
+    double Sum() const override { return 0.0; }
     /* Retrieve the mean of the observed values */
     double Mean() const override { return 0.0; }
     /* Retrieve the unbiased variance of the observed values */
@@ -238,6 +242,7 @@ public:
     Distribution(const std::string& metricId) :
         DistributionBase(metricId),
         mNumOfSamples(0),
+        mSum(0.0),
         mMean(0.0),
         mScaledVariance(0.0),
         mMaximum(0.0),
@@ -250,6 +255,8 @@ public:
 
     /* Retrieve the number of the observed values */
     int NumOfSamples() const override { return this->mNumOfSamples; }
+    /* Retrieve the sum of the observed values */
+    double Sum() const override { return this->mSum; }
     /* Retrieve the mean of the observed values */
     double Mean() const override { return this->mMean; }
     /* Retrieve the unbiased variance of the observed values */
@@ -264,6 +271,8 @@ public:
 private:
     /* Number of the observed values */
     int    mNumOfSamples;
+    /* Sum of the observed values */
+    double mSum;
     /* Mean of the observed values */
     double mMean;
     /* Scaled variance of the observed values */

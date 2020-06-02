@@ -14,6 +14,7 @@ namespace Metric {
 void Distribution::Observe(double val)
 {
     ++this->mNumOfSamples;
+    this->mSum += val;
 
     if (this->mNumOfSamples == 1) {
         this->mMean = val;
@@ -297,6 +298,7 @@ MetricManager::ptree MetricManager::ToPropertyTree() const
         ptree distTree;
         distTree.put("Id", pDistribution->Id());
         distTree.put("NumOfSamples", pDistribution->NumOfSamples());
+        distTree.put("Sum", pDistribution->Sum());
         distTree.put("Mean", pDistribution->Mean());
         distTree.put("StandardDeviation", pDistribution->StandardDeviation());
         distTree.put("Maximum", pDistribution->Maximum());
