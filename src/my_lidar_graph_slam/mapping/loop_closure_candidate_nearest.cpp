@@ -12,8 +12,8 @@ namespace Mapping {
 
 /* Find a local map and a pose graph node used for loop closure */
 LoopClosureCandidate::CandidateVector LoopClosureCandidateNearest::Find(
-    const GridMapBuilderPtr& gridMapBuilder,
-    const PoseGraphPtr& poseGraph,
+    const std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+    const std::shared_ptr<PoseGraph>& poseGraph,
     const RobotPose2D<double>& robotPose)
 {
     const int numOfMaps = static_cast<int>(gridMapBuilder->LocalMaps().size());
@@ -50,7 +50,7 @@ LoopClosureCandidate::CandidateVector LoopClosureCandidateNearest::Find(
             /* Retrieve the pose graph node */
             const RobotPose2D<double>& nodePose =
                 poseGraph->NodeAt(nodeIdx).Pose();
-            
+
             /* Calculate the accumulated travel distance */
             nodeTravelDist += Distance(prevPose, nodePose);
             prevPose = nodePose;

@@ -13,14 +13,9 @@ class LoopClosureCandidateNearest final : public LoopClosureCandidate
 {
 public:
     /* Type definitions */
-    using LoopClosureCandidate::GridMapBuilderPtr;
-    using LoopClosureCandidate::PoseGraphPtr;
-    using LoopClosureCandidate::ScanPtr;
-    using LoopClosureCandidate::GridMapType;
-
     using LoopClosureCandidate::CandidateType;
     using LoopClosureCandidate::CandidateVector;
-    
+
     /* Constructor */
     LoopClosureCandidateNearest(double travelDistThreshold,
                                 double nodeDistThreshold) :
@@ -32,9 +27,10 @@ public:
     ~LoopClosureCandidateNearest() = default;
 
     /* Find a local map and a pose graph node used for loop closure */
-    CandidateVector Find(const GridMapBuilderPtr& gridMapBuilder,
-                         const PoseGraphPtr& poseGraph,
-                         const RobotPose2D<double>& robotPose) override;
+    CandidateVector Find(
+        const std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+        const std::shared_ptr<PoseGraph>& poseGraph,
+        const RobotPose2D<double>& robotPose) override;
 
 private:
     /* Travel distance threhsold for loop closure

@@ -19,26 +19,20 @@ namespace Mapping {
 class LoopClosureCandidate
 {
 public:
-    /* Type definitions */
-    using GridMapBuilderPtr = std::shared_ptr<GridMapBuilder>;
-    using PoseGraphPtr = std::shared_ptr<Mapping::PoseGraph>;
-    using ScanPtr = Sensor::ScanDataPtr<double>;
-    using GridMapType = GridMapBuilder::GridMapType;
-
     /* CandidateType holds a local map index and a pose graph node index */
     using CandidateType = std::pair<int, int>;
     using CandidateVector = std::vector<CandidateType>;
 
     /* Constructor */
     LoopClosureCandidate() = default;
-
     /* Destructor */
     virtual ~LoopClosureCandidate() = default;
 
     /* Find a local map and a pose graph node used for loop closure */
-    virtual CandidateVector Find(const GridMapBuilderPtr& gridMapBuilder,
-                                 const PoseGraphPtr& poseGraph,
-                                 const RobotPose2D<double>& robotPose) = 0;
+    virtual CandidateVector Find(
+        const std::shared_ptr<GridMapBuilder>& gridMapBuilder,
+        const std::shared_ptr<PoseGraph>& poseGraph,
+        const RobotPose2D<double>& robotPose) = 0;
 };
 
 } /* namespace Mapping */
