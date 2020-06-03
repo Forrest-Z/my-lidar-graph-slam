@@ -118,7 +118,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     RobotPose2D<double> bestSensorPose = sensorPose;
     double scoreMax = this->mScoreThreshold;
     double matchRateMax = 0.0;
-    bool solutionFound = false;
+    bool loopFound = false;
 
     /* Determine the search window step */
     double stepX;
@@ -176,7 +176,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
             bestSensorPose = nodePose;
             scoreMax = resultSummary.mNormalizedScore;
             matchRateMax = resultSummary.mMatchRate;
-            solutionFound = true;
+            loopFound = true;
         } else {
             /* Otherwise, split the current node into four new nodes */
             const int x = currentNode.mX;
@@ -203,7 +203,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     histMetrics("LoopClosureMaxMatchRate")->Observe(matchRateMax);
 
     /* Loop closure fails if the solution is not found */
-    if (!solutionFound)
+    if (!loopFound)
         return false;
 
     /* Estimate the covariance matrix */
