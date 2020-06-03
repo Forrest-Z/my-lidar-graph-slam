@@ -22,6 +22,7 @@
 #include "my_lidar_graph_slam/mapping/loop_closure_branch_bound.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_empty.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
+#include "my_lidar_graph_slam/mapping/loop_closure_real_time_correlative.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
 #include "my_lidar_graph_slam/mapping/scan_accumulator.hpp"
@@ -294,6 +295,41 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureGridSearch(
     return pLoopClosure;
 }
 
+/* Create the real-time correlative loop closure object */
+std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureRealTimeCorrelative(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for real-time correlative loop closure */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
+    const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
+    const int lowResolution = config.get("LowResolutionMapWinSize", 10);
+    const double rangeX = config.get("SearchRangeX", 2.0);
+    const double rangeY = config.get("SearchRangeY", 2.0);
+    const double rangeTheta = config.get("SearchRangeTheta", 1.0);
+    const double scanRangeMax = config.get("ScanRangeMax", 20.0);
+    const double scoreThreshold = config.get("ScoreThreshold", 0.8);
+
+    /* Construct cost function */
+    const std::string costType =
+        config.get("CostType", "GreedyEndpoint");
+    const std::string costConfigGroup =
+        config.get("CostConfigGroup", "CostGreedyEndpoint");
+    auto pCostFunc = CreateCostFunction(
+        jsonSettings, costType, costConfigGroup);
+
+    /* Construct real-time correlative loop closure object */
+    auto pLoopClosure = std::make_shared<
+        Mapping::LoopClosureRealTimeCorrelative>(
+        pCostFunc, travelDistThreshold, nodeDistMax,
+        lowResolution, rangeX, rangeY, rangeTheta,
+        scanRangeMax, scoreThreshold);
+
+    return pLoopClosure;
+}
+
 /* Create the branch-and-bound loop closure object */
 std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureBranchBound(
     const pt::ptree& jsonSettings,
@@ -345,6 +381,8 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosure(
 {
     if (loopClosureType == "GridSearch")
         return CreateLoopClosureGridSearch(jsonSettings, configGroup);
+    else if (loopClosureType == "RealTimeCorrelative")
+        return CreateLoopClosureRealTimeCorrelative(jsonSettings, configGroup);
     else if (loopClosureType == "BranchBound")
         return CreateLoopClosureBranchBound(jsonSettings, configGroup);
     else if (loopClosureType == "Empty")
