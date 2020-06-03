@@ -41,8 +41,8 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
         PrecomputeGridMap(gridMap, this->mLowResolution);
 
     /* Find the best pose from the search window */
-    const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
-    const RobotPose2D<double> sensorPose = Compound(initialPose, relPose);
+    const RobotPose2D<double> sensorPose =
+        Compound(initialPose, scanData->RelativeSensorPose());
 
     /* Determine the search step */
     double stepX;
@@ -76,7 +76,7 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
         this->ComputeScanIndices(
             precompMap, currentSensorPose, scanData, scanIndices);
 
-        /* 'winX' and 'winY' are in the number of grid cells */
+        /* 'winX' and 'winY' are represented in the number of grid cells */
         /* For given 't', the projected scan points 'scanIndices' are
          * related by pure translation for the 'x' and 'y' search directions */
         for (int x = -winX; x <= winX; x += this->mLowResolution) {
@@ -114,7 +114,7 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
 
     /* Compute the robot pose from the updated sensor pose */
     const RobotPose2D<double> robotPose =
-        MoveBackward(bestSensorPose, relPose);
+        MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
 
     /* Setup the result summary */
     /* Set the normalized cost value */
@@ -163,7 +163,6 @@ void ScanMatcherRealTimeCorrelative::ComputeScanIndices(
     std::vector<Point2D<int>>& scanIndices) const
 {
     /* Compute the grid cell indices for scan points */
-    scanIndices.reserve(scanData->NumOfScans());
     scanIndices.clear();
 
     const std::size_t numOfScans = scanData->NumOfScans();
@@ -174,9 +173,9 @@ void ScanMatcherRealTimeCorrelative::ComputeScanIndices(
         if (range >= this->mScanRangeMax)
             continue;
 
-        const Point2D<double> hitPoint =
+        Point2D<double> hitPoint =
             scanData->HitPoint(sensorPose, i);
-        const Point2D<int> hitIdx =
+        Point2D<int> hitIdx =
             precompMap.WorldCoordinateToGridCellIndex(hitPoint);
         scanIndices.push_back(std::move(hitIdx));
     }
@@ -218,8 +217,8 @@ void ScanMatcherRealTimeCorrelative::EvaluateHighResolutionMap(
     double& maxScore) const
 {
     /* Search inside the relatively small area */
-    for (int x = offsetX; x <= offsetX + this->mLowResolution; ++x) {
-        for (int y = offsetY; y <= offsetY + this->mLowResolution; ++y) {
+    for (int x = offsetX; x < offsetX + this->mLowResolution; ++x) {
+        for (int y = offsetY; y < offsetY + this->mLowResolution; ++y) {
             /* Evaluate matching score */
             const double score =
                 this->ComputeScore(gridMap, scanIndices, x, y);
