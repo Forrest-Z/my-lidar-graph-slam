@@ -59,6 +59,9 @@ void PoseGraphOptimizerLM::Optimize(std::shared_ptr<PoseGraph>& poseGraph)
         prevTotalError = totalError;
     }
 
+    /* Dump the histogram that stores error residuals for pose graph edges */
+    this->DumpError(poseGraph);
+
     /* Update metrics */
     auto* const pMetric = Metric::MetricManager::Instance();
     auto& distMetrics = pMetric->DistributionMetrics();
@@ -317,16 +320,59 @@ double PoseGraphOptimizerLM::ComputeTotalError(
         const RobotPose2D<double>& endNodePose =
             poseGraph->NodeAt(endNodeIdx).Pose();
         
-        /* Compute error function */
+        /* Compute the residual */
         Eigen::Vector3d errorVec;
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
         
-        /* Compute Mahalanobis distance */
+        /* Compute the error value */
         totalError += errorVec.transpose() * infoMat * errorVec;
     }
 
     return totalError;
+}
+
+/* Dump the pose graph error */
+void PoseGraphOptimizerLM::DumpError(
+    const std::shared_ptr<PoseGraph>& poseGraph) const
+{
+    auto* const pMetric = Metric::MetricManager::Instance();
+    auto* const pErrorHistogram = pMetric->HistogramMetrics()("PoseGraphError");
+
+    /* Reset the histogram for storing pose graph edge residuals */
+    pErrorHistogram->Reset();
+
+    /* Compute error function for each edge */
+    for (const auto& edge : poseGraph->Edges()) {
+        /* Retrieve the relative pose \bar{z}_{ij} from the edge */
+        const RobotPose2D<double>& edgeRelPose = edge.RelativePose();
+        /* Retrieve the information matrix \Lambda_{ij} of the edge */
+        const Eigen::Matrix3d& infoMat = edge.InformationMatrix();
+
+        /* Retrieve the poses of the start node and the end node */
+        const int startNodeIdx = edge.StartNodeIndex();
+        const int endNodeIdx = edge.EndNodeIndex();
+
+        const RobotPose2D<double>& startNodePose =
+            poseGraph->NodeAt(startNodeIdx).Pose();
+        const RobotPose2D<double>& endNodePose =
+            poseGraph->NodeAt(endNodeIdx).Pose();
+
+        /* Compute the residual */
+        Eigen::Vector3d errorVec;
+        this->ComputeErrorFunction(startNodePose, endNodePose,
+                                   edgeRelPose, errorVec);
+
+        /* Compute the error value */
+        const double errorVal = errorVec.transpose() * infoMat * errorVec;
+        /* Add the error value to the error histogram */
+        pErrorHistogram->Observe(errorVal);
+    }
+
+    /* Dump the error histogram */
+    pErrorHistogram->Dump(std::cerr);
+
+    return;
 }
 
 } /* namespace Mapping */

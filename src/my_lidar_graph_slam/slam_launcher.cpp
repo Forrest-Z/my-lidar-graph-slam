@@ -636,6 +636,11 @@ void RegisterMetrics()
         "LoopClosureMaxScoreSuccess", bucketBoundaries));
     histMetrics.Append(new Histogram(
         "LoopClosureMaxMatchRateSuccess", bucketBoundaries));
+
+    const auto poseGraphErrorBoundaries =
+        Histogram::CreateExponentialWidthBoundaries(1e-8, 10.0, 10.0);
+    histMetrics.Append(new Histogram(
+        "PoseGraphError", poseGraphErrorBoundaries));
 }
 
 /* Save metrics */

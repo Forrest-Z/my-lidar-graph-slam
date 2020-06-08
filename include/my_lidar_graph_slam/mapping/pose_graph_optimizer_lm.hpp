@@ -82,6 +82,9 @@ private:
     /* Compute total error */
     double ComputeTotalError(const std::shared_ptr<PoseGraph>& poseGraph) const;
 
+    /* Dump the pose graph error */
+    void DumpError(const std::shared_ptr<PoseGraph>& poseGraph) const;
+
 private:
     /* Linear solver type */
     SolverType mSolverType;
