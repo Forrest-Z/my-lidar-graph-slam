@@ -32,6 +32,17 @@ void Gauge::Dump(std::ostream& outStream) const
  * Distribution class implementations
  */
 
+/* Reset the distribution */
+void Distribution::Reset()
+{
+    this->mNumOfSamples = 0;
+    this->mSum = 0.0;
+    this->mMean = 0.0;
+    this->mScaledVariance = 0.0;
+    this->mMaximum = 0.0;
+    this->mMinimum = 0.0;
+}
+
 /* Observe the value and update mean and variance */
 void Distribution::Observe(double val)
 {
@@ -165,6 +176,14 @@ Histogram::Histogram(const std::string& metricId,
     assert(!this->mBucketBoundaries.empty());
     assert(std::is_sorted(this->mBucketBoundaries.cbegin(),
                           this->mBucketBoundaries.cend()));
+}
+
+/* Reset the histogram */
+void Histogram::Reset()
+{
+    std::fill(this->mBucketCounts.begin(),
+              this->mBucketCounts.end(), 0.0);
+    this->mSumValues = 0.0;
 }
 
 /* Observe the value */

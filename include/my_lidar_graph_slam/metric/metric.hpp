@@ -63,6 +63,9 @@ public:
     /* Destructor */
     ~CounterBase() = default;
 
+    /* Reset the counter value */
+    virtual void Reset() = 0;
+
     /* Retrieve the counter value */
     virtual double Value() const = 0;
 
@@ -80,6 +83,9 @@ public:
     NullCounter() : CounterBase("") { }
     /* Destructor */
     ~NullCounter() = default;
+
+    /* Reset the counter value */
+    void Reset() override { }
 
     /* Retrieve the counter value */
     double Value() const override { return 0.0; }
@@ -106,6 +112,9 @@ public:
     /* Destructor */
     ~Counter() = default;
 
+    /* Reset the counter value */
+    void Reset() override { this->mValue = 0.0; }
+
     /* Retrieve the counter value */
     double Value() const override { return this->mValue; }
 
@@ -130,6 +139,9 @@ public:
     /* Destructor */
     ~GaugeBase() = default;
 
+    /* Reset the gauge value */
+    virtual void Reset() = 0;
+
     /* Retrieve the gauge value */
     virtual double Value() const = 0;
     /* Set the gauge value */
@@ -151,6 +163,9 @@ public:
     NullGauge() : GaugeBase("") { }
     /* Destructor */
     ~NullGauge() = default;
+
+    /* Reset the gauge value */
+    void Reset() override { }
 
     /* Retrieve the gauge value */
     double Value() const override { return 0.0; }
@@ -181,6 +196,9 @@ public:
     /* Destructor */
     ~Gauge() = default;
 
+    /* Reset the gauge value */
+    void Reset() override { this->mValue = 0.0; }
+
     /* Retrieve the gauge value */
     double Value() const override { return this->mValue; }
     /* Set the gauge value */
@@ -207,6 +225,9 @@ public:
         MetricBase(MetricType::Distribution, metricId) { }
     /* Destructor */
     ~DistributionBase() = default;
+
+    /* Reset the distribution */
+    virtual void Reset() = 0;
 
     /* Observe the value and update mean and variance */
     virtual void Observe(double val) = 0;
@@ -237,6 +258,9 @@ public:
     NullDistribution() : DistributionBase("") { }
     /* Destructor */
     ~NullDistribution() = default;
+
+    /* Reset the distribution */
+    void Reset() override { }
 
     /* Observe the value and update mean and variance */
     void Observe(double) override { }
@@ -274,6 +298,9 @@ public:
         mMinimum(0.0) { }
     /* Destructor */
     ~Distribution() = default;
+
+    /* Reset the distribution */
+    void Reset() override;
 
     /* Observe the value and update mean and variance */
     void Observe(double val) override;
@@ -323,6 +350,9 @@ public:
     /* Destructor */
     ~HistogramBase() = default;
 
+    /* Reset the histogram */
+    virtual void Reset() = 0;
+
     /* Observe the value */
     virtual void Observe(double val) = 0;
 
@@ -354,6 +384,9 @@ public:
     NullHistogram() : HistogramBase("") { }
     /* Destructor */
     ~NullHistogram() = default;
+
+    /* Reset the histogram */
+    void Reset() override { }
 
     /* Observe the value */
     void Observe(double) override { }
@@ -407,6 +440,9 @@ public:
               const BucketBoundaries& bucketBoundaries);
     /* Destructor */
     ~Histogram() = default;
+
+    /* Reset the histogram */
+    void Reset() override;
 
     /* Observe the value */
     void Observe(double val) override;
