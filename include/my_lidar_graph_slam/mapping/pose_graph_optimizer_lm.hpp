@@ -87,6 +87,9 @@ private:
         const std::vector<PoseGraph::Node>& poseGraphNodes,
         const std::vector<PoseGraph::Edge>& poseGraphEdges) const;
 
+    /* Dump the pose graph error */
+    void DumpError(const std::shared_ptr<PoseGraph>& poseGraph) const;
+
 private:
     /* Linear solver type */
     SolverType                          mSolverType;
