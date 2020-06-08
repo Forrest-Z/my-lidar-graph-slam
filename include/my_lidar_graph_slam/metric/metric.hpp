@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <numeric>
@@ -46,7 +47,7 @@ public:
     /* Retrieve the metric Id string */
     virtual const std::string& Id() const final { return this->mId; }
 
-private:
+protected:
     /* Metric type */
     MetricType  mType;
     /* Metric Id string */
@@ -67,6 +68,9 @@ public:
 
     /* Increment the counter by specified value */
     virtual void Increment(double val = 1.0) = 0;
+
+    /* Dump the counter object */
+    virtual void Dump(std::ostream& outStream) const = 0;
 };
 
 class NullCounter final : public CounterBase
@@ -82,6 +86,9 @@ public:
 
     /* Increment the counter by specified value */
     void Increment(double) override { }
+
+    /* Dump the counter object */
+    void Dump(std::ostream&) const override { }
 };
 
 class Counter final : public CounterBase
@@ -106,6 +113,9 @@ public:
     void Increment(double val = 1.0) override
     { this->mValue += std::max(0.0, val); }
 
+    /* Dump the counter object */
+    void Dump(std::ostream& outStream) const override;
+
 private:
     /* Counter value */
     double mValue;
@@ -129,6 +139,9 @@ public:
     virtual void Increment(double val = 1.0) = 0;
     /* Decrement the gauge by specified value */
     virtual void Decrement(double val = 1.0) = 0;
+
+    /* Dump the gauge object */
+    virtual void Dump(std::ostream& outStream) const = 0;
 };
 
 class NullGauge final : public GaugeBase
@@ -148,6 +161,9 @@ public:
     void Increment(double) override { }
     /* Decrement the gauge by specified value */
     void Decrement(double) override { }
+
+    /* Dump the gauge object */
+    void Dump(std::ostream&) const override { }
 };
 
 class Gauge final : public GaugeBase
@@ -174,6 +190,9 @@ public:
     void Increment(double val = 1.0) override { this->mValue += val; }
     /* Decrement the gauge by specified value */
     void Decrement(double val = 1.0) override { this->mValue -= val; }
+
+    /* Dump the gauge object */
+    void Dump(std::ostream& outStream) const override;
 
 private:
     /* Gauge value */
@@ -206,6 +225,9 @@ public:
     virtual double Maximum() const = 0;
     /* Retrieve the minimum of the observed values */
     virtual double Minimum() const = 0;
+
+    /* Dump the distribution object */
+    virtual void Dump(std::ostream& outStream) const = 0;
 };
 
 class NullDistribution final : public DistributionBase
@@ -233,6 +255,9 @@ public:
     double Maximum() const override { return 0.0; }
     /* Retrieve the minimum of the observed values */
     double Minimum() const override { return 0.0; }
+
+    /* Dump the distribution object */
+    void Dump(std::ostream&) const override { }
 };
 
 class Distribution final : public DistributionBase
@@ -267,6 +292,9 @@ public:
     double Maximum() const override { return this->mMaximum; }
     /* Retrieve the minimum of the observed values */
     double Minimum() const override { return this->mMinimum; }
+
+    /* Dump the distribution object */
+    void Dump(std::ostream& outStream) const override;
 
 private:
     /* Number of the observed values */
@@ -314,6 +342,9 @@ public:
     virtual void ValueRange(std::size_t bucketIdx,
                             double& rangeMin,
                             double& rangeMax) const = 0;
+
+    /* Dump the histogram object */
+    virtual void Dump(std::ostream& outStream) const = 0;
 };
 
 class NullHistogram final : public HistogramBase
@@ -345,6 +376,9 @@ public:
     void ValueRange(std::size_t bucketIdx,
                     double& rangeMin,
                     double& rangeMax) const override;
+
+    /* Dump the histogram object */
+    void Dump(std::ostream&) const override { }
 
 private:
     /* Empty bucket boundaries */
@@ -396,6 +430,9 @@ public:
     void ValueRange(std::size_t bucketIdx,
                     double& rangeMin,
                     double& rangeMax) const override;
+
+    /* Dump the histogram object */
+    void Dump(std::ostream& outStream) const override;
 
 private:
     /* Bucket boundaries */
