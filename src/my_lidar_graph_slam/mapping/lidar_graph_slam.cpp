@@ -291,19 +291,34 @@ void LidarGraphSlam::PerformLoopClosure(
     relPose = NormalizeAngle(relPose);
 
     /* Covariance matrix must be rotated since the matrix
-        * must represent the covariance in the node frame */
+     * must represent the covariance in the node frame */
     const RobotPose2D<double>& startNodePose =
         this->mPoseGraph->NodeAt(startNodeIdx).Pose();
     Eigen::Matrix3d robotFrameCovMat;
     ConvertCovarianceFromWorldToRobot(
         startNodePose, estimatedCovMat, robotFrameCovMat);
     /* Calculate a information matrix by inverting a covariance matrix
-        * obtained from the scan matching */
+     * obtained from the scan matching */
     const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();
 
     /* Append the new pose graph edge for loop closing constraint */
     this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
                                  relPose, edgeInfoMat);
+
+    /* Dump the loop closing edge information */
+    const Eigen::IOFormat matFormat {
+        Eigen::StreamPrecision, 0,
+        ", ", "\n", "[", "]", "[", "]" };
+
+    std::cerr << "Loop found!" << '\n';
+    std::cerr << "Relative pose: "
+              << NormalizeAngle(relPose) << '\n'
+              << "Covariance matrix: \n"
+              << robotFrameCovMat.format(matFormat) << '\n'
+              << "Information matrix: \n"
+              << edgeInfoMat.format(matFormat) << '\n'
+              << "Start node index: " << startNodeIdx << '\n'
+              << "End node index: " << endNodeIdx << '\n';
 
     /* Perform loop closure */
     boost::timer::cpu_timer optimizationTimer;
