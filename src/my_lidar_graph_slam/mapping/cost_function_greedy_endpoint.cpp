@@ -113,10 +113,16 @@ Eigen::Vector3d CostGreedyEndpoint::ComputeGradient(
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& sensorPose)
 {
-    /* Compute a gradient of the cost function with respect to sensor pose */
-    const double diffLinear = 0.01;
-    const double diffAngular = 0.01;
+    /* Compute the step */
+    const auto maxRangeIt = std::max_element(
+        scanData->Ranges().cbegin(), scanData->Ranges().cend());
+    const double maxRange = std::min(*maxRangeIt, this->mUsableRangeMax);
+    const double theta = gridMap.Resolution() / maxRange;
 
+    const double diffLinear = gridMap.Resolution();
+    const double diffAngular = std::acos(1.0 - 0.5 * theta * theta);
+
+    /* Compute a gradient of the cost function with respect to sensor pose */
     const RobotPose2D<double> deltaX { diffLinear, 0.0, 0.0 };
     const RobotPose2D<double> deltaY { 0.0, diffLinear, 0.0 };
     const RobotPose2D<double> deltaTheta { 0.0, 0.0, diffAngular };
