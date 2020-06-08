@@ -7,6 +7,28 @@ namespace MyLidarGraphSlam {
 namespace Metric {
 
 /*
+ * Counter class implementations
+ */
+
+/* Dump the counter object */
+void Counter::Dump(std::ostream& outStream) const
+{
+    outStream << "Counter Id: " << this->mId << ", "
+              << "Value: " << this->mValue << '\n';
+}
+
+/*
+ * Gauge class implementations
+ */
+
+/* Dump the gauge object */
+void Gauge::Dump(std::ostream& outStream) const
+{
+    outStream << "Gauge Id: " << this->mId << ", "
+              << "Value: " << this->mValue << '\n';
+}
+
+/*
  * Distribution class implementations
  */
 
@@ -41,6 +63,19 @@ double Distribution::Variance() const
 double Distribution::StandardDeviation() const
 {
     return std::sqrt(this->Variance());
+}
+
+/* Dump the distribution object */
+void Distribution::Dump(std::ostream& outStream) const
+{
+    outStream << "Distribution Id: " << this->mId << ", "
+              << "Number of samples: " << this->mNumOfSamples << ", "
+              << "Sum: " << this->mSum << ", "
+              << "Mean: " << this->mMean << ", "
+              << "Variance: " << this->Variance() << ", "
+              << "Standard deviation: " << this->StandardDeviation() << ", "
+              << "Max: " << this->mMaximum << ", "
+              << "Min: " << this->mMinimum << '\n';
 }
 
 /*
@@ -127,6 +162,7 @@ Histogram::Histogram(const std::string& metricId,
     mBucketCounts(bucketBoundaries.size() + 1),
     mSumValues(0.0)
 {
+    assert(!this->mBucketBoundaries.empty());
     assert(std::is_sorted(this->mBucketBoundaries.cbegin(),
                           this->mBucketBoundaries.cend()));
 }
@@ -185,6 +221,27 @@ void Histogram::ValueRange(std::size_t bucketIdx,
         this->mBucketBoundaries[bucketIdx];
 
     return;
+}
+
+/* Dump the histogram object */
+void Histogram::Dump(std::ostream& outStream) const
+{
+    outStream << "Histogram Id: " << this->mId << ", "
+              << "Number of samples: " << this->NumOfSamples() << ", "
+              << "Sum: " << this->mSumValues << ", "
+              << "Mean: " << this->Mean() << '\n';
+
+    /* Dump the histogram (number of the values in each bucket) */
+    outStream << " - " << this->mBucketBoundaries.front() << ": "
+              << this->mBucketCounts.front() << '\n';
+
+    for (std::size_t i = 0; i < this->mBucketBoundaries.size() - 1; ++i)
+        outStream << this->mBucketBoundaries[i] << " - "
+                  << this->mBucketBoundaries[i + 1] << ": "
+                  << this->mBucketCounts[i + 1] << '\n';
+
+    outStream << this->mBucketBoundaries.back() << " - : "
+              << this->mBucketCounts.back() << '\n';
 }
 
 /*
