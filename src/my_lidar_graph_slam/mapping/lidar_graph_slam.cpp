@@ -290,10 +290,13 @@ void LidarGraphSlam::PerformLoopClosure(
     /* Relative pose must be normalized beforehand */
     relPose = NormalizeAngle(relPose);
 
-    /* Covariance matrix must be rotated since the matrix
-     * must represent the covariance in the node frame */
     const RobotPose2D<double>& startNodePose =
         this->mPoseGraph->NodeAt(startNodeIdx).Pose();
+    const RobotPose2D<double>& endNodePose =
+        this->mPoseGraph->NodeAt(endNodeIdx).Pose();
+
+    /* Covariance matrix must be rotated since the matrix
+     * must represent the covariance in the node frame */
     Eigen::Matrix3d robotFrameCovMat;
     ConvertCovarianceFromWorldToRobot(
         startNodePose, estimatedCovMat, robotFrameCovMat);
@@ -305,14 +308,20 @@ void LidarGraphSlam::PerformLoopClosure(
     this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
                                  relPose, edgeInfoMat);
 
+    /* Compute the residual */
+    Eigen::Vector3d errorVec;
+    this->mPoseGraphOptimizer->ComputeErrorFunction(
+        startNodePose, endNodePose, relPose, errorVec);
+    const double errorVal = errorVec.transpose() * edgeInfoMat * errorVec;
+
     /* Dump the loop closing edge information */
     const Eigen::IOFormat matFormat {
         Eigen::StreamPrecision, 0,
         ", ", "\n", "[", "]", "[", "]" };
 
     std::cerr << "Loop found!" << '\n';
-    std::cerr << "Relative pose: "
-              << NormalizeAngle(relPose) << '\n'
+    std::cerr << "Relative pose: " << NormalizeAngle(relPose) << '\n'
+              << "Error: " << errorVal << '\n'
               << "Covariance matrix: \n"
               << robotFrameCovMat.format(matFormat) << '\n'
               << "Information matrix: \n"
