@@ -31,6 +31,7 @@
 #include "my_lidar_graph_slam/mapping/loop_searcher_nearest.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
+#include "my_lidar_graph_slam/mapping/robust_loss_function.hpp"
 #include "my_lidar_graph_slam/mapping/scan_accumulator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
@@ -60,12 +61,13 @@ std::shared_ptr<Mapping::CostFunction> CreateCostGreedyEndpoint(
     const double hitAndMissedDist = config.get("HitAndMissedDist", 0.075);
     const double occupancyThreshold = config.get("OccupancyThreshold", 0.1);
     const int kernelSize = config.get("KernelSize", 1);
+    const double standardDeviation = config.get("StandardDeviation", 0.05);
     const double scalingFactor = config.get("ScalingFactor", 1.0);
 
     /* Create greedy endpoint cost function */
     auto pCostFunc = std::make_shared<Mapping::CostGreedyEndpoint>(
         usableRangeMin, usableRangeMax, hitAndMissedDist,
-        occupancyThreshold, kernelSize, scalingFactor);
+        occupancyThreshold, kernelSize, standardDeviation, scalingFactor);
 
     return pCostFunc;
 }
@@ -427,6 +429,124 @@ std::shared_ptr<Mapping::PoseGraph> CreatePoseGraph(
     return pPoseGraph;
 }
 
+/* Create squared loss function object (Gaussian) */
+std::shared_ptr<Mapping::LossFunction> CreateLossSquared(
+    const pt::ptree& /* jsonSettings */,
+    const std::string& /* configGroup */)
+{
+    /* Construct squared loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossSquared>();
+    return pLossFunction;
+}
+
+/* Create Huber loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossHuber(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Huber loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.345 * 1.345);
+
+    /* Construct Huber loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossHuber>(scale);
+    return pLossFunction;
+}
+
+/* Create Cauchy loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossCauchy(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Cauchy loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1e-2);
+
+    /* Construct Cauchy loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossCauchy>(scale);
+    return pLossFunction;
+}
+
+/* Create Fair loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossFair(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Fair loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.3998 * 1.3998);
+
+    /* Construct Fair loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossFair>(scale);
+    return pLossFunction;
+}
+
+/* Create Geman-McClure loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossGemanMcClure(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Geman-McClure loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.0);
+
+    /* Construct Geman-McClure loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossGemanMcClure>(scale);
+    return pLossFunction;
+}
+
+/* Create Welsch loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossWelsch(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Welsch loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 2.9846 * 2.9846);
+
+    /* Construct Welsch loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossWelsch>(scale);
+    return pLossFunction;
+}
+
+/* Create DCS (Dynamic Covariance Scaling) loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossDCS(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for DCS loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.0);
+
+    /* Construct DCS loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossDCS>(scale);
+    return pLossFunction;
+}
+
+/* Create loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossFunction(
+    const pt::ptree& jsonSettings,
+    const std::string& lossFunctionType,
+    const std::string& configGroup)
+{
+    if (lossFunctionType == "Squared")
+        return CreateLossSquared(jsonSettings, configGroup);
+    else if (lossFunctionType == "Huber")
+        return CreateLossHuber(jsonSettings, configGroup);
+    else if (lossFunctionType == "Cauchy")
+        return CreateLossCauchy(jsonSettings, configGroup);
+    else if (lossFunctionType == "Fair")
+        return CreateLossFair(jsonSettings, configGroup);
+    else if (lossFunctionType == "GemanMcClure")
+        return CreateLossGemanMcClure(jsonSettings, configGroup);
+    else if (lossFunctionType == "Welsch")
+        return CreateLossWelsch(jsonSettings, configGroup);
+    else if (lossFunctionType == "DCS")
+        return CreateLossDCS(jsonSettings, configGroup);
+
+    return nullptr;
+}
+
 /* Create Levenberg-Marquardt method based pose graph optimizer object */
 std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerLM(
     const pt::ptree& jsonSettings,
@@ -448,10 +568,18 @@ std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerLM(
     const double errorTolerance = config.get("ErrorTolerance", 1e-3);
     const double initialLambda = config.get("InitialLambda", 1e-4);
 
+    const std::string lossFuncType =
+        config.get("LossFunctionType", "Huber");
+    const std::string lossFuncConfigGroup =
+        config.get("LossFunctionConfigGroup", "LossHuber");
+    auto pLossFunction = CreateLossFunction(
+        jsonSettings, lossFuncType, lossFuncConfigGroup);
+
     /* Construct pose graph optimizer object */
     auto pOptimizer = std::make_shared<Mapping::PoseGraphOptimizerLM>(
-        solverType, numOfIterationsMax, errorTolerance, initialLambda);
-    
+        solverType, numOfIterationsMax, errorTolerance, initialLambda,
+        pLossFunction);
+
     return pOptimizer;
 }
 
