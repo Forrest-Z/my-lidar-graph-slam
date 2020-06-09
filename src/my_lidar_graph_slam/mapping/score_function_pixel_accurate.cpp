@@ -30,7 +30,7 @@ void ScorePixelAccurate::Score(
         this->mUsableRangeMax, scanData->MaxRange());
     
     const std::size_t numOfScans = scanData->NumOfScans();
-    std::size_t numOfValidGridCells = 0;
+    std::size_t numOfKnownGridCells = 0;
 
     const double unknownVal = gridMap.UnknownValue();
 
@@ -48,13 +48,14 @@ void ScorePixelAccurate::Score(
         const double hitGridCellValue =
             gridMap.Value(hitPointIdx, unknownVal);
         
-        /* Count the grid cells with valid occupancy probability value */
-        if (hitGridCellValue != unknownVal)
-            ++numOfValidGridCells;
-        
+        /* Ignore the grid cell with unknown occupancy probability */
+        if (hitGridCellValue == unknownVal)
+            continue;
+
         /* If the hit grid cell has unknown probability value,
          * the minimum score (zero) is added */
         sumScore += hitGridCellValue;
+        ++numOfKnownGridCells;
     }
 
     /* Normalize the score function */
@@ -63,7 +64,7 @@ void ScorePixelAccurate::Score(
     
     /* Calculate the rate of valid grid cells */
     const double matchRate =
-        static_cast<double>(numOfValidGridCells) /
+        static_cast<double>(numOfKnownGridCells) /
         static_cast<double>(numOfScans);
 
     /* Set the result summary */
