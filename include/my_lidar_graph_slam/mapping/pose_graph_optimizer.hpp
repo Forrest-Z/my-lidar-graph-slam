@@ -21,6 +21,13 @@ public:
 
     /* Optimize a pose graph */
     virtual void Optimize(std::shared_ptr<PoseGraph>& poseGraph) = 0;
+
+    /* Compute error function */
+    virtual void ComputeErrorFunction(
+        const RobotPose2D<double>& startNodePose,
+        const RobotPose2D<double>& endNodePose,
+        const RobotPose2D<double>& edgeRelPose,
+        Eigen::Vector3d& errorVec) const = 0;
 };
 
 } /* namespace Mapping */

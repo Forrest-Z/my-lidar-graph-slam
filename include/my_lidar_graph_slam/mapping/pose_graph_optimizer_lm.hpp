@@ -4,6 +4,8 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
 #define MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
 
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
+
 #include <cmath>
 #include <limits>
 #include <vector>
@@ -14,7 +16,7 @@
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/util.hpp"
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
+#include "my_lidar_graph_slam/mapping/robust_loss_function.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -46,17 +48,25 @@ public:
     PoseGraphOptimizerLM(SolverType solverType,
                          int numOfIterationsMax,
                          double errorTolerance,
-                         double initialLambda) :
+                         double initialLambda,
+                         LossFunctionPtr lossFunction) :
         mSolverType(solverType),
         mNumOfIterationsMax(numOfIterationsMax),
         mErrorTolerance(errorTolerance),
-        mLambda(initialLambda) { }
+        mLambda(initialLambda),
+        mLossFunction(lossFunction) { }
     /* Destructor */
     ~PoseGraphOptimizerLM() = default;
 
     /* Optimize a pose graph using the combination of
      * linear solver and Levenberg-Marquardt method */
     void Optimize(std::shared_ptr<PoseGraph>& poseGraph) override;
+
+    /* Compute error function */
+    void ComputeErrorFunction(const RobotPose2D<double>& startNodePose,
+                              const RobotPose2D<double>& endNodePose,
+                              const RobotPose2D<double>& edgeRelPose,
+                              Eigen::Vector3d& errorVec) const override;
 
 private:
     /* Perform one optimization step and return the total error */
@@ -73,12 +83,6 @@ private:
                                Eigen::Matrix3d& startNodeErrorJacobian,
                                Eigen::Matrix3d& endNodeErrorJacobian) const;
     
-    /* Compute error function */
-    void ComputeErrorFunction(const RobotPose2D<double>& startNodePose,
-                              const RobotPose2D<double>& endNodePose,
-                              const RobotPose2D<double>& edgeRelPose,
-                              Eigen::Vector3d& errorVec) const;
-    
     /* Compute total error */
     double ComputeTotalError(const std::shared_ptr<PoseGraph>& poseGraph) const;
 
@@ -87,15 +91,17 @@ private:
 
 private:
     /* Linear solver type */
-    SolverType mSolverType;
+    SolverType      mSolverType;
     /* Maximum number of the optimization iterations */
-    int        mNumOfIterationsMax;
+    int             mNumOfIterationsMax;
     /* Error tolerance to check the convergence */
-    double     mErrorTolerance;
+    double          mErrorTolerance;
     /* Damping factor used in Levenberg-Marquardt method
      * The method is almost the same as Gauss-Newton method when small,
      * and is gradient descent method when large */
-    double     mLambda;
+    double          mLambda;
+    /* Robust loss function to correct (weight) information matrices */
+    LossFunctionPtr mLossFunction;
 };
 
 } /* namespace Mapping */
