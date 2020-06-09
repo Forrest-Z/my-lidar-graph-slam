@@ -5,6 +5,7 @@
         "HitAndMissedDist": 0.075,
         "OccupancyThreshold": 0.1,
         "KernelSize": 1,
+        "StandardDeviation": 0.05,
         "ScalingFactor": 1.0
     },
 
@@ -81,6 +82,7 @@
             "HitAndMissedDist": 0.075,
             "OccupancyThreshold": 0.1,
             "KernelSize": 1,
+            "StandardDeviation": 0.05,
             "ScalingFactor": 1.0
         },
         "CostSquareError": {
@@ -106,18 +108,19 @@
             "HitAndMissedDist": 0.075,
             "OccupancyThreshold": 0.1,
             "KernelSize": 1,
+            "StandardDeviation": 0.05,
             "ScalingFactor": 1.0
         }
     },
 
     "LoopDetectorBranchBound": {
         "NodeHeightMax": 6,
-        "SearchRangeX": 5.0,
-        "SearchRangeY": 5.0,
+        "SearchRangeX": 2.0,
+        "SearchRangeY": 2.0,
         "SearchRangeTheta": 1.0,
         "ScanRangeMax": 20.0,
-        "ScoreThreshold": 0.55,
-        "MatchRateThreshold": 0.0,
+        "ScoreThreshold": 0.6,
+        "MatchRateThreshold": 0.9,
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
         "CostType": "GreedyEndpoint",
@@ -128,6 +131,7 @@
             "HitAndMissedDist": 0.075,
             "OccupancyThreshold": 0.1,
             "KernelSize": 1,
+            "StandardDeviation": 0.05,
             "ScalingFactor": 1.0
         },
         "CostSquareError": {
@@ -139,8 +143,13 @@
     "PoseGraphOptimizerLM": {
         "SolverType": "ConjugateGradient",
         "NumOfIterationsMax": 10,
-        "ErrorTolerance": 1e-3,
-        "InitialLambda": 1e-4
+        "ErrorTolerance": 1e-4,
+        "InitialLambda": 1e-4,
+        "LossFunctionType": "Huber",
+        "LossFunctionConfigGroup": "PoseGraphOptimizerLM.LossHuber",
+        "LossHuber": {
+            "Scale": 0.01
+        }
     },
 
     "GridMapBuilder": {
@@ -151,7 +160,7 @@
             "TravelDistThresholdForLocalMap": 20.0
         },
         "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0,
+        "UsableRangeMax": 20.0,
         "ProbabilityHit": 0.6,
         "ProbabilityMiss": 0.45
     },
