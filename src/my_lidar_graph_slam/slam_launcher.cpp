@@ -766,10 +766,15 @@ void RegisterMetrics()
     histMetrics.Append(new Histogram(
         "LoopClosureMaxMatchRateSuccess", bucketBoundaries));
 
+    const double errorBoundaryMin = std::pow(2.0, -25.0);
+    const double errorBoundaryMax = std::pow(2.0, 10.0);
     const auto poseGraphErrorBoundaries =
-        Histogram::CreateExponentialWidthBoundaries(1e-8, 10.0, 10.0);
+        Histogram::CreateExponentialWidthBoundaries(
+            errorBoundaryMin, errorBoundaryMax, 2.0);
     histMetrics.Append(new Histogram(
         "PoseGraphError", poseGraphErrorBoundaries));
+    histMetrics.Append(new Histogram(
+        "PoseGraphRobustError", poseGraphErrorBoundaries));
 }
 
 /* Save metrics */

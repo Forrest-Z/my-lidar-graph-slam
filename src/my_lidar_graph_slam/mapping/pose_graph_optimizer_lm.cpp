@@ -59,8 +59,8 @@ void PoseGraphOptimizerLM::Optimize(std::shared_ptr<PoseGraph>& poseGraph)
         prevTotalError = totalError;
     }
 
-    /* Dump the histogram that stores error residuals for pose graph edges */
-    this->DumpError(poseGraph);
+    /* Update the histogram that stores pose graph errors */
+    this->UpdateMetrics(poseGraph);
 
     /* Update metrics */
     auto* const pMetric = Metric::MetricManager::Instance();
@@ -334,24 +334,27 @@ double PoseGraphOptimizerLM::ComputeTotalError(
         /* Compute the error value */
         const double errorVal = errorVec.transpose() * infoMat * errorVec;
         /* Apply the robust loss function */
-        const double correctedError = this->mLossFunction->Loss(errorVal);
+        const double correctedErrorVal = this->mLossFunction->Loss(errorVal);
 
         /* Compute the error value */
-        totalError += correctedError;
+        totalError += correctedErrorVal;
     }
 
     return totalError;
 }
 
-/* Dump the pose graph error */
-void PoseGraphOptimizerLM::DumpError(
+/* Update the pose graph error metrics */
+void PoseGraphOptimizerLM::UpdateMetrics(
     const std::shared_ptr<PoseGraph>& poseGraph) const
 {
     auto* const pMetric = Metric::MetricManager::Instance();
-    auto* const pErrorHistogram = pMetric->HistogramMetrics()("PoseGraphError");
+    auto& histMetrics = pMetric->HistogramMetrics();
+    auto* const pHistError = histMetrics("PoseGraphError");
+    auto* const pHistRobustError = histMetrics("PoseGraphRobustError");
 
-    /* Reset the histogram for storing pose graph edge residuals */
-    pErrorHistogram->Reset();
+    /* Reset the histogram for storing pose graph edge errors */
+    pHistError->Reset();
+    pHistRobustError->Reset();
 
     /* Compute error function for each edge */
     for (const auto& edge : poseGraph->Edges()) {
@@ -376,12 +379,17 @@ void PoseGraphOptimizerLM::DumpError(
 
         /* Compute the error value */
         const double errorVal = errorVec.transpose() * infoMat * errorVec;
-        /* Add the error value to the error histogram */
-        pErrorHistogram->Observe(errorVal);
+        /* Apply the robust loss function */
+        const double correctedErrorVal = this->mLossFunction->Loss(errorVal);
+
+        /* Append the error value to the error histogram */
+        pHistError->Observe(errorVal);
+        /* Append the robust error value to the error histogram */
+        pHistRobustError->Observe(correctedErrorVal);
     }
 
-    /* Dump the error histogram */
-    pErrorHistogram->Dump(std::cerr);
+    /* Dump the pose graph error histogram */
+    pHistError->Dump(std::cerr);
 
     return;
 }
