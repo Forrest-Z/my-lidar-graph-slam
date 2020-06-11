@@ -79,6 +79,15 @@ inline double ToMilliSeconds(std::int_least64_t nanoSec)
     return milliSeconds.count();
 }
 
+/* Convert nanoseconds to microseconds */
+inline double ToMicroSeconds(std::int_least64_t nanoSec)
+{
+    const auto nanoSeconds = std::chrono::nanoseconds(nanoSec);
+    const auto microSeconds = std::chrono::duration_cast<
+        std::chrono::microseconds>(nanoSeconds);
+    return microSeconds.count();
+}
+
 /* Check if the number is power of 2 */
 inline bool IsPowerOf2(int x)
 {
