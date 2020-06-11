@@ -8,6 +8,8 @@
 #include <limits>
 #include <numeric>
 
+#include <boost/timer/timer.hpp>
+
 #include "my_lidar_graph_slam/metric/metric.hpp"
 
 namespace MyLidarGraphSlam {
@@ -22,6 +24,9 @@ bool LoopClosureRealTimeCorrelative::FindLoop(
     int& endNodeIdx,
     Eigen::Matrix3d& estimatedCovMat)
 {
+    auto* const pMetric = Metric::MetricManager::Instance();
+    auto& distMetrics = pMetric->DistributionMetrics();
+
     /* Retrieve the current robot pose and scan data */
     const auto& currentNode = poseGraph->LatestNode();
     const RobotPose2D<double>& currentPose = currentNode.Pose();
@@ -52,8 +57,11 @@ bool LoopClosureRealTimeCorrelative::FindLoop(
     /* Precompute a low-resolution grid map */
     if (!candidateMapInfo.mPrecomputed) {
         /* Precompute a grid map */
+        boost::timer::cpu_timer precomputationTimer;
         GridMapBuilder::PrecomputedMapType precompMap =
             PrecomputeGridMap(candidateMap, this->mLowResolution);
+        distMetrics("MapPrecomputationTime")->Observe(
+            ToMicroSeconds(precomputationTimer.elapsed().wall));
         /* Append the newly created grid map */
         candidateMapInfo.mPrecomputedMaps.emplace(0, std::move(precompMap));
         /* Mark the local map as precomputed */

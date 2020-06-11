@@ -7,6 +7,8 @@
 #include <deque>
 #include <limits>
 
+#include <boost/timer/timer.hpp>
+
 #include "my_lidar_graph_slam/io/map_saver.hpp"
 #include "my_lidar_graph_slam/metric/metric.hpp"
 
@@ -22,6 +24,9 @@ bool LoopClosureBranchBound::FindLoop(
     int& endNodeIdx,
     Eigen::Matrix3d& estimatedCovMat)
 {
+    auto* const pMetrics = Metric::MetricManager::Instance();
+    auto& distMetrics = pMetrics->DistributionMetrics();
+
     /* Retrieve the current robot pose and scan data */
     const auto& currentNode = poseGraph->LatestNode();
     const RobotPose2D<double>& currentPose = currentNode.Pose();
@@ -49,9 +54,13 @@ bool LoopClosureBranchBound::FindLoop(
     assert(candidateMapInfo.mFinished);
 
     /* Precompute local grid maps for efficient loop closure */
-    if (!candidateMapInfo.mPrecomputed)
+    if (!candidateMapInfo.mPrecomputed) {
+        boost::timer::cpu_timer precomputationTimer;
         gridMapBuilder->PrecomputeGridMaps(
             candidateMapIdx, this->mNodeHeightMax);
+        distMetrics("MapPrecomputationTime")->Observe(
+            ToMicroSeconds(precomputationTimer.elapsed().wall));
+    }
 
     RobotPose2D<double> correspondingPose;
     Eigen::Matrix3d covMat;
@@ -197,7 +206,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
     }
 
     /* Update metrics */
-    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
+    auto* const pMetric = Metric::MetricManager::Instance();
     auto& histMetrics = pMetric->HistogramMetrics();
     histMetrics("LoopClosureMaxScore")->Observe(scoreMax);
     histMetrics("LoopClosureMaxMatchRate")->Observe(matchRateMax);

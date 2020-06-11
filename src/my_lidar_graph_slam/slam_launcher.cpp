@@ -743,6 +743,7 @@ void RegisterMetrics()
     distMetrics.Append(new Distribution("LoopDetectionTime"));
     distMetrics.Append(new Distribution("PoseGraphOptimizationTime"));
     distMetrics.Append(new Distribution("RegenerateMapTime"));
+    distMetrics.Append(new Distribution("MapPrecomputationTime"));
 
     distMetrics.Append(new Distribution("LocalSlamMaxScore"));
     distMetrics.Append(new Distribution("LocalSlamCost"));
