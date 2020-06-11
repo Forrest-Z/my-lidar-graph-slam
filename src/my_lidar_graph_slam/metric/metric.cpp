@@ -243,12 +243,16 @@ void Histogram::ValueRange(std::size_t bucketIdx,
 }
 
 /* Dump the histogram object */
-void Histogram::Dump(std::ostream& outStream) const
+void Histogram::Dump(std::ostream& outStream, bool isVerbose) const
 {
     outStream << "Histogram Id: " << this->mId << ", "
               << "Number of samples: " << this->NumOfSamples() << ", "
               << "Sum: " << this->mSumValues << ", "
               << "Mean: " << this->Mean() << '\n';
+
+    /* Print the number of data points in each bins in verbose mode */
+    if (!isVerbose)
+        return;
 
     /* Dump the histogram (number of the values in each bucket) */
     outStream << " - " << this->mBucketBoundaries.front() << ": "

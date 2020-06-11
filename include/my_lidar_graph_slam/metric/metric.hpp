@@ -374,7 +374,7 @@ public:
                             double& rangeMax) const = 0;
 
     /* Dump the histogram object */
-    virtual void Dump(std::ostream& outStream) const = 0;
+    virtual void Dump(std::ostream& outStream, bool isVerbose) const = 0;
 };
 
 class NullHistogram final : public HistogramBase
@@ -411,7 +411,7 @@ public:
                     double& rangeMax) const override;
 
     /* Dump the histogram object */
-    void Dump(std::ostream&) const override { }
+    void Dump(std::ostream&, bool) const override { }
 
 private:
     /* Empty bucket boundaries */
@@ -468,7 +468,7 @@ public:
                     double& rangeMax) const override;
 
     /* Dump the histogram object */
-    void Dump(std::ostream& outStream) const override;
+    void Dump(std::ostream& outStream, bool isVerbose) const override;
 
 private:
     /* Bucket boundaries */
