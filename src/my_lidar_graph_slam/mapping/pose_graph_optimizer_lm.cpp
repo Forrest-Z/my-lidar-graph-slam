@@ -389,7 +389,8 @@ void PoseGraphOptimizerLM::UpdateMetrics(
     }
 
     /* Dump the pose graph error histogram */
-    pHistError->Dump(std::cerr);
+    pHistRobustError->Dump(std::cerr, false);
+    pHistError->Dump(std::cerr, true);
 
     return;
 }
