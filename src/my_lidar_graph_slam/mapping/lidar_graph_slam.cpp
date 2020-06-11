@@ -105,7 +105,7 @@ bool LidarGraphSlam::ProcessScan(
     /* Update metrics */
     counterMetrics("ProcessCount")->Increment();
     /* Measure processing time */
-    const double processTime = ToMilliSeconds(cpuTimer.elapsed().wall);
+    const double processTime = ToMicroSeconds(cpuTimer.elapsed().wall);
     /* Update process time metrics */
     if (this->mProcessCount > 0)
         distMetrics("OverallProcessTime")->Observe(processTime);
@@ -187,7 +187,7 @@ void LidarGraphSlam::PerformLocalSlam(
         this->mGridMapBuilder->LatestMap(),
         scanData, initialPose, scanMatchSummary);
     distMetrics("LocalScanMatchingTime")->Observe(
-        ToMilliSeconds(localScanMatchingTimer.elapsed().wall));
+        ToMicroSeconds(localScanMatchingTimer.elapsed().wall));
 
     const RobotPose2D<double>& estimatedPose =
         scanMatchSummary.mEstimatedPose;
@@ -230,7 +230,7 @@ void LidarGraphSlam::PerformLocalSlam(
 
     /* Measure processing time */
     distMetrics("PoseGraphUpdateTime")->Observe(
-        ToMilliSeconds(poseGraphUpdateTimer.elapsed().wall));
+        ToMicroSeconds(poseGraphUpdateTimer.elapsed().wall));
 
     return;
 }
@@ -245,7 +245,7 @@ void LidarGraphSlam::AppendScan()
     boost::timer::cpu_timer mapUpdateTimer;
     this->mGridMapBuilder->AppendScan(this->mPoseGraph);
     distMetrics("MapUpdateTime")->Observe(
-        ToMilliSeconds(mapUpdateTimer.elapsed().wall));
+        ToMicroSeconds(mapUpdateTimer.elapsed().wall));
 }
 
 /* Perform loop closure */
@@ -281,7 +281,7 @@ void LidarGraphSlam::PerformLoopClosure(
         this->mGridMapBuilder, this->mPoseGraph,
         relPose, startNodeIdx, endNodeIdx, estimatedCovMat);
     distMetrics("LoopDetectionTime")->Observe(
-        ToMilliSeconds(loopDetectionTimer.elapsed().wall));
+        ToMicroSeconds(loopDetectionTimer.elapsed().wall));
 
     if (!loopFound)
         return;
@@ -333,13 +333,13 @@ void LidarGraphSlam::PerformLoopClosure(
     boost::timer::cpu_timer optimizationTimer;
     this->mPoseGraphOptimizer->Optimize(this->mPoseGraph);
     distMetrics("PoseGraphOptimizationTime")->Observe(
-        ToMilliSeconds(optimizationTimer.elapsed().wall));
+        ToMicroSeconds(optimizationTimer.elapsed().wall));
 
     /* Re-create the grid maps */
     boost::timer::cpu_timer regenerateMapTimer;
     this->mGridMapBuilder->AfterLoopClosure(this->mPoseGraph);
     distMetrics("RegenerateMapTime")->Observe(
-        ToMilliSeconds(regenerateMapTimer.elapsed().wall));
+        ToMicroSeconds(regenerateMapTimer.elapsed().wall));
 }
 
 } /* namespace Mapping */
