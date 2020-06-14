@@ -11,6 +11,9 @@
 #include <deque>
 #include <functional>
 #include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -32,6 +35,28 @@ inline void Assert(bool condition, const char* message)
                   << "Line: " << __LINE__ << ')' << std::endl;
         std::abort();
     }
+}
+
+/* Join elements in a container with a delimiter */
+template <class C, class V = typename C::value_type>
+std::string Join(const C& elements, const char* delimiter)
+{
+    std::ostringstream strStream;
+    auto beginIt = std::begin(elements);
+    auto endIt = std::end(elements);
+
+    /* Print the elements if the container is not empty */
+    if (beginIt != endIt) {
+        std::copy(beginIt, std::prev(endIt),
+                  std::ostream_iterator<V>(strStream, delimiter));
+        beginIt = std::prev(endIt);
+    }
+
+    /* Print the last remaining element if the container is not empty */
+    if (beginIt != endIt)
+        strStream << *beginIt;
+
+    return strStream.str();
 }
 
 /* Convert strongly typed enum to integers */
