@@ -3,6 +3,8 @@
 
 #include "my_lidar_graph_slam/metric/metric.hpp"
 
+#include "my_lidar_graph_slam/util.hpp"
+
 namespace MyLidarGraphSlam {
 namespace Metric {
 
@@ -268,6 +270,42 @@ void Histogram::Dump(std::ostream& outStream, bool isVerbose) const
 }
 
 /*
+ * ValueSequence class implementations
+ */
+
+/* Reset the value sequence */
+void ValueSequence::Reset()
+{
+    this->mValues.clear();
+}
+
+/* Observe the value and append to the sequence */
+void ValueSequence::Observe(double val)
+{
+    this->mValues.push_back(val);
+}
+
+/* Retrieve the number of data points */
+std::size_t ValueSequence::NumOfValues() const
+{
+    return this->mValues.size();
+}
+
+/* Retrieve the value in the container */
+double ValueSequence::ValueAt(std::size_t valueIdx) const
+{
+    return this->mValues.at(valueIdx);
+}
+
+/* Dump the value sequence object */
+void ValueSequence::Dump(std::ostream& outStream) const
+{
+    outStream << "ValueSequence Id: " << this->mId << ", "
+              << "Number of samples: " << this->NumOfValues() << '\n';
+    outStream << Join(this->mValues, ", ") << '\n';
+}
+
+/*
  * MetricFamily class implementations
  */
 
@@ -326,6 +364,7 @@ template class MetricFamily<CounterBase>;
 template class MetricFamily<GaugeBase>;
 template class MetricFamily<DistributionBase>;
 template class MetricFamily<HistogramBase>;
+template class MetricFamily<ValueSequenceBase>;
 
 /*
  * MetricManager class implementations
@@ -424,10 +463,35 @@ MetricManager::ptree MetricManager::ToPropertyTree() const
         histogramTree.push_back(std::make_pair("", metricTree));
     }
 
+    /* Process value sequence metrics */
+    const std::size_t numOfValueSequences =
+        this->mValueSequenceMetrics.NumOfMetrics();
+    ptree valueSequenceTree;
+
+    for (std::size_t i = 0; i < numOfValueSequences; ++i) {
+        const ValueSequenceBase* pValueSequence =
+            this->mValueSequenceMetrics.MetricAt(i);
+        ptree metricTree;
+        metricTree.put("Id", pValueSequence->Id());
+        metricTree.put("NumOfValues", pValueSequence->NumOfValues());
+
+        /* Process values in the container */
+        ptree valuesTree;
+        for (std::size_t j = 0; j < pValueSequence->NumOfValues(); ++j) {
+            ptree elementTree;
+            elementTree.put_value(pValueSequence->ValueAt(j));
+            valuesTree.push_back(std::make_pair("", elementTree));
+        }
+
+        metricTree.add_child("Values", valuesTree);
+        valueSequenceTree.push_back(std::make_pair("", metricTree));
+    }
+
     rootTree.add_child("Counters", counterTree);
     rootTree.add_child("Gauges", gaugeTree);
     rootTree.add_child("Distributions", distributionTree);
     rootTree.add_child("Histograms", histogramTree);
+    rootTree.add_child("ValueSequences", valueSequenceTree);
 
     return rootTree;
 }
