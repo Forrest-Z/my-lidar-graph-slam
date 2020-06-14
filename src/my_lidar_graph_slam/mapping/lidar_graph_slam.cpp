@@ -227,6 +227,9 @@ void LidarGraphSlam::PerformLocalSlam(
     /* Append the new pose graph edge for odometric constraint */
     this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
                                  edgeRelPose, edgeInfoMat);
+    /* Update the pose graph error sequence */
+    this->mPoseGraphOptimizer->UpdateMetrics(
+        this->mPoseGraph, true, true, false, false, false);
 
     /* Measure processing time */
     distMetrics("PoseGraphUpdateTime")->Observe(
@@ -307,6 +310,9 @@ void LidarGraphSlam::PerformLoopClosure(
     /* Append the new pose graph edge for loop closing constraint */
     this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
                                  relPose, edgeInfoMat);
+    /* Update the pose graph error sequence */
+    this->mPoseGraphOptimizer->UpdateMetrics(
+        this->mPoseGraph, false, true, true, false, false);
 
     /* Compute the residual */
     Eigen::Vector3d errorVec;
@@ -334,6 +340,9 @@ void LidarGraphSlam::PerformLoopClosure(
     this->mPoseGraphOptimizer->Optimize(this->mPoseGraph);
     distMetrics("PoseGraphOptimizationTime")->Observe(
         ToMicroSeconds(optimizationTimer.elapsed().wall));
+    /* Update the pose graph error histogram */
+    this->mPoseGraphOptimizer->UpdateMetrics(
+        this->mPoseGraph, true, true, false, true, true);
 
     /* Re-create the grid maps */
     boost::timer::cpu_timer regenerateMapTimer;

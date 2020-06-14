@@ -775,18 +775,22 @@ void RegisterMetrics()
         "PoseGraphError", poseGraphErrorBoundaries));
     histMetrics.Append(new Histogram(
         "PoseGraphRobustError", poseGraphErrorBoundaries));
+
+    /* Register value sequence metrics */
+    auto& valueSeqMetrics = pMetricManager->ValueSequenceMetrics();
+    valueSeqMetrics.Append(new ValueSequence("PoseGraphError"));
+    valueSeqMetrics.Append(new ValueSequence("PoseGraphRobustError"));
+    valueSeqMetrics.Append(new ValueSequence("PoseGraphNewLoopEdgeCreated"));
+    valueSeqMetrics.Append(new ValueSequence("PoseGraphAfterLoopClosure"));
 }
 
 /* Save metrics */
 void SaveMetrics(const std::string& fileName)
 {
     /* Save metrics to JSON file */
-    Metric::MetricManager* const pMetricManager =
-        Metric::MetricManager::Instance();
-    
+    auto* const pMetricManager = Metric::MetricManager::Instance();
     /* Convert all metrics to Boost property tree */
-    const pt::ptree metricTree =
-        pMetricManager->ToPropertyTree();
+    const pt::ptree metricTree = pMetricManager->ToPropertyTree();
 
     /* Write JSON file */
     const std::string metricFileName = fileName + ".metric.json";

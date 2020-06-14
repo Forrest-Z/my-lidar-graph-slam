@@ -68,6 +68,14 @@ public:
                               const RobotPose2D<double>& edgeRelPose,
                               Eigen::Vector3d& errorVec) const override;
 
+    /* Update the pose graph error metrics */
+    void UpdateMetrics(const std::shared_ptr<PoseGraph>& poseGraph,
+                       bool updateErrorHistogram,
+                       bool updateErrorValueSeq,
+                       bool isNewLoopEdgeCreated,
+                       bool isAfterLoopClosure,
+                       bool dumpErrorHistogram) const override;
+
 private:
     /* Perform one optimization step and return the total error */
     void OptimizeStep(std::shared_ptr<PoseGraph>& poseGraph,
@@ -85,9 +93,6 @@ private:
     
     /* Compute total error */
     double ComputeTotalError(const std::shared_ptr<PoseGraph>& poseGraph) const;
-
-    /* Update the pose graph error metrics */
-    void UpdateMetrics(const std::shared_ptr<PoseGraph>& poseGraph) const;
 
 private:
     /* Linear solver type */

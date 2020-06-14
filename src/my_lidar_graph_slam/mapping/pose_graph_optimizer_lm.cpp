@@ -59,9 +59,6 @@ void PoseGraphOptimizerLM::Optimize(std::shared_ptr<PoseGraph>& poseGraph)
         prevTotalError = totalError;
     }
 
-    /* Update the histogram that stores pose graph errors */
-    this->UpdateMetrics(poseGraph);
-
     /* Update metrics */
     auto* const pMetric = Metric::MetricManager::Instance();
     auto& distMetrics = pMetric->DistributionMetrics();
@@ -345,16 +342,32 @@ double PoseGraphOptimizerLM::ComputeTotalError(
 
 /* Update the pose graph error metrics */
 void PoseGraphOptimizerLM::UpdateMetrics(
-    const std::shared_ptr<PoseGraph>& poseGraph) const
+    const std::shared_ptr<PoseGraph>& poseGraph,
+    bool updateErrorHistogram,
+    bool updateErrorValueSeq,
+    bool isNewLoopEdgeCreated,
+    bool isAfterLoopClosure,
+    bool dumpErrorHistogram) const
 {
     auto* const pMetric = Metric::MetricManager::Instance();
     auto& histMetrics = pMetric->HistogramMetrics();
     auto* const pHistError = histMetrics("PoseGraphError");
     auto* const pHistRobustError = histMetrics("PoseGraphRobustError");
 
-    /* Reset the histogram for storing pose graph edge errors */
-    pHistError->Reset();
-    pHistRobustError->Reset();
+    auto& seqMetrics = pMetric->ValueSequenceMetrics();
+    auto* const pValueSeqError = seqMetrics("PoseGraphError");
+    auto* const pValueSeqRobustError = seqMetrics("PoseGraphRobustError");
+    auto* const pValueSeqNewLoop = seqMetrics("PoseGraphNewLoopEdgeCreated");
+    auto* const pValueSeqLoopClosure = seqMetrics("PoseGraphAfterLoopClosure");
+
+    if (updateErrorHistogram) {
+        /* Reset the histogram for storing pose graph edge errors */
+        pHistError->Reset();
+        pHistRobustError->Reset();
+    }
+
+    double totalError = 0.0;
+    double totalRobustError = 0.0;
 
     /* Compute error function for each edge */
     for (const auto& edge : poseGraph->Edges()) {
@@ -382,15 +395,36 @@ void PoseGraphOptimizerLM::UpdateMetrics(
         /* Apply the robust loss function */
         const double correctedErrorVal = this->mLossFunction->Loss(errorVal);
 
-        /* Append the error value to the error histogram */
-        pHistError->Observe(errorVal);
-        /* Append the robust error value to the error histogram */
-        pHistRobustError->Observe(correctedErrorVal);
+        totalError += errorVal;
+        totalRobustError += correctedErrorVal;
+
+        if (updateErrorHistogram) {
+            /* Append the error value to the error histogram */
+            pHistError->Observe(errorVal);
+            /* Append the robust error value to the error histogram */
+            pHistRobustError->Observe(correctedErrorVal);
+        }
     }
 
-    /* Dump the pose graph error histogram */
-    pHistRobustError->Dump(std::cerr, false);
-    pHistError->Dump(std::cerr, true);
+    if (updateErrorValueSeq) {
+        /* Append the total error to the value sequence */
+        pValueSeqError->Observe(totalError);
+        /* Append the total robust error to the value sequence */
+        pValueSeqRobustError->Observe(totalRobustError);
+
+        /* Append the error value index if the new edge is created */
+        if (isNewLoopEdgeCreated)
+            pValueSeqNewLoop->Observe(pValueSeqError->NumOfValues() - 1);
+        /* Append the error value index if the loop closure took place */
+        if (isAfterLoopClosure)
+            pValueSeqLoopClosure->Observe(pValueSeqError->NumOfValues() - 1);
+    }
+
+    if (dumpErrorHistogram) {
+        /* Dump the pose graph error histogram */
+        pHistRobustError->Dump(std::cerr, false);
+        pHistError->Dump(std::cerr, true);
+    }
 
     return;
 }

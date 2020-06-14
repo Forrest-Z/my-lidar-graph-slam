@@ -28,6 +28,15 @@ public:
         const RobotPose2D<double>& endNodePose,
         const RobotPose2D<double>& edgeRelPose,
         Eigen::Vector3d& errorVec) const = 0;
+
+    /* Update the pose graph error metrics */
+    virtual void UpdateMetrics(
+        const std::shared_ptr<PoseGraph>& poseGraph,
+        bool updateErrorHistogram,
+        bool updateErrorValueSeq,
+        bool isNewLoopEdgeCreated,
+        bool isAfterLoopClosure,
+        bool dumpErrorHistogram) const = 0;
 };
 
 } /* namespace Mapping */
