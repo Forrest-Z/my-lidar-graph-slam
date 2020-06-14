@@ -28,6 +28,7 @@ enum class MetricType
     Gauge,
     Distribution,
     Histogram,
+    ValueSequence,
     MetricFamily,
 };
 
@@ -479,6 +480,81 @@ private:
     double              mSumValues;
 };
 
+class ValueSequenceBase : public MetricBase
+{
+public:
+    /* Constructor */
+    ValueSequenceBase(const std::string& metricId) :
+        MetricBase(MetricType::ValueSequence, metricId) { }
+    /* Destructor */
+    ~ValueSequenceBase() = default;
+
+    /* Reset the value sequence */
+    virtual void Reset() = 0;
+
+    /* Observe the value and append to the sequence */
+    virtual void Observe(double val) = 0;
+
+    /* Retrieve the number of data points */
+    virtual std::size_t NumOfValues() const = 0;
+    /* Retrieve the value in the container */
+    virtual double ValueAt(std::size_t valueIdx) const = 0;
+
+    /* Dump the value sequence object */
+    virtual void Dump(std::ostream& outStream) const = 0;
+};
+
+class NullValueSequence final : public ValueSequenceBase
+{
+public:
+    /* Constructor */
+    NullValueSequence() : ValueSequenceBase("") { }
+    /* Destructor */
+    ~NullValueSequence() = default;
+
+    /* Reset the value sequence */
+    void Reset() override { }
+
+    /* Observe the value and append to the sequence */
+    void Observe(double) override { }
+
+    /* Retrieve the number of data points */
+    std::size_t NumOfValues() const override { return 0; }
+    /* Retrieve the value in the container */
+    double ValueAt(std::size_t) const override { return 0.0; }
+
+    /* Dump the value sequence object */
+    void Dump(std::ostream&) const override { }
+};
+
+class ValueSequence final : public ValueSequenceBase
+{
+public:
+    /* Constructor */
+    ValueSequence(const std::string& metricId) :
+        ValueSequenceBase(metricId) { }
+    /* Destructor */
+    ~ValueSequence() = default;
+
+    /* Reset the value sequence */
+    void Reset() override;
+
+    /* Observe the value and append to the sequence */
+    void Observe(double val) override;
+
+    /* Retrieve the number of data points */
+    std::size_t NumOfValues() const override;
+    /* Retrieve the value in the container */
+    double ValueAt(std::size_t valueIdx) const override;
+
+    /* Dump the value sequence object */
+    void Dump(std::ostream& outStream) const override;
+
+private:
+    /* Value sequence */
+    std::vector<double> mValues;
+};
+
 template <typename T>
 class MetricFamily final : public MetricBase
 {
@@ -533,7 +609,8 @@ private:
         mCounterMetrics("Counters", new NullCounter()),
         mGaugeMetrics("Gauges", new NullGauge()),
         mDistributionMetrics("Distributions", new NullDistribution()),
-        mHistogramMetrics("Histograms", new NullHistogram()) { }
+        mHistogramMetrics("Histograms", new NullHistogram()),
+        mValueSequenceMetrics("ValueSequences", new NullValueSequence()) { }
     /* Destructor */
     ~MetricManager() = default;
 
@@ -584,15 +661,24 @@ public:
     MetricFamily<HistogramBase>& HistogramMetrics()
     { return this->mHistogramMetrics; }
 
+    /* Retrieve the value sequence metrics */
+    const MetricFamily<ValueSequenceBase>& ValueSequenceMetrics() const
+    { return this->mValueSequenceMetrics; }
+    /* Retrieve the value sequence metrics */
+    MetricFamily<ValueSequenceBase>& ValueSequenceMetrics()
+    { return this->mValueSequenceMetrics; }
+
 private:
     /* List of the counter metrics */
-    MetricFamily<CounterBase>      mCounterMetrics;
+    MetricFamily<CounterBase>       mCounterMetrics;
     /* List of the gauge metrics */
-    MetricFamily<GaugeBase>        mGaugeMetrics;
+    MetricFamily<GaugeBase>         mGaugeMetrics;
     /* List of the distribution metrics */
-    MetricFamily<DistributionBase> mDistributionMetrics;
+    MetricFamily<DistributionBase>  mDistributionMetrics;
     /* List of the histogram metrics */
-    MetricFamily<HistogramBase>    mHistogramMetrics;
+    MetricFamily<HistogramBase>     mHistogramMetrics;
+    /* List of the value sequence metrics */
+    MetricFamily<ValueSequenceBase> mValueSequenceMetrics;
 };
 
 } /* namespace Metric */
