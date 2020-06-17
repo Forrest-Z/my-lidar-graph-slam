@@ -744,6 +744,8 @@ void RegisterMetrics()
     distMetrics.Append(new Distribution("PoseGraphOptimizationTime"));
     distMetrics.Append(new Distribution("RegenerateMapTime"));
     distMetrics.Append(new Distribution("MapPrecomputationTime"));
+    distMetrics.Append(new Distribution("LocalScanMatchingCoreTime"));
+    distMetrics.Append(new Distribution("LoopDetectionCoreTime"));
 
     distMetrics.Append(new Distribution("LocalSlamMaxScore"));
     distMetrics.Append(new Distribution("LocalSlamCost"));
@@ -782,6 +784,19 @@ void RegisterMetrics()
     valueSeqMetrics.Append(new ValueSequence("PoseGraphRobustError"));
     valueSeqMetrics.Append(new ValueSequence("PoseGraphNewLoopEdgeCreated"));
     valueSeqMetrics.Append(new ValueSequence("PoseGraphAfterLoopClosure"));
+
+    valueSeqMetrics.Append(
+        new ValueSequence("ScanMatcherComputeScanIndices"));
+    valueSeqMetrics.Append(
+        new ValueSequence("ScanMatcherComputeScore"));
+    valueSeqMetrics.Append(
+        new ValueSequence("ScanMatcherEvaluateHighResolutionMap"));
+    valueSeqMetrics.Append(
+        new ValueSequence("LoopClosureComputeScanIndices"));
+    valueSeqMetrics.Append(
+        new ValueSequence("LoopClosureComputeScore"));
+    valueSeqMetrics.Append(
+        new ValueSequence("LoopClosureEvaluateHighResolutionMap"));
 }
 
 /* Save metrics */

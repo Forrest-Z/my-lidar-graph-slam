@@ -205,6 +205,8 @@ bool LoopClosureRealTimeCorrelative::FindCorrespondingPose(
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
+    auto* const pMetric = Metric::MetricManager::Instance();
+
     /* Retrieve the local grid map */
     const GridMapBuilder::GridMapType& localMap = localMapInfo.mMap;
     /* Retrieve the precomputed low-resolution grid map */
@@ -244,12 +246,21 @@ bool LoopClosureRealTimeCorrelative::FindCorrespondingPose(
     std::vector<Point2D<int>> scanIndices;
     scanIndices.reserve(scanData->NumOfScans());
 
+    /* Count the method calls for further analysis */
+    int computeScanIndicesCalls = 0;
+    int computeScoreCalls = 0;
+    int evaluateHighResolutionMapCalls = 0;
+
+    /* Measure the actual processing time for further analysis */
+    boost::timer::cpu_timer loopDetectionCoreTimer;
+
     for (int t = -winTheta; t <= winTheta; ++t) {
         /* Compute the grid cell indices for scan points */
         const RobotPose2D<double> currentSensorPose {
             sensorPose.mX, sensorPose.mY, sensorPose.mTheta + stepTheta * t };
         this->ComputeScanIndices(
             precompMap, currentSensorPose, scanData, scanIndices);
+        ++computeScanIndicesCalls;
 
         /* 'winX' and 'winY' are represented in the number of grid cells */
         /* For given 't', the projected scan points 'scanIndices' are
@@ -259,6 +270,7 @@ bool LoopClosureRealTimeCorrelative::FindCorrespondingPose(
                 /* Evaluate the matching score */
                 const double score = this->ComputeScore(
                     precompMap, scanIndices, x, y);
+                ++computeScoreCalls;
 
                 /* Ignore the score of the low-resolution grid cell
                  * if the score is below a maximum score */
@@ -270,12 +282,26 @@ bool LoopClosureRealTimeCorrelative::FindCorrespondingPose(
                 this->EvaluateHighResolutionMap(
                     localMap, scanIndices, x, y, t,
                     bestWinX, bestWinY, bestWinTheta, scoreMax);
+                ++evaluateHighResolutionMapCalls;
             }
         }
     }
 
+    /* Measure the actual processing time for further analysis */
+    auto& distMetrics = pMetric->DistributionMetrics();
+    distMetrics("LoopDetectionCoreTime")->Observe(
+        ToMicroSeconds(loopDetectionCoreTimer.elapsed().wall));
+
     /* Update metrics */
-    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
+    auto& valueSeqMetrics = pMetric->ValueSequenceMetrics();
+    valueSeqMetrics("LoopClosureComputeScanIndices")->Observe(
+        computeScanIndicesCalls);
+    valueSeqMetrics("LoopClosureComputeScore")->Observe(
+        computeScoreCalls);
+    valueSeqMetrics("LoopClosureEvaluateHighResolutionMap")->Observe(
+        evaluateHighResolutionMapCalls);
+
+    /* Update metrics */
     auto& histMetrics = pMetric->HistogramMetrics();
     histMetrics("LoopClosureMaxScore")->Observe(scoreMax);
 

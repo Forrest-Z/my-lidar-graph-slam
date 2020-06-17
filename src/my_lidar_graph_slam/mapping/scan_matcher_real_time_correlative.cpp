@@ -7,6 +7,8 @@
 #include <limits>
 #include <numeric>
 
+#include <boost/timer/timer.hpp>
+
 #include "my_lidar_graph_slam/metric/metric.hpp"
 
 namespace MyLidarGraphSlam {
@@ -36,6 +38,8 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
     const RobotPose2D<double>& initialPose,
     Summary& resultSummary)
 {
+    auto* const pMetric = Metric::MetricManager::Instance();
+
     /* Precompute the grid map */
     const PrecomputedMapType precompMap =
         PrecomputeGridMap(gridMap, this->mLowResolution);
@@ -69,12 +73,21 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
     std::vector<Point2D<int>> scanIndices;
     scanIndices.reserve(scanData->NumOfScans());
 
+    /* Count the method calls for further analysis */
+    int computeScanIndicesCalls = 0;
+    int computeScoreCalls = 0;
+    int evaluateHighResolutionMapCalls = 0;
+
+    /* Measure the actual processing time for further analysis */
+    boost::timer::cpu_timer scanMatchingCoreTimer;
+
     for (int t = -winTheta; t <= winTheta; ++t) {
         /* Compute the grid cell indices for scan points */
         const RobotPose2D<double> currentSensorPose {
             sensorPose.mX, sensorPose.mY, sensorPose.mTheta + stepTheta * t };
         this->ComputeScanIndices(
             precompMap, currentSensorPose, scanData, scanIndices);
+        ++computeScanIndicesCalls;
 
         /* 'winX' and 'winY' are represented in the number of grid cells */
         /* For given 't', the projected scan points 'scanIndices' are
@@ -84,6 +97,7 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
                 /* Evaluate the matching score */
                 const double score = this->ComputeScore(
                     precompMap, scanIndices, x, y);
+                ++computeScoreCalls;
 
                 /* Ignore the score of the low-resolution grid cell
                  * if the score is below a maximum score */
@@ -95,9 +109,24 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
                 this->EvaluateHighResolutionMap(
                     gridMap, scanIndices, x, y, t,
                     bestWinX, bestWinY, bestWinTheta, scoreMax);
+                ++evaluateHighResolutionMapCalls;
             }
         }
     }
+
+    /* Measure the actual processing time for further analysis */
+    auto& distMetrics = pMetric->DistributionMetrics();
+    distMetrics("LocalScanMatchingCoreTime")->Observe(
+        ToMicroSeconds(scanMatchingCoreTimer.elapsed().wall));
+
+    /* Update metrics */
+    auto& valueSeqMetrics = pMetric->ValueSequenceMetrics();
+    valueSeqMetrics("ScanMatcherComputeScanIndices")->Observe(
+        computeScanIndicesCalls);
+    valueSeqMetrics("ScanMatcherComputeScore")->Observe(
+        computeScoreCalls);
+    valueSeqMetrics("ScanMatcherEvaluateHighResolutionMap")->Observe(
+        evaluateHighResolutionMapCalls);
 
     /* Compute the best sensor pose */
     const RobotPose2D<double> bestSensorPose {
@@ -125,8 +154,6 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
     resultSummary.mEstimatedCovariance = covMat;
 
     /* Update metrics */
-    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
-    auto& distMetrics = pMetric->DistributionMetrics();
     distMetrics("LocalSlamMaxScore")->Observe(scoreMax);
     distMetrics("LocalSlamCost")->Observe(costVal / scanData->NumOfScans());
 
