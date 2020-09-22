@@ -198,13 +198,13 @@ void ScanData<T>::HitAndMissedPoint(
 }
 
 /* Type definitions */
-using SensorDataPtr = std::shared_ptr<SensorData>;
+using SensorDataPtr = std::shared_ptr<const SensorData>;
 
 template <typename T>
-using OdometryDataPtr = std::shared_ptr<OdometryData<T>>;
+using OdometryDataPtr = std::shared_ptr<const OdometryData<T>>;
 
 template <typename T>
-using ScanDataPtr = std::shared_ptr<ScanData<T>>;
+using ScanDataPtr = std::shared_ptr<const ScanData<T>>;
 
 } /* namespace Sensor */
 } /* namespace MyLidarGraphSlam */
