@@ -8,8 +8,8 @@ namespace Mapping {
 
 /* Find a loop and return a loop constraint */
 bool LoopClosureEmpty::FindLoop(
-    GridMapBuilderPtr& gridMapBuilder,
-    const PoseGraphPtr& poseGraph,
+    GridMapBuilderPtr& /* gridMapBuilder */,
+    const PoseGraphPtr& /* poseGraph */,
     RobotPose2D<double>& relPose,
     int& startNodeIdx,
     int& endNodeIdx,
