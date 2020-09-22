@@ -348,14 +348,14 @@ void MapSaver::DrawMap(const GridMapType& gridMap,
                      * and is in unknown state (GridCell::Unknown is zero) */
                     if (gridCellValue <= 0.0 || gridCellValue > 1.0)
                         continue;
-                    
+
                     const std::ptrdiff_t idxX = static_cast<std::ptrdiff_t>(
                         x * gridMap.PatchSize() + xx);
                     const std::ptrdiff_t idxY = static_cast<std::ptrdiff_t>(
                         y * gridMap.PatchSize() + yy);
-                    const gil::bits8 grayScale = static_cast<gil::bits8>(
+                    const std::uint8_t grayScale = static_cast<std::uint8_t>(
                         (1.0 - gridCellValue) * 255.0);
-                    
+
                     mapImageView(idxX, idxY) =
                         gil::rgb8_pixel_t(grayScale, grayScale, grayScale);
                 }
@@ -504,8 +504,14 @@ bool MapSaver::SaveMapCore(const GridMapType& gridMap,
      * Image should be flipped upside down */
     try {
         const std::string pngFileName = saveOptions.mFileName + ".png";
+#if BOOST_VERSION <= 106700
         gil::png_write_view(pngFileName,
                             gil::flipped_up_down_view(mapImageView));
+#else
+        gil::write_view(pngFileName,
+                        gil::flipped_up_down_view(mapImageView),
+                        gil::png_tag());
+#endif
     } catch (const std::ios_base::failure& e) {
         std::cerr << "std::ios_base::failure occurred: " << e.what() << ' '
                   << "(Error code: " << e.code() << ")" << std::endl;

@@ -13,8 +13,18 @@
 #define int_p_NULL          (int*)NULL
 #define png_bytep_NULL      (png_bytep)NULL
 
+#include <boost/version.hpp>
+
+#if BOOST_VERSION <= 106700
 #include <boost/gil/gil_all.hpp>
 #include <boost/gil/extension/io/png_io.hpp>
+#elif BOOST_VERSION <= 106800
+#include <boost/gil/gil_all.hpp>
+#include <boost/gil/extension/io/png.hpp>
+#else
+#include <boost/gil.hpp>
+#include <boost/gil/extension/io/png.hpp>
+#endif
 
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
