@@ -16,14 +16,67 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
+ * NodePosition struct represents the pose and index of
+ * the pose graph nodes, which is intended for the use in
+ * rendering the current pose graph or searching the loop closure
+ * candidate, where the corresponding scan data of the node is not needed
+ */
+struct NodePosition final
+{
+    /* Constructor */
+    NodePosition(int nodeIdx,
+                 const RobotPose2D<double>& pose) :
+        mIdx(nodeIdx), mPose(pose) { }
+    /* Destructor */
+    ~NodePosition() = default;
+
+    /* Comparison (less than) operator */
+    inline bool operator<(const NodePosition& other) const
+    { return this->mIdx < other.mIdx; }
+
+    /* Index of the node */
+    int                 mIdx;
+    /* Robot pose */
+    RobotPose2D<double> mPose;
+};
+
+/*
+ * EdgeConnection struct represents the indices of the adjacent
+ * pose graph nodes and the type (odometry or loop constraint), which is
+ * intended for the use in rendering the current pose graph, where
+ * the corresponding information matrix is not needed
+ */
+struct EdgeConnection final
+{
+    /* Constructor */
+    EdgeConnection(int startNodeIdx,
+                   int endNodeIdx,
+                   bool isOdometry) :
+        mStartNodeIdx(startNodeIdx),
+        mEndNodeIdx(endNodeIdx),
+        mIsOdometry(isOdometry) { }
+    /* Destructor */
+    ~EdgeConnection() = default;
+
+    /* Index of the start node */
+    int  mStartNodeIdx;
+    /* Index of the end node */
+    int  mEndNodeIdx;
+    /* Flag to determine whether the edge represents
+     * odometry or loop constraint */
+    bool mIsOdometry;
+};
+
+/*
  * PoseGraph class represents pose graphs for Graph-Based SLAM
  */
 class PoseGraph
 {
 public:
     /*
-     * Node class represents pose graph nodes
-     * poses are variables in the graph optimization problem
+     * Node class represents the pose graph nodes same as NodePosition struct
+     * but with the associated scan data to build grid maps
+     * Poses are the variables in the graph optimization problem
      */
     class Node final
     {
@@ -69,7 +122,7 @@ public:
     /*
      * Edge class represents pose graph edges (constraints)
      * connecting two adjacent pose graph nodes
-     * relative poses are constants in the optimization problem
+     * Relative poses are the constants in the optimization problem
      */
     class Edge final
     {
