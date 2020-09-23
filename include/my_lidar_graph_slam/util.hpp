@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <deque>
 #include <functional>
+#include <iostream>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -19,6 +20,18 @@
 #include "my_lidar_graph_slam/pose.hpp"
 
 namespace MyLidarGraphSlam {
+
+/* Assert function that is enabled in Release mode */
+inline void Assert(bool condition, const char* message)
+{
+    if (!condition) {
+        std::cerr << "Assertion failed: " << message << " ("
+                  << "Function: " << __func__ << ", "
+                  << "File: " << __FILE__ << ", "
+                  << "Line: " << __LINE__ << ')' << std::endl;
+        std::abort();
+    }
+}
 
 /* Convert strongly typed enum to integers */
 template <typename T>
