@@ -5,7 +5,10 @@
 #define MY_LIDAR_GRAPH_SLAM_IO_GNUPLOT_HELPER_HPP
 
 #include <cstdio>
+#include <map>
 #include <memory>
+#include <tuple>
+#include <vector>
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
@@ -40,14 +43,15 @@ public:
     GnuplotHelper(const GnuplotHelper&) = delete;
     /* Copy assignment operator (disabled) */
     GnuplotHelper& operator=(const GnuplotHelper&) = delete;
-    /* Move constructor (disabled) */
-    GnuplotHelper(GnuplotHelper&&) = delete;
-    /* Move assignment operator (disabled) */
-    GnuplotHelper& operator=(GnuplotHelper&&) = delete;
+    /* Move constructor */
+    GnuplotHelper(GnuplotHelper&&) noexcept = default;
+    /* Move assignment operator */
+    GnuplotHelper& operator=(GnuplotHelper&&) noexcept = default;
 
     /* Draw the pose graph */
     void DrawPoseGraph(
-        const std::shared_ptr<Mapping::PoseGraph>& poseGraph) const;
+        const std::map<int, const RobotPose2D<double>>& poseGraphNodes,
+        const std::vector<std::tuple<int, int, bool>>& poseGraphEdges) const;
 
 private:
     std::unique_ptr<FILE, PipeDeleter> mGnuplot;
