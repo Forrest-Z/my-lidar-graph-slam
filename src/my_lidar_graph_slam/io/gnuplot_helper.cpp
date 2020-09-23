@@ -20,24 +20,22 @@ GnuplotHelper::GnuplotHelper() :
 
 /* Draw the pose graph */
 void GnuplotHelper::DrawPoseGraph(
-    const std::map<int, const RobotPose2D<double>>& poseGraphNodes,
-    const std::vector<std::tuple<int, int, bool>>& poseGraphEdges) const
+    const std::map<int, Mapping::NodePosition>& poseGraphNodes,
+    const std::vector<Mapping::EdgeConnection>& poseGraphEdges) const
 {
     /* Setup pose graph edges for odometric constraints */
     std::fprintf(this->mGnuplot.get(), "$odometryEdges << EOF\n");
 
     for (const auto& edge : poseGraphEdges) {
-        const auto [startNodeIdx, endNodeIdx, isOdometricConstraint] = edge;
-
-        if (!isOdometricConstraint)
+        if (!edge.mIsOdometry)
             continue;
 
-        const auto& startNodePose = poseGraphNodes.at(startNodeIdx);
-        const auto& endNodePose = poseGraphNodes.at(endNodeIdx);
+        const auto& startNode = poseGraphNodes.at(edge.mStartNodeIdx);
+        const auto& endNode = poseGraphNodes.at(edge.mEndNodeIdx);
 
         std::fprintf(this->mGnuplot.get(), "%f %f\n%f %f\n\n",
-                     startNodePose.mX, startNodePose.mY,
-                     endNodePose.mX, endNodePose.mY);
+                     startNode.mPose.mX, startNode.mPose.mY,
+                     endNode.mPose.mX, endNode.mPose.mY);
     }
 
     std::fprintf(this->mGnuplot.get(), "EOF\n");
@@ -46,17 +44,15 @@ void GnuplotHelper::DrawPoseGraph(
     std::fprintf(this->mGnuplot.get(), "$loopClosingEdges << EOF\n");
 
     for (const auto& edge : poseGraphEdges) {
-        const auto [startNodeIdx, endNodeIdx, isOdometricConstraint] = edge;
-
-        if (isOdometricConstraint)
+        if (edge.mIsOdometry)
             continue;
 
-        const auto& startNodePose = poseGraphNodes.at(startNodeIdx);
-        const auto& endNodePose = poseGraphNodes.at(endNodeIdx);
+        const auto& startNode = poseGraphNodes.at(edge.mStartNodeIdx);
+        const auto& endNode = poseGraphNodes.at(edge.mEndNodeIdx);
 
         std::fprintf(this->mGnuplot.get(), "%f %f\n%f %f\n\n",
-                     startNodePose.mX, startNodePose.mY,
-                     endNodePose.mX, endNodePose.mY);
+                     startNode.mPose.mX, startNode.mPose.mY,
+                     endNode.mPose.mX, endNode.mPose.mY);
     }
 
     std::fprintf(this->mGnuplot.get(), "EOF\n");

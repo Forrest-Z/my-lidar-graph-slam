@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <map>
 #include <memory>
-#include <tuple>
 #include <vector>
 
 #include "my_lidar_graph_slam/pose.hpp"
@@ -50,8 +49,8 @@ public:
 
     /* Draw the pose graph */
     void DrawPoseGraph(
-        const std::map<int, const RobotPose2D<double>>& poseGraphNodes,
-        const std::vector<std::tuple<int, int, bool>>& poseGraphEdges) const;
+        const std::map<int, Mapping::NodePosition>& poseGraphNodes,
+        const std::vector<Mapping::EdgeConnection>& poseGraphEdges) const;
 
 private:
     std::unique_ptr<FILE, PipeDeleter> mGnuplot;
