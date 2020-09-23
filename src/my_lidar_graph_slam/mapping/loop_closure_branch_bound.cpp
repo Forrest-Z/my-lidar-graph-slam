@@ -48,8 +48,8 @@ bool LoopClosureBranchBound::FindLoop(
 
     /* Precompute local grid maps for efficient loop closure */
     if (!candidateMapInfo.mPrecomputed)
-        gridMapBuilder->PrecomputeGridMaps(
-            candidateMapIdx, this->mNodeHeightMax);
+        PrecomputeGridMaps(gridMapBuilder->LocalMapAt(candidateMapIdx),
+                           this->mNodeHeightMax);
 
     RobotPose2D<double> correspondingPose;
     Eigen::Matrix3d covMat;

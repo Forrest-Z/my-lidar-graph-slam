@@ -128,38 +128,6 @@ GridMapBuilder::GridMapType GridMapBuilder::ConstructGlobalMap(
     return gridMap;
 }
 
-/* Precompute grid maps for efficiency */
-void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
-{
-    /* Retrieve the local grid map */
-    auto& localMapInfo = this->mLocalMaps.at(localMapIdx);
-    auto& precomputedMaps = localMapInfo.mPrecomputedMaps;
-    const GridMapType& localMap = localMapInfo.mMap;
-
-    /* The local grid map must be finished */
-    assert(localMapInfo.mFinished);
-
-    /* Create the temporary grid map to store the intermediate result
-     * The map size is as same as the local grid map and is reused for
-     * several times below */
-    PrecomputedMapType intermediateMap =
-        PrecomputedMapType::CreateSameSizeMap(localMap);
-
-    /* Compute a grid map for each node height */
-    for (int nodeHeight = 0, winSize = 1;
-         nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
-        /* Precompute a grid map */
-        PrecomputedMapType precompMap =
-            PrecomputeGridMap(localMap, intermediateMap, winSize);
-
-        /* Append the newly created map */
-        precomputedMaps.emplace(nodeHeight, std::move(precompMap));
-    }
-
-    /* Mark the local map as precomputed */
-    localMapInfo.mPrecomputed = true;
-}
-
 /* Update the grid map (list of the local grid maps) */
 bool GridMapBuilder::UpdateGridMap(
     const std::shared_ptr<PoseGraph>& poseGraph)
@@ -529,6 +497,38 @@ void SlidingWindowMaxCol(
     /* Apply the sliding window maximum function */
     for (rowIdx = 0; rowIdx < numOfGridCellsY; ++rowIdx)
         SlidingWindowMax(inFunc, outFunc, numOfGridCellsX, winSize);
+}
+
+/* Precompute coarser grid maps for efficiency */
+void PrecomputeGridMaps(GridMapBuilder::LocalMapInfo& localMapInfo,
+                        const int nodeHeightMax)
+{
+    /* Retrieve the local grid map */
+    auto& precomputedMaps = localMapInfo.mPrecomputedMaps;
+    const GridMapBuilder::GridMapType& localMap = localMapInfo.mMap;
+
+    /* The local grid map must be finished */
+    assert(localMapInfo.mFinished);
+
+    /* Create the temporary grid map to store the intermediate result
+     * The map size is as same as the local grid map and is reused for
+     * several times below */
+    GridMapBuilder::PrecomputedMapType intermediateMap =
+        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(localMap);
+
+    /* Compute a grid map for each node height */
+    for (int nodeHeight = 0, winSize = 1;
+         nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
+        /* Precompute a grid map */
+        GridMapBuilder::PrecomputedMapType precompMap =
+            PrecomputeGridMap(localMap, intermediateMap, winSize);
+
+        /* Append the newly created map */
+        precomputedMaps.emplace(nodeHeight, std::move(precompMap));
+    }
+
+    /* Mark the local map as precomputed */
+    localMapInfo.mPrecomputed = true;
 }
 
 /* Precompute grid map for efficiency */

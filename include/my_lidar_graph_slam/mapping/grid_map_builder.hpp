@@ -97,10 +97,7 @@ public:
     /* Construct the global map */
     GridMapType ConstructGlobalMap(
         const std::shared_ptr<PoseGraph>& poseGraph) const;
-    
-    /* Precompute grid maps for efficiency */
-    void PrecomputeGridMaps(int localMapIdx, int maxNodeHeight);
-    
+
     /* Retrieve the local grid maps */
     inline const std::vector<LocalMapInfo>& LocalMaps() const
     { return this->mLocalMaps; }
@@ -210,6 +207,11 @@ void SlidingWindowMaxCol(
     const GridMapBuilder::PrecomputedMapType& intermediateMap,
     GridMapBuilder::PrecomputedMapType& precompMap,
     int winSize);
+
+/* Precompute coarser grid maps for efficiency */
+void PrecomputeGridMaps(
+    GridMapBuilder::LocalMapInfo& localMapInfo,
+    const int nodeHeightMax);
 
 /* Precompute grid map for efficiency */
 GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
