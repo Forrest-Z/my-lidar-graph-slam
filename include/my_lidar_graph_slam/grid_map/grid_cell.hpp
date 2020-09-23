@@ -22,11 +22,11 @@ public:
     /* Copy constructor */
     GridCell(const GridCell& other) = default;
     /* Move constructor */
-    GridCell(GridCell&& other) = default;
+    GridCell(GridCell&& other) noexcept = default;
     /* Copy assignment operator */
     GridCell& operator=(const GridCell& other) = default;
     /* Move assignment operator */
-    GridCell& operator=(GridCell&& other) = default;
+    GridCell& operator=(GridCell&& other) noexcept = default;
 
     /* Cast operator */
     virtual explicit operator T() const = 0;
