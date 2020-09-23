@@ -4,6 +4,7 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_GRID_MAP_GRID_MAP_PATCH_HPP
 #define MY_LIDAR_GRAPH_SLAM_GRID_MAP_GRID_MAP_PATCH_HPP
 
+#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <utility>
@@ -23,11 +24,10 @@ public:
     /* Destructor */
     ~Patch() = default;
 
-    /* Copy constructor (disabled) */
-    Patch(const Patch& other) = delete;
-    /* Copy assignment operator (disabled) */
-    Patch& operator=(const Patch& other) = delete;
-
+    /* Copy constructor */
+    Patch(const Patch& other);
+    /* Copy assignment operator */
+    Patch& operator=(const Patch& other);
     /* Move constructor */
     Patch(Patch&& other) noexcept;
     /* Move assignment operator */
@@ -73,6 +73,44 @@ private:
     /* Patch data */
     std::unique_ptr<T[]> mData;
 };
+
+/* Copy constructor */
+template <typename T>
+Patch<T>::Patch(const Patch<T>& other) :
+    mSize(-1),
+    mData(nullptr)
+{
+    /* Just call the copy assignment operator */
+    *this = other;
+}
+
+/* Copy assignment operator */
+template <typename T>
+Patch<T>& Patch<T>::operator=(const Patch<T>& other)
+{
+    if (this == &other)
+        return *this;
+
+    if (!other.IsValid() || !other.IsAllocated()) {
+        /* Reset if the patch is invalid */
+        this->mSize = -1;
+        this->mData.reset(nullptr);
+    } else {
+        /* Reallocate the patch if the patch size is different */
+        if (this->mSize != other.mSize)
+            this->Allocate(other.mSize);
+
+        /* Ensure that the patch is allocated and valid */
+        assert(this->IsValid());
+        assert(this->IsAllocated());
+
+        /* Copy the grid cell values to the newly allocated patch */
+        const int numOfGridCells = this->mSize * this->mSize;
+        std::copy_n(other.mData.get(), numOfGridCells, this->mData.get());
+    }
+
+    return *this;
+}
 
 /* Move constructor */
 template <typename T>
