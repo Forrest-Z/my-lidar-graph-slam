@@ -5,6 +5,7 @@
 #define MY_LIDAR_GRAPH_SLAM_SENSOR_SCAN_INTERPOLATOR_HPP
 
 #include <cassert>
+#include <memory>
 #include <vector>
 
 #include "my_lidar_graph_slam/point.hpp"
@@ -14,6 +15,10 @@
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
+
+/* Type definitions for convenience */
+class ScanInterpolator;
+using ScanInterpolatorPtr = std::shared_ptr<ScanInterpolator>;
 
 class ScanInterpolator final
 {
