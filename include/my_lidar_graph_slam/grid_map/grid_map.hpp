@@ -61,11 +61,10 @@ public:
     /* Destructor */
     ~GridMap() = default;
 
-    /* Copy constructor (disabled) */
-    GridMap(const GridMap&) = delete;
-    /* Copy assignment operator (disabled) */
-    GridMap& operator=(const GridMap&) = delete;
-
+    /* Copy constructor */
+    GridMap(const GridMap& other);
+    /* Copy assignment operator */
+    GridMap& operator=(const GridMap& other);
     /* Move constructor */
     GridMap(GridMap&& other) noexcept;
     /* Move assignment operator */
@@ -499,6 +498,76 @@ GridMap<T>::GridMap(double mapResolution,
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
     this->mPatches.reset(new Patch<T>[numOfPatches]);
     assert(this->mPatches != nullptr);
+}
+
+/* Copy constructor */
+template <typename T>
+GridMap<T>::GridMap(const GridMap<T>& other) :
+    mResolution(other.mResolution),
+    mPatchSize(other.mPatchSize),
+    mNumOfPatchesX(other.mNumOfPatchesX),
+    mNumOfPatchesY(other.mNumOfPatchesY),
+    mNumOfGridCellsX(other.mNumOfGridCellsX),
+    mNumOfGridCellsY(other.mNumOfGridCellsY),
+    mMapSizeX(other.mMapSizeX),
+    mMapSizeY(other.mMapSizeY),
+    mMinPos(other.mMinPos),
+    mPatches(nullptr)
+{
+    /* Ensure that the grid map has at least one patch or
+     * is in a special empty (uninitialized) state */
+    assert((this->mNumOfPatchesX > 0 && this->mNumOfPatchesY > 0) ||
+           (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0));
+
+    /* Do not allocate new patches if empty */
+    if (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0)
+        return;
+
+    /* Allocate new patches and then copy the values */
+    const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
+    this->mPatches.reset(new Patch<T>[numOfPatches]);
+    assert(this->mPatches != nullptr);
+
+    /* Copy the patches */
+    std::copy_n(other.mPatches.get(), numOfPatches, this->mPatches.get());
+}
+
+/* Copy assignment operator */
+template <typename T>
+GridMap<T>& GridMap<T>::operator=(const GridMap<T>& other)
+{
+    if (this == &other)
+        return *this;
+
+    /* Copy the grid map parameters */
+    this->mResolution = other.mResolution;
+    this->mPatchSize = other.mPatchSize;
+    this->mNumOfPatchesX = other.mNumOfPatchesX;
+    this->mNumOfPatchesY = other.mNumOfPatchesY;
+    this->mNumOfGridCellsX = other.mNumOfGridCellsX;
+    this->mNumOfGridCellsY = other.mNumOfGridCellsY;
+    this->mMapSizeX = other.mMapSizeX;
+    this->mMapSizeY = other.mMapSizeY;
+    this->mMinPos = other.mMinPos;
+
+    /* Ensure that the grid map has at least one patch or
+     * is in a special empty (uninitialized) state */
+    assert((this->mNumOfPatchesX > 0 && this->mNumOfPatchesY > 0) ||
+           (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0));
+
+    /* Do not allocate new patches if empty */
+    if (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0)
+        return *this;
+
+    /* Allocate new patches and then copy the values */
+    const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
+    this->mPatches.reset(new Patch<T>[numOfPatches]);
+    assert(this->mPatches != nullptr);
+
+    /* Copy the patches */
+    std::copy_n(other.mPatches.get(), numOfPatches, this->mPatches.get());
+
+    return *this;
 }
 
 /* Move constructor */
