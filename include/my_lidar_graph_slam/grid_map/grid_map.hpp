@@ -28,6 +28,9 @@ public:
     using ValueType = typename T::ValueType;
     using ObservationType = typename T::ObservationType;
 
+    /* Constructor to create an empty grid map */
+    GridMap();
+
     /* Constructor with number of grid cells */
     GridMap(double mapResolution,
             int patchSize,
@@ -301,6 +304,22 @@ private:
     std::unique_ptr<Patch<T>[]> mPatches;
 };
 
+/* Constructor to create an empty grid map */
+template <typename T>
+GridMap<T>::GridMap() :
+    mResolution(0.0),
+    mPatchSize(0),
+    mNumOfPatchesX(0),
+    mNumOfPatchesY(0),
+    mNumOfGridCellsX(0),
+    mNumOfGridCellsY(0),
+    mMapSizeX(0.0),
+    mMapSizeY(0.0),
+    mMinPos(0.0, 0.0),
+    mPatches(nullptr)
+{
+}
+
 /* Constructor with number of grid cells */
 template <typename T>
 GridMap<T>::GridMap(double mapResolution,
@@ -320,9 +339,9 @@ GridMap<T>::GridMap(double mapResolution,
     /* Set the patch size (in number of grid cells) */
     this->mPatchSize = patchSize;
 
-    /* Map should contain at least one patch */
-    initialNumOfCellsX = std::max(1, initialNumOfCellsX);
-    initialNumOfCellsY = std::max(1, initialNumOfCellsY);
+    /* Empty grid map with no patch is allowed */
+    initialNumOfCellsX = std::max(0, initialNumOfCellsX);
+    initialNumOfCellsY = std::max(0, initialNumOfCellsY);
 
     this->mNumOfPatchesX = static_cast<int>(std::ceil(
         static_cast<double>(initialNumOfCellsX) /
@@ -331,8 +350,8 @@ GridMap<T>::GridMap(double mapResolution,
         static_cast<double>(initialNumOfCellsY) /
         static_cast<double>(patchSize)));
     
-    assert(this->mNumOfPatchesX > 0);
-    assert(this->mNumOfPatchesY > 0);
+    assert(this->mNumOfPatchesX >= 0);
+    assert(this->mNumOfPatchesY >= 0);
 
     /* Calculate the number of grid cells */
     this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
@@ -349,10 +368,13 @@ GridMap<T>::GridMap(double mapResolution,
     this->mMinPos.mX = centerPos.mX - idxOffsetX * this->mResolution;
     this->mMinPos.mY = centerPos.mY - idxOffsetY * this->mResolution;
 
-    /* Allocate the memory for map patches */
+    /* Allocate the memory for map patches if necessary */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
-    this->mPatches.reset(new Patch<T>[numOfPatches]);
-    assert(this->mPatches != nullptr);
+
+    if (numOfPatches > 0)
+        this->mPatches.reset(new Patch<T>[numOfPatches]);
+    else
+        this->mPatches.reset(nullptr);
 }
 
 /* Constructor with map size */
@@ -374,19 +396,19 @@ GridMap<T>::GridMap(double mapResolution,
     /* Set the patch size (in number of grid cells) */
     this->mPatchSize = patchSize;
 
-    /* Modify the map size so that the map contains at least one patch */
-    const double patchSizeInMeters = patchSize * this->mResolution;
-    mapSizeX = std::max(patchSizeInMeters, mapSizeX);
-    mapSizeY = std::max(patchSizeInMeters, mapSizeY);
+    /* Empty grid map with no patch is allowed */
+    mapSizeX = std::max(0.0, mapSizeX);
+    mapSizeY = std::max(0.0, mapSizeY);
 
     /* Calculate and validate the number of patches */
+    const double patchSizeInMeters = patchSize * this->mResolution;
     this->mNumOfPatchesX = static_cast<int>(std::ceil(
         mapSizeX / patchSizeInMeters));
     this->mNumOfPatchesY = static_cast<int>(std::ceil(
         mapSizeY / patchSizeInMeters));
     
-    assert(this->mNumOfPatchesX > 0);
-    assert(this->mNumOfPatchesY > 0);
+    assert(this->mNumOfPatchesX >= 0);
+    assert(this->mNumOfPatchesY >= 0);
 
     /* Calculate the number of grid cells */
     this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
@@ -406,8 +428,11 @@ GridMap<T>::GridMap(double mapResolution,
 
     /* Allocate the memory for map patches (not grid cells) */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
-    this->mPatches.reset(new Patch<T>[numOfPatches]);
-    assert(this->mPatches != nullptr);
+
+    if (numOfPatches > 0)
+        this->mPatches.reset(new Patch<T>[numOfPatches]);
+    else
+        this->mPatches.reset(nullptr);
 }
 
 /* Constructor with positions */
@@ -430,19 +455,19 @@ GridMap<T>::GridMap(double mapResolution,
     /* Set the patch size (in number of grid cells) */
     this->mPatchSize = patchSize;
 
-    /* Map should contain at least one patch */
-    const double patchSizeInMeters = patchSize * mapResolution;
-    double mapSizeX = std::max(patchSizeInMeters, maxX - minX);
-    double mapSizeY = std::max(patchSizeInMeters, maxY - minY);
-    
+    /* Empty grid map with no patch is allowed */
+    const double mapSizeX = std::max(0.0, maxX - minX);
+    const double mapSizeY = std::max(0.0, maxY - minY);
+
     /* Calculate the number of patches */
+    const double patchSizeInMeters = patchSize * this->mResolution;
     this->mNumOfPatchesX = static_cast<int>(std::ceil(
         mapSizeX / patchSizeInMeters));
     this->mNumOfPatchesY = static_cast<int>(std::ceil(
         mapSizeY / patchSizeInMeters));
-    
-    assert(this->mNumOfPatchesX > 0);
-    assert(this->mNumOfPatchesY > 0);
+
+    assert(this->mNumOfPatchesX >= 0);
+    assert(this->mNumOfPatchesY >= 0);
 
     /* Calculate the number of grid cells */
     this->mNumOfGridCellsX = this->mNumOfPatchesX * this->mPatchSize;
@@ -457,8 +482,11 @@ GridMap<T>::GridMap(double mapResolution,
 
     /* Allocate the memory for map patches */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
-    this->mPatches.reset(new Patch<T>[numOfPatches]);
-    assert(this->mPatches != nullptr);
+
+    if (numOfPatches > 0)
+        this->mPatches.reset(new Patch<T>[numOfPatches]);
+    else
+        this->mPatches.reset(nullptr);
 }
 
 /* Constructor with internal parameters */
@@ -472,8 +500,8 @@ GridMap<T>::GridMap(double mapResolution,
 {
     assert(mapResolution > 0.0);
     assert(patchSize > 0);
-    assert(numOfPatchesX > 0);
-    assert(numOfPatchesY > 0);
+    assert(numOfPatchesX >= 0);
+    assert(numOfPatchesY >= 0);
 
     /* Set the map resolution */
     this->mResolution = mapResolution;
@@ -496,40 +524,29 @@ GridMap<T>::GridMap(double mapResolution,
 
     /* Allocate the memory for patches */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
-    this->mPatches.reset(new Patch<T>[numOfPatches]);
-    assert(this->mPatches != nullptr);
+
+    if (numOfPatches > 0)
+        this->mPatches.reset(new Patch<T>[numOfPatches]);
+    else
+        this->mPatches.reset(nullptr);
 }
 
 /* Copy constructor */
 template <typename T>
 GridMap<T>::GridMap(const GridMap<T>& other) :
-    mResolution(other.mResolution),
-    mPatchSize(other.mPatchSize),
-    mNumOfPatchesX(other.mNumOfPatchesX),
-    mNumOfPatchesY(other.mNumOfPatchesY),
-    mNumOfGridCellsX(other.mNumOfGridCellsX),
-    mNumOfGridCellsY(other.mNumOfGridCellsY),
-    mMapSizeX(other.mMapSizeX),
-    mMapSizeY(other.mMapSizeY),
-    mMinPos(other.mMinPos),
+    mResolution(0.0),
+    mPatchSize(0),
+    mNumOfPatchesX(0),
+    mNumOfPatchesY(0),
+    mNumOfGridCellsX(0),
+    mNumOfGridCellsY(0),
+    mMapSizeX(0.0),
+    mMapSizeY(0.0),
+    mMinPos(0.0, 0.0),
     mPatches(nullptr)
 {
-    /* Ensure that the grid map has at least one patch or
-     * is in a special empty (uninitialized) state */
-    assert((this->mNumOfPatchesX > 0 && this->mNumOfPatchesY > 0) ||
-           (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0));
-
-    /* Do not allocate new patches if empty */
-    if (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0)
-        return;
-
-    /* Allocate new patches and then copy the values */
-    const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
-    this->mPatches.reset(new Patch<T>[numOfPatches]);
-    assert(this->mPatches != nullptr);
-
-    /* Copy the patches */
-    std::copy_n(other.mPatches.get(), numOfPatches, this->mPatches.get());
+    /* Just call the copy assignment operator */
+    *this = other;
 }
 
 /* Copy assignment operator */
@@ -538,6 +555,14 @@ GridMap<T>& GridMap<T>::operator=(const GridMap<T>& other)
 {
     if (this == &other)
         return *this;
+
+    /* Ensure that the map size (in the number of patches) is valid */
+    assert(other.mNumOfPatchesX >= 0);
+    assert(other.mNumOfPatchesY >= 0);
+
+    const int numOfPatches = other.mNumOfPatchesX * other.mNumOfPatchesY;
+    assert((numOfPatches > 0 && other.mPatches != nullptr) ||
+           (numOfPatches == 0 && other.mPatches == nullptr));
 
     /* Copy the grid map parameters */
     this->mResolution = other.mResolution;
@@ -550,22 +575,14 @@ GridMap<T>& GridMap<T>::operator=(const GridMap<T>& other)
     this->mMapSizeY = other.mMapSizeY;
     this->mMinPos = other.mMinPos;
 
-    /* Ensure that the grid map has at least one patch or
-     * is in a special empty (uninitialized) state */
-    assert((this->mNumOfPatchesX > 0 && this->mNumOfPatchesY > 0) ||
-           (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0));
-
-    /* Do not allocate new patches if empty */
-    if (this->mNumOfPatchesX == 0 && this->mNumOfPatchesY == 0)
-        return *this;
-
     /* Allocate new patches and then copy the values */
-    const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
-    this->mPatches.reset(new Patch<T>[numOfPatches]);
-    assert(this->mPatches != nullptr);
-
-    /* Copy the patches */
-    std::copy_n(other.mPatches.get(), numOfPatches, this->mPatches.get());
+    if (numOfPatches > 0) {
+        this->mPatches.reset(new Patch<T>[numOfPatches]);
+        assert(this->mPatches != nullptr);
+        std::copy_n(other.mPatches.get(), numOfPatches, this->mPatches.get());
+    } else {
+        this->mPatches.reset(nullptr);
+    }
 
     return *this;
 }
@@ -631,21 +648,25 @@ void GridMap<T>::Resize(double minX, double minY,
         this->WorldCoordinateToGridCellIndex(minX, minY);
     const Point2D<int> gridCellIdxMax =
         this->WorldCoordinateToGridCellIndex(maxX, maxY);
-    
+
     /* Calculate the patch index (can be negative) */
     const Point2D<int> patchIdxMin =
         this->GridCellIndexToPatchIndex(gridCellIdxMin);
     const Point2D<int> patchIdxMax =
         this->GridCellIndexToPatchIndex(gridCellIdxMax);
-    
+
     /* Calculate the number of patches */
-    const int numOfPatchesX = std::max(1, patchIdxMax.mX - patchIdxMin.mX + 1);
-    const int numOfPatchesY = std::max(1, patchIdxMax.mY - patchIdxMin.mY + 1);
+    const int numOfPatchesX = std::max(0, patchIdxMax.mX - patchIdxMin.mX + 1);
+    const int numOfPatchesY = std::max(0, patchIdxMax.mY - patchIdxMin.mY + 1);
+    const int numOfPatches = numOfPatchesX * numOfPatchesY;
 
     /* Re-allocate patches */
     std::unique_ptr<Patch<T>[]> oldPatches = std::move(this->mPatches);
-    this->mPatches.reset(new Patch<T>[numOfPatchesX * numOfPatchesY]);
-    assert(this->mPatches != nullptr);
+
+    if (numOfPatches > 0)
+        this->mPatches.reset(new Patch<T>[numOfPatchesX * numOfPatchesY]);
+    else
+        this->mPatches.reset(nullptr);
 
     /* Copy patches */
     const int x0 = std::max(0, patchIdxMin.mX);
@@ -687,7 +708,7 @@ void GridMap<T>::Expand(double minX, double minY,
 
     if (this->IsInside(minX, minY) && this->IsInside(maxX, maxY))
         return;
-    
+
     Point2D<double> minPos = this->GridCellIndexToWorldCoordinate(0, 0);
     Point2D<double> maxPos = this->GridCellIndexToWorldCoordinate(
         this->mNumOfGridCellsX, this->mNumOfGridCellsY);
@@ -705,9 +726,12 @@ void GridMap<T>::Expand(double minX, double minY,
 template <typename T>
 void GridMap<T>::Reset()
 {
-    assert(this->mNumOfPatchesX > 0);
-    assert(this->mNumOfPatchesY > 0);
-    assert(this->mPatches != nullptr);
+    assert(this->mNumOfPatchesX >= 0);
+    assert(this->mNumOfPatchesY >= 0);
+
+    const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
+    assert((numOfPatches > 0 && this->mPatches != nullptr) ||
+           (numOfPatches == 0 && this->mPatches == nullptr));
 
     /* Reset all patches */
     for (int patchIdxY = 0; patchIdxY < this->mNumOfPatchesY; ++patchIdxY)
@@ -729,6 +753,8 @@ template <typename T>
 Point2D<double> GridMap<T>::GridCellIndexToWorldCoordinate(
     int idxX, int idxY) const
 {
+    assert(this->mResolution > 0.0);
+
     const double mapX = this->mMinPos.mX + this->mResolution * idxX;
     const double mapY = this->mMinPos.mY + this->mResolution * idxY;
 
@@ -740,6 +766,8 @@ template <typename T>
 Point2D<int> GridMap<T>::WorldCoordinateToGridCellIndex(
     double mapX, double mapY) const
 {
+    assert(this->mResolution > 0.0);
+
     const int cellIdxX = static_cast<int>(std::floor(
         (mapX - this->mMinPos.mX) / this->mResolution));
     const int cellIdxY = static_cast<int>(std::floor(
@@ -754,6 +782,8 @@ template <typename T>
 Point2D<double> GridMap<T>::WorldCoordinateToGridCellIndexFloat(
     double mapX, double mapY) const
 {
+    assert(this->mResolution > 0.0);
+
     const double cellIdxX = (mapX - this->mMinPos.mX) / this->mResolution;
     const double cellIdxY = (mapY - this->mMinPos.mY) / this->mResolution;
 
@@ -765,6 +795,7 @@ template <typename T>
 typename GridMap<T>::GridCellType& GridMap<T>::GridCellAt(
     int idxX, int idxY)
 {
+    assert(this->mPatchSize > 0);
     assert(this->IsInside(idxX, idxY));
 
     const Point2D<int> patchIdx = this->GridCellIndexToPatchIndex(idxX, idxY);
@@ -773,7 +804,7 @@ typename GridMap<T>::GridCellType& GridMap<T>::GridCellAt(
     /* Allocate patch if necessary */
     if (!patch.IsAllocated())
         patch.Allocate(this->mPatchSize);
-    
+
     return patch.At(idxX % this->mPatchSize,
                     idxY % this->mPatchSize);
 }
@@ -783,6 +814,7 @@ template <typename T>
 const typename GridMap<T>::GridCellType& GridMap<T>::GridCellAt(
     int idxX, int idxY) const
 {
+    assert(this->mPatchSize > 0);
     assert(this->IsInside(idxX, idxY));
 
     const Point2D<int> patchIdx = this->GridCellIndexToPatchIndex(idxX, idxY);
@@ -797,6 +829,7 @@ template <typename T>
 typename GridMap<T>::ValueType GridMap<T>::Value(
     int idxX, int idxY) const
 {
+    assert(this->mPatchSize > 0);
     assert(this->IsInside(idxX, idxY));
 
     const Point2D<int> patchIdx = this->GridCellIndexToPatchIndex(idxX, idxY);
@@ -813,6 +846,8 @@ template <typename T>
 typename GridMap<T>::ValueType GridMap<T>::Value(
     int idxX, int idxY, ValueType defaultVal) const
 {
+    assert(this->mPatchSize > 0);
+
     if (!this->IsInside(idxX, idxY))
         return defaultVal;
 
@@ -837,6 +872,7 @@ template <typename T>
 double GridMap<T>::Distance(int idxX0, int idxY0,
                             int idxX1, int idxY1) const
 {
+    assert(this->mResolution > 0.0);
     return std::hypot((idxX1 - idxX0) * this->mResolution,
                       (idxY1 - idxY0) * this->mResolution);
 }
@@ -846,6 +882,7 @@ template <typename T>
 double GridMap<T>::SquaredDistance(int idxX0, int idxY0,
                                    int idxX1, int idxY1) const
 {
+    assert(this->mResolution > 0.0);
     const double deltaX = (idxX1 - idxX0) * this->mResolution;
     const double deltaY = (idxY1 - idxY0) * this->mResolution;
     return deltaX * deltaX + deltaY * deltaY;
@@ -856,6 +893,7 @@ template <typename T>
 Point2D<int> GridMap<T>::GridCellIndexToPatchIndex(
     int idxX, int idxY) const
 {
+    assert(this->mPatchSize > 0);
     return Point2D<int> {
         (idxX < 0) ? (idxX / this->mPatchSize - 1) :
                      (idxX / this->mPatchSize),
@@ -870,6 +908,7 @@ void GridMap<T>::PatchIndexToGridCellIndexRange(
     int& minIdxX, int& minIdxY,
     int& maxIdxX, int& maxIdxY) const
 {
+    assert(this->mPatchSize > 0);
     minIdxX = patchIdxX * this->mPatchSize;
     minIdxY = patchIdxY * this->mPatchSize;
     maxIdxX = minIdxX + this->mPatchSize;
