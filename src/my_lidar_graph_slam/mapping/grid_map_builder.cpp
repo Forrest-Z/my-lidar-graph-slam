@@ -79,14 +79,17 @@ GridMapBuilder::GridMapBuilder(
 }
 
 /* Append the new scan data */
-void GridMapBuilder::AppendScan(
+bool GridMapBuilder::AppendScan(
     const std::shared_ptr<PoseGraph>& poseGraph)
 {
     /* Update the grid map */
-    this->UpdateGridMap(poseGraph);
+    const bool localMapCreated = this->UpdateGridMap(poseGraph);
 
     /* Update the grid map with latest scans */
     this->UpdateLatestMap(poseGraph);
+
+    /* Return whether the new local map is created */
+    return localMapCreated;
 }
 
 /* Re-create the local grid maps and latest map after the loop closure */
@@ -158,7 +161,7 @@ void GridMapBuilder::PrecomputeGridMaps(int localMapIdx, int nodeHeightMax)
 }
 
 /* Update the grid map (list of the local grid maps) */
-void GridMapBuilder::UpdateGridMap(
+bool GridMapBuilder::UpdateGridMap(
     const std::shared_ptr<PoseGraph>& poseGraph)
 {
     /* Current robot pose (stored in the latest pose graph node) */
@@ -172,12 +175,11 @@ void GridMapBuilder::UpdateGridMap(
     const RobotPose2D<double> relRobotPose = (this->mLocalMaps.size() == 0) ?
         RobotPose2D<double>(0.0, 0.0, 0.0) :
         InverseCompound(this->mLastRobotPose, robotPose);
-    
+
     this->mLastRobotPose = robotPose;
 
     /* Update the accumulated travel distance */
     this->mAccumTravelDist += Distance(relRobotPose);
-
     /* Update the accumulated travel distance since the last grid map */
     this->mTravelDistLastLocalMap += Distance(relRobotPose);
 
@@ -218,7 +220,7 @@ void GridMapBuilder::UpdateGridMap(
     /* Expand the local map so that it can contain the latest scan */
     localMap.Expand(scanBottomLeft.mX, scanBottomLeft.mY,
                     scanTopRight.mX, scanTopRight.mY);
-    
+
     /* Compute the sensor pose from the robot pose */
     const RobotPose2D<double> sensorPose =
         Compound(robotPose, scanData->RelativeSensorPose());
@@ -233,22 +235,25 @@ void GridMapBuilder::UpdateGridMap(
         /* Compute the index of the hit grid cell */
         const Point2D<int> hitGridCellIdx =
             localMap.WorldCoordinateToGridCellIndex(hitPoints[i]);
-        
+
         /* Compute the indices of the missed grid cells */
         const std::vector<Point2D<int>> missedGridCellIndices =
             this->ComputeMissedGridCellIndices(
                 sensorGridCellIdx, hitGridCellIdx);
-        
+
         /* Update occupancy probability values for missed grid cells */
         for (std::size_t j = 0; j < missedGridCellIndices.size(); ++j)
             localMap.Update(missedGridCellIndices[j], this->mProbMiss);
-        
+
         /* Update occupancy probability values for hit grid cell */
         localMap.Update(hitGridCellIdx, this->mProbHit);
     }
 
     /* Update the index of the pose graph node */
     localMapInfo.mPoseGraphNodeIdxMax = nodeIdx;
+
+    /* Return whether the new local map is created */
+    return createNewLocalMap;
 }
 
 /* Update the grid map with the latest scans */

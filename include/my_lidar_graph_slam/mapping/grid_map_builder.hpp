@@ -89,7 +89,7 @@ public:
     ~GridMapBuilder() = default;
 
     /* Append the new scan data */
-    void AppendScan(const std::shared_ptr<PoseGraph>& poseGraph);
+    bool AppendScan(const std::shared_ptr<PoseGraph>& poseGraph);
 
     /* Re-create the local grid maps and latest map after the loop closure */
     void AfterLoopClosure(const std::shared_ptr<PoseGraph>& poseGraph);
@@ -125,7 +125,7 @@ public:
 
 private:
     /* Update the grid map (list of the local grid maps) */
-    void UpdateGridMap(
+    bool UpdateGridMap(
         const std::shared_ptr<PoseGraph>& poseGraph);
     
     /* Update the grid map with the latest scans */
