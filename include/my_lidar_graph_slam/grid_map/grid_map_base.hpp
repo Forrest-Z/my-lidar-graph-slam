@@ -18,11 +18,10 @@ public:
     /* Destructor */
     virtual ~GridMapBase() = default;
 
-    /* Copy constructor (disabled) */
-    GridMapBase(const GridMapBase&) = delete;
-    /* Copy assignment operator (disabled) */
-    GridMapBase& operator=(const GridMapBase&) = delete;
-
+    /* Copy constructor */
+    GridMapBase(const GridMapBase&) = default;
+    /* Copy assignment operator */
+    GridMapBase& operator=(const GridMapBase&) = default;
     /* Move constructor */
     GridMapBase(GridMapBase&&) noexcept = default;
     /* Move assignment operator */
