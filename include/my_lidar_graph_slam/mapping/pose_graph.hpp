@@ -90,10 +90,10 @@ public:
         /* Destructor */
         ~Node() = default;
 
-        /* Copy constructor (disabled) */
-        Node(const Node&) = delete;
-        /* Copy assignment operator (disabled) */
-        Node& operator=(const Node&) = delete;
+        /* Copy constructor */
+        Node(const Node&) = default;
+        /* Copy assignment operator */
+        Node& operator=(const Node&) = default;
         /* Move constructor */
         Node(Node&&) = default;
         /* Move assignment operator */
@@ -140,10 +140,10 @@ public:
         /* Destructor */
         ~Edge() = default;
 
-        /* Copy constructor (disabled) */
-        Edge(const Edge&) = delete;
-        /* Copy assignment operator (disabled) */
-        Edge& operator=(const Edge&) = delete;
+        /* Copy constructor */
+        Edge(const Edge&) = default;
+        /* Copy assignment operator */
+        Edge& operator=(const Edge&) = default;
         /* Move constructor */
         Edge(Edge&&) = default;
         /* Move assignment operator */
