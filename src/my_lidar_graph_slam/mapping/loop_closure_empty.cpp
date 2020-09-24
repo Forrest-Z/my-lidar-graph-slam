@@ -8,19 +8,11 @@ namespace Mapping {
 
 /* Find a loop and return a loop constraint */
 bool LoopClosureEmpty::FindLoop(
-    GridMapBuilderPtr& /* gridMapBuilder */,
-    const PoseGraphPtr& /* poseGraph */,
-    RobotPose2D<double>& relPose,
-    int& startNodeIdx,
-    int& endNodeIdx,
-    Eigen::Matrix3d& estimatedCovMat)
+    LoopClosureCandidateInfoVector& /* loopClosureCandidates */,
+    LoopClosureResultVector& /* loopClosureResults */)
 {
     /* Do not perform loop closure */
-    relPose = RobotPose2D<double>(0.0, 0.0, 0.0);
-    startNodeIdx = 0;
-    endNodeIdx = 0;
-    estimatedCovMat = Eigen::Matrix3d::Zero();
-
+    /* Return false to indicate that the loop detection failed */
     return false;
 }
 
