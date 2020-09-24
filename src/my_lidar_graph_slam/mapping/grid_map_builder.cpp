@@ -13,40 +13,6 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
- * LocalMapInfo struct implementations
- */
-
-/* Move constructor */
-GridMapBuilder::LocalMapInfo::LocalMapInfo(
-    GridMapBuilder::LocalMapInfo&& other) noexcept:
-    mMap(std::move(other.mMap)),
-    mPoseGraphNodeIdxMin(other.mPoseGraphNodeIdxMin),
-    mPoseGraphNodeIdxMax(other.mPoseGraphNodeIdxMax),
-    mFinished(other.mFinished),
-    mPrecomputed(other.mPrecomputed),
-    mPrecomputedMaps(std::move(other.mPrecomputedMaps))
-{
-}
-
-/* Move assignment operator */
-GridMapBuilder::LocalMapInfo&
-    GridMapBuilder::LocalMapInfo::operator=(
-    GridMapBuilder::LocalMapInfo&& other) noexcept
-{
-    if (this == &other)
-        return *this;
-    
-    this->mMap = std::move(other.mMap);
-    this->mPoseGraphNodeIdxMin = other.mPoseGraphNodeIdxMin;
-    this->mPoseGraphNodeIdxMax = other.mPoseGraphNodeIdxMax;
-    this->mFinished = other.mFinished;
-    this->mPrecomputed = other.mPrecomputed;
-    this->mPrecomputedMaps = std::move(other.mPrecomputedMaps);
-
-    return *this;
-}
-
-/*
  * GridMapBuilder class implementations
  */
 

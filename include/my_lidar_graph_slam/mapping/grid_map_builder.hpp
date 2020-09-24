@@ -79,15 +79,14 @@ public:
         /* Destructor */
         ~LocalMapInfo() = default;
 
-        /* Copy constructor (disabled) */
-        LocalMapInfo(const LocalMapInfo&) = delete;
-        /* Copy assignment operator (disabled) */
-        LocalMapInfo& operator=(const LocalMapInfo&) = delete;
-
+        /* Copy constructor */
+        LocalMapInfo(const LocalMapInfo& other) = default;
+        /* Copy assignment operator */
+        LocalMapInfo& operator=(const LocalMapInfo& other) = default;
         /* Move constructor */
-        LocalMapInfo(LocalMapInfo&& other) noexcept;
+        LocalMapInfo(LocalMapInfo&& other) noexcept = default;
         /* Move assignment operator */
-        LocalMapInfo& operator=(LocalMapInfo&& other) noexcept;
+        LocalMapInfo& operator=(LocalMapInfo&& other) noexcept = default;
 
         /* Local grid map, which consists of the scan data
          * from the pose graph nodes within the range of
