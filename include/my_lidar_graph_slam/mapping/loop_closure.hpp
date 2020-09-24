@@ -62,10 +62,12 @@ struct LoopClosureResult final
 {
     /* Constructor */
     LoopClosureResult(const RobotPose2D<double>& relativePose,
+                      const RobotPose2D<double>& startNodePose,
                       const int startNodeIdx,
                       const int endNodeIdx,
                       const Eigen::Matrix3d& estimatedCovMat) :
         mRelativePose(relativePose),
+        mStartNodePose(startNodePose),
         mStartNodeIdx(startNodeIdx),
         mEndNodeIdx(endNodeIdx),
         mEstimatedCovMat(estimatedCovMat) { }
@@ -75,6 +77,8 @@ struct LoopClosureResult final
 
     /* Actual relative pose between two nodes */
     const RobotPose2D<double> mRelativePose;
+    /* Pose of the start node */
+    const RobotPose2D<double> mStartNodePose;
     /* Index of the start pose graph node */
     const int                 mStartNodeIdx;
     /* Index of the end pose graph node */

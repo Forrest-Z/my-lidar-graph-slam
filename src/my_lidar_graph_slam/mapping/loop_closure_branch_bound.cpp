@@ -66,7 +66,8 @@ bool LoopClosureBranchBound::FindLoop(
 
             /* Append to the loop closure results */
             loopClosureResults.emplace_back(
-                relativePose, startNodeIdx, endNodeIdx, covarianceMatrix);
+                relativePose, localMapNode.Pose(),
+                startNodeIdx, endNodeIdx, covarianceMatrix);
         }
     }
 
