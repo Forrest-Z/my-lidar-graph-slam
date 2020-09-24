@@ -279,6 +279,11 @@ public:
     inline const Point2D<double>& MinPos() const override
     { return this->mMinPos; }
 
+    /* Get the maximum position of the map in world coordinate */
+    inline const Point2D<double> MaxPos() const
+    { return this->GridCellIndexToWorldCoordinate(
+        this->mNumOfGridCellsX, this->mNumOfGridCellsY); }
+
 private:
     /* Map resolution (grid cell size in meters) */
     double                      mResolution;
