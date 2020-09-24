@@ -4,10 +4,10 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_GRID_SEARCH_HPP
 #define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_GRID_SEARCH_HPP
 
+#include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_candidate_nearest.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -16,16 +16,12 @@ class LoopClosureGridSearch final : public LoopClosure
 {
 public:
     /* Type definitions */
-    using LoopClosure::GridMapBuilderPtr;
-    using LoopClosure::PoseGraphPtr;
     using LoopClosure::ScanPtr;
     using LoopClosure::GridMapType;
 
     /* Constructor */
     LoopClosureGridSearch(const ScoreFuncPtr& scoreFunc,
                           const CostFuncPtr& costFunc,
-                          double travelDistThreshold,
-                          double nodeDistThreshold,
                           double rangeX,
                           double rangeY,
                           double rangeTheta,
@@ -36,7 +32,6 @@ public:
                           double matchRateThreshold) :
         mScoreFunc(scoreFunc),
         mCostFunc(costFunc),
-        mLoopClosureCandidate(travelDistThreshold, nodeDistThreshold),
         mRangeX(rangeX),
         mRangeY(rangeY),
         mRangeTheta(rangeTheta),
@@ -50,13 +45,10 @@ public:
     ~LoopClosureGridSearch() = default;
 
     /* Find a loop and return a loop constraint */
-    bool FindLoop(GridMapBuilderPtr& gridMapBuilder,
-                  const PoseGraphPtr& poseGraph,
-                  RobotPose2D<double>& relPose,
-                  int& startNodeIdx,
-                  int& endNodeIdx,
-                  Eigen::Matrix3d& estimatedCovMat) override;
-    
+    bool FindLoop(
+        LoopClosureCandidateInfoVector& loopClosureCandidates,
+        LoopClosureResultVector& loopClosureResults) override;
+
 private:
     /* Find a corresponding pose of the current robot pose
      * from the loop-closure candidate local grid map */
@@ -71,8 +63,6 @@ private:
     ScoreFuncPtr                mScoreFunc;
     /* Cost function */
     CostFuncPtr                 mCostFunc;
-    /* Loop closure candidate search */
-    LoopClosureCandidateNearest mLoopClosureCandidate;
     /* Linear (horizontal) size of the search window */
     double                      mRangeX;
     /* Linear (vertical) size of the search window */

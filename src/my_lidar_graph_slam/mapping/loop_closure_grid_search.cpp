@@ -13,57 +13,60 @@ namespace Mapping {
 
 /* Find a loop and return a loop constraint */
 bool LoopClosureGridSearch::FindLoop(
-    GridMapBuilderPtr& gridMapBuilder,
-    const PoseGraphPtr& poseGraph,
-    RobotPose2D<double>& relPose,
-    int& startNodeIdx,
-    int& endNodeIdx,
-    Eigen::Matrix3d& estimatedCovMat)
+    LoopClosureCandidateInfoVector& loopClosureCandidates,
+    LoopClosureResultVector& loopClosureResults)
 {
-    /* Retrieve the current robot pose and scan data */
-    const auto& currentNode = poseGraph->LatestNode();
-    const RobotPose2D<double>& currentPose = currentNode.Pose();
-    const ScanPtr& currentScanData = currentNode.ScanData();
-    const int currentNodeIdx = currentNode.Index();
+    /* Clear the loop closure results */
+    loopClosureResults.clear();
 
-    /* Find a local map and a pose graph node for loop closure */
-    const auto loopClosureCandidates = this->mLoopClosureCandidate.Find(
-        gridMapBuilder, poseGraph, currentPose);
-    
-    /* Do not perform loop closure if candidate not found */
+    /* Do not perform loop detection if no candidate exists */
     if (loopClosureCandidates.empty())
         return false;
-    
-    /* Find a corresponding pose of the current pose in the
-     * loop-closure candidate local grid map */
-    const int candidateMapIdx = loopClosureCandidates.front().first;
-    const int candidateNodeIdx = loopClosureCandidates.front().second;
 
-    const auto& candidateMapInfo = gridMapBuilder->LocalMapAt(candidateMapIdx);
-    const GridMapType& candidateMap = candidateMapInfo.mMap;
-    const auto& candidateNode = poseGraph->NodeAt(candidateNodeIdx);
-    const RobotPose2D<double>& candidateNodePose = candidateNode.Pose();
+    /* Perform loop detection for each candidate */
+    for (const auto& loopClosureCandidate : loopClosureCandidates) {
+        /* Retrieve the pose graph nodes, each of whose scan data is
+         * matched against the local grid map to detect a loop */
+        const auto& candidateNodes = loopClosureCandidate.mCandidateNodes;
+        /* Retrieve the local grid map information */
+        auto& localMapInfo = loopClosureCandidate.mLocalMapInfo;
+        /* Retrieve the pose graph node inside the local grid map */
+        const auto& localMapNode = loopClosureCandidate.mLocalMapNode;
 
-    RobotPose2D<double> correspondingPose;
-    Eigen::Matrix3d covMat;
-    const bool loopFound = this->FindCorrespondingPose(
-        candidateMap, currentScanData, currentPose,
-        correspondingPose, covMat);
-    
-    /* Do not setup pose graph edge information if loop closure failed */
-    if (!loopFound)
-        return false;
-    
-    /* Setup pose graph edge information */
-    /* Set the relative pose */
-    relPose = InverseCompound(candidateNodePose, correspondingPose);
-    /* Set the pose graph indices */
-    startNodeIdx = candidateNodeIdx;
-    endNodeIdx = currentNodeIdx;
-    /* Set the estimated covariance matrix */
-    estimatedCovMat = covMat;
+        /* Make sure that the node is inside the local grid map */
+        assert(localMapNode.Index() >= localMapInfo.mPoseGraphNodeIdxMin &&
+               localMapNode.Index() <= localMapInfo.mPoseGraphNodeIdxMax);
 
-    return true;
+        /* Perform loop detection for each candidate node */
+        for (const auto& candidateNode : candidateNodes) {
+            /* Find the corresponding position of the node
+             * inside the local grid map */
+            RobotPose2D<double> correspondingPose;
+            Eigen::Matrix3d covarianceMatrix;
+            const bool loopDetected = this->FindCorrespondingPose(
+                localMapInfo.mMap,
+                candidateNode.ScanData(), candidateNode.Pose(),
+                correspondingPose, covarianceMatrix);
+
+            /* Do not build a new loop closing edge if loop not detected */
+            if (!loopDetected)
+                continue;
+
+            /* Setup loop closing edge information */
+            /* Relative pose of the edge */
+            const RobotPose2D<double> relativePose =
+                InverseCompound(localMapNode.Pose(), correspondingPose);
+            /* Indices of the start and end node */
+            const int startNodeIdx = localMapNode.Index();
+            const int endNodeIdx = candidateNode.Index();
+
+            /* Append to the loop closure results */
+            loopClosureResults.emplace_back(
+                relativePose, startNodeIdx, endNodeIdx, covarianceMatrix);
+        }
+    }
+
+    return !loopClosureResults.empty();
 }
 
 /* Find a corresponding pose of the current robot pose
