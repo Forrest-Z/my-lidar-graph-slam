@@ -19,6 +19,39 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/*
+ * LocalMapPosition struct stores information about the local map bounding box,
+ * indices of the pose graph nodes that reside in this local map, which are
+ * necessary for the loop detection candidate search
+ */
+struct LocalMapPosition
+{
+    /* Constructor */
+    LocalMapPosition(const Point2D<double>& minPos,
+                     const Point2D<double>& maxPos,
+                     const int poseGraphNodeIdxMin,
+                     const int poseGraphNodeIdxMax,
+                     const bool isFinished) :
+        mMinPos(minPos),
+        mMaxPos(maxPos),
+        mPoseGraphNodeIdxMin(poseGraphNodeIdxMin),
+        mPoseGraphNodeIdxMax(poseGraphNodeIdxMax),
+        mFinished(isFinished) { }
+    /* Destructor */
+    ~LocalMapPosition() = default;
+
+    /* Minimum position of the local map (in world frame) */
+    Point2D<double> mMinPos;
+    /* Maximum position of the local map (in world frame) */
+    Point2D<double> mMaxPos;
+    /* Minimum index of the pose graph node inside this local map */
+    int             mPoseGraphNodeIdxMin;
+    /* Maximum index of the pose graph node inside this local map */
+    int             mPoseGraphNodeIdxMax;
+    /* Flag to determine whether the grid map is in finished state */
+    bool            mFinished;
+};
+
 class GridMapBuilder
 {
 public:
