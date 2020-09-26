@@ -36,11 +36,14 @@ ScanMatcherLinearSolver::ScanMatcherLinearSolver(
 
 /* Optimize the robot pose by scan matching */
 void ScanMatcherLinearSolver::OptimizePose(
-    const GridMapType& gridMap,
-    const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& initialPose,
+    const ScanMatchingQuery& queryInfo,
     Summary& resultSummary)
 {
+    /* Retrieve the query information */
+    const auto& gridMap = queryInfo.mGridMap;
+    const auto& scanData = queryInfo.mScanData;
+    const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
+
     /* Calculate the sensor pose from the initial robot pose */
     const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
     RobotPose2D<double> sensorPose = Compound(initialPose, relPose);

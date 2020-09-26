@@ -24,15 +24,18 @@ ScanMatcherHillClimbing::ScanMatcherHillClimbing(
 
 /* Optimize the robot pose by scan matching */
 void ScanMatcherHillClimbing::OptimizePose(
-    const GridMapType& gridMap,
-    const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& initialPose,
+    const ScanMatchingQuery& queryInfo,
     Summary& resultSummary)
 {
     /* Constants used for hill-climbing method */
     static const double moveX[] = { 1.0, -1.0, 0.0, 0.0, 0.0, 0.0 };
     static const double moveY[] = { 0.0, 0.0, 1.0, -1.0, 0.0, 0.0 };
     static const double moveTheta[] = { 0.0, 0.0, 0.0, 0.0, 1.0, -1.0 };
+
+    /* Retrieve the query information */
+    const auto& gridMap = queryInfo.mGridMap;
+    const auto& scanData = queryInfo.mScanData;
+    const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
 
     /* Calculate the sensor pose from the initial robot pose */
     const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();

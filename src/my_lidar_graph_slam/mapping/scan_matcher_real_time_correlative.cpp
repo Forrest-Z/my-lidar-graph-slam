@@ -29,11 +29,14 @@ ScanMatcherRealTimeCorrelative::ScanMatcherRealTimeCorrelative(
 
 /* Optimize the robot pose by scan matching */
 void ScanMatcherRealTimeCorrelative::OptimizePose(
-    const GridMapType& gridMap,
-    const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& initialPose,
+    const ScanMatchingQuery& queryInfo,
     Summary& resultSummary)
 {
+    /* Retrieve the query information */
+    const auto& gridMap = queryInfo.mGridMap;
+    const auto& scanData = queryInfo.mScanData;
+    const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
+
     /* Precompute the grid map */
     const PrecomputedMapType precompMap =
         PrecomputeGridMap(gridMap, this->mLowResolution);

@@ -18,6 +18,32 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/*
+ * ScanMatchingQuery struct holds the necessary information for
+ * executing a scan matching, such as an initial robot pose in a world frame,
+ * a grid map, and a scan data to be matched against a grid map
+ */
+struct ScanMatchingQuery final
+{
+    /* Constructor */
+    ScanMatchingQuery(GridMapBuilder::GridMapType&& gridMap,
+                      const Sensor::ScanDataPtr<double>& scanData,
+                      const RobotPose2D<double>& initialPose) :
+        mGridMap(std::move(gridMap)),
+        mScanData(scanData),
+        mInitialPose(initialPose) { }
+
+    /* Destructor */
+    ~ScanMatchingQuery() = default;
+
+    /* Grid map */
+    const GridMapBuilder::GridMapType mGridMap;
+    /* Scan data */
+    const Sensor::ScanDataPtr<double> mScanData;
+    /* Initial robot pose (in a world frame) */
+    const RobotPose2D<double>         mInitialPose;
+};
+
 /* Type definitions for convenience */
 class ScanMatcher;
 using ScanMatcherPtr = std::shared_ptr<ScanMatcher>;
@@ -59,9 +85,7 @@ public:
 
     /* Optimize the robot pose by scan matching */
     virtual void OptimizePose(
-        const GridMapType& gridMap,
-        const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& initialPose,
+        const ScanMatchingQuery& queryInfo,
         Summary& resultSummary) = 0;
 
 };
