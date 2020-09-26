@@ -53,9 +53,12 @@
         "DistThresholdEmpty": 0.25
     },
 
-    "LoopClosureGridSearch": {
+    "LoopClosureCandidateNearest": {
         "TravelDistThreshold": 10.0,
-        "PoseGraphNodeDistMax": 5.0,
+        "PoseGraphNodeDistMax": 5.0
+    },
+
+    "LoopClosureGridSearch": {
         "SearchRangeX": 2.0,
         "SearchRangeY": 2.0,
         "SearchRangeTheta": 0.5,
@@ -83,8 +86,6 @@
     },
 
     "LoopClosureBranchBound": {
-        "TravelDistThreshold": 10.0,
-        "PoseGraphNodeDistMax": 5.0,
         "NodeHeightMax": 6,
         "SearchRangeX": 5.0,
         "SearchRangeY": 5.0,
@@ -125,8 +126,8 @@
         },
         "UsableRangeMin": 0.01,
         "UsableRangeMax": 50.0,
-        "ProbabilityHit": 0.6,
-        "ProbabilityMiss": 0.4
+        "ProbabilityHit": 0.62,
+        "ProbabilityMiss": 0.46
     },
 
     "LidarGraphSlam": {
@@ -137,6 +138,8 @@
         },
         "PoseGraphOptimizerType": "SpChol",
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
+        "LoopClosureCandidateSearchType": "Nearest",
+        "LoopClosureCandidateSearchConfigGroup": "LoopClosureCandidateNearest",
         "LoopClosureType": "BranchBound",
         "LoopClosureConfigGroup": "LoopClosureBranchBound",
         "LoopClosureInterval": 5,

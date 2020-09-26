@@ -5,8 +5,10 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <queue>
+#include <vector>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -19,7 +21,11 @@
 #include "my_lidar_graph_slam/mapping/cost_function_greedy_endpoint.hpp"
 #include "my_lidar_graph_slam/mapping/cost_function_square_error.hpp"
 #include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
+#include "my_lidar_graph_slam/mapping/lidar_graph_slam_backend.hpp"
+#include "my_lidar_graph_slam/mapping/lidar_graph_slam_frontend.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_branch_bound.hpp"
+#include "my_lidar_graph_slam/mapping/loop_closure_candidate.hpp"
+#include "my_lidar_graph_slam/mapping/loop_closure_candidate_nearest.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_empty.hpp"
 #include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
@@ -41,7 +47,8 @@ namespace pt = boost::property_tree;
 /* Declare types for convenience */
 using MapType = GridMap<BinaryBayesGridCell<double>>;
 using PrecomputedMapType = GridMap<ConstGridCell<double>>;
-using ScanType = Sensor::ScanDataPtr<double>;
+using ScanPtrType = Sensor::ScanDataPtr<double>;
+using ScanType = ScanPtrType::element_type;
 
 /* Create the greedy endpoint cost function object */
 std::shared_ptr<Mapping::CostFunction> CreateCostGreedyEndpoint(
@@ -238,6 +245,38 @@ std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcher(
     return nullptr;
 }
 
+/* Create the nearest loop closure candidate searcher */
+std::shared_ptr<Mapping::LoopClosureCandidateNearest>
+    CreateLoopClosureCandidateNearest(
+        const pt::ptree& jsonSettings,
+        const std::string& configGroup)
+{
+    /* Read settings for nearest loop closure candidate searcher */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
+    const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
+
+    /* Construct loop closure candidate searcher */
+    auto pCandidateSearch = std::make_shared<
+        Mapping::LoopClosureCandidateNearest>(
+            travelDistThreshold, nodeDistMax);
+
+    return pCandidateSearch;
+}
+
+/* Create the loop closure candidate searcher */
+std::shared_ptr<Mapping::LoopClosureCandidate> CreateLoopClosureCandidate(
+    const pt::ptree& jsonSettings,
+    const std::string& candidateSearchType,
+    const std::string& configGroup)
+{
+    if (candidateSearchType == "Nearest")
+        return CreateLoopClosureCandidateNearest(jsonSettings, configGroup);
+
+    return nullptr;
+}
+
 /* Create the dummy loop closure object */
 std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureEmpty(
     const pt::ptree& /* jsonSettings */,
@@ -256,8 +295,6 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureGridSearch(
     /* Read settings for grid search loop closure */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
-    const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
-    const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
     const double rangeX = config.get("SearchRangeX", 2.0);
     const double rangeY = config.get("SearchRangeY", 2.0);
     const double rangeTheta = config.get("SearchRangeTheta", 1.0);
@@ -274,7 +311,7 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureGridSearch(
         config.get("ScoreConfigGroup", "ScorePixelAccurate");
     auto pScoreFunc = CreateScoreFunction(
         jsonSettings, scoreType, scoreConfigGroup);
-    
+
     /* Construct cost function */
     const std::string costType =
         config.get("CostType", "GreedyEndpoint");
@@ -285,10 +322,10 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureGridSearch(
 
     /* Construct grid search loop closure object */
     auto pLoopClosure = std::make_shared<Mapping::LoopClosureGridSearch>(
-        pScoreFunc, pCostFunc, travelDistThreshold, nodeDistMax,
+        pScoreFunc, pCostFunc,
         rangeX, rangeY, rangeTheta, stepX, stepY, stepTheta,
         scoreThreshold, matchRateThreshold);
-    
+
     return pLoopClosure;
 }
 
@@ -300,8 +337,6 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureBranchBound(
     /* Read settings for branch-and-bound loop closure */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
-    const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
-    const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
     const int nodeHeightMax = config.get("NodeHeightMax", 6);
     const double rangeX = config.get("SearchRangeX", 2.0);
     const double rangeY = config.get("SearchRangeY", 2.0);
@@ -328,7 +363,7 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureBranchBound(
 
     /* Construct branch-and-bound loop closure object */
     auto pLoopClosure = std::make_shared<Mapping::LoopClosureBranchBound>(
-        pScoreFunc, pCostFunc, travelDistThreshold, nodeDistMax,
+        pScoreFunc, pCostFunc,
         nodeHeightMax, rangeX, rangeY, rangeTheta, scanRangeMax,
         scoreThreshold, matchRateThreshold);
 
@@ -459,7 +494,7 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
                    "ScanMatcherHillClimbing");
     auto pScanMatcher = CreateScanMatcher(
         jsonSettings, localScanMatcherType, localScanMatcherConfigGroup);
-    
+
     /* Create pose graph */
     auto pPoseGraph = CreatePoseGraph(jsonSettings);
 
@@ -471,6 +506,15 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
                    "PoseGraphOptimizerSpChol");
     auto pOptimizer = CreatePoseGraphOptimizer(
         jsonSettings, optimizerType, optimizerConfigGroup);
+
+    /* Create loop detection candidate searcher object */
+    const std::string candidateSearchType =
+        config.get("LoopClosureCandidateSearchType", "Nearest");
+    const std::string candidateSearchConfigGroup =
+        config.get("LoopClosureCandidateSearchConfigGroup",
+                   "LoopClosureCandidateNearest");
+    auto pCandidateSearch = CreateLoopClosureCandidate(
+        jsonSettings, candidateSearchType, candidateSearchConfigGroup);
 
     /* Create loop closure object */
     const std::string loopClosureType =
@@ -499,7 +543,7 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
 
     const RobotPose2D<double> initialPose {
         initialPoseX, initialPoseY, initialPoseTheta };
-    
+
     const double updateThresholdTravelDist =
         config.get("UpdateThresholdTravelDist", 1.0);
     const double updateThresholdAngle =
@@ -507,12 +551,20 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     const double updateThresholdTime =
         config.get("UpdateThresholdTime", 5.0);
 
+    /* Create SLAM frontend object */
+    auto pFrontend = std::make_shared<Mapping::LidarGraphSlamFrontend>(
+        pScanInterpolator, pScanMatcher, initialPose,
+        updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime,
+        loopClosureInterval);
+
+    /* Create SLAM backend object */
+    auto pBackend = std::make_shared<Mapping::LidarGraphSlamBackend>(
+        pOptimizer, pCandidateSearch, pLoopClosure);
+
     /* Create LiDAR Graph-Based SLAM object */
     auto pLidarGraphSlam = std::make_shared<Mapping::LidarGraphSlam>(
-        pGridMapBuilder, pScanMatcher, pPoseGraph, pOptimizer, pLoopClosure,
-        loopClosureInterval, pScanInterpolator, initialPose,
-        updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime);
-    
+        pFrontend, pBackend, pGridMapBuilder, pPoseGraph);
+
     return pLidarGraphSlam;
 }
 
@@ -573,38 +625,65 @@ int main(int argc, char** argv)
               << "Output name: "
               << outputFilePath.c_str() << std::endl;
 
+    /* Start the SLAM backend */
+    pLidarGraphSlam->StartBackend();
+
     IO::GnuplotHelper gnuplotHelper;
 
     for (const auto& sensorData : logData) {
-        Sensor::ScanDataPtr<double> scanData =
-            std::dynamic_pointer_cast<Sensor::ScanData<double>>(sensorData);
-        
+        ScanPtrType scanData = std::dynamic_pointer_cast<ScanType>(sensorData);
+
         if (scanData == nullptr)
             continue;
-        
+
         /* Process the latest scan data */
         const bool mapUpdated = pLidarGraphSlam->ProcessScan(
             scanData, scanData->OdomPose());
-        
+
         if (!guiEnabled || !mapUpdated)
             continue;
         if (pLidarGraphSlam->ProcessCount() % drawFrameInterval != 0)
             continue;
-        
+
+        /* Get the pose graph information */
+        std::map<int, Mapping::NodePosition> poseGraphNodes;
+        std::vector<Mapping::EdgeConnection> poseGraphEdges;
+        pLidarGraphSlam->GetPoseGraph(poseGraphNodes, poseGraphEdges);
+
         /* Draw the current pose graph if necessary */
-        gnuplotHelper.DrawPoseGraph(pLidarGraphSlam->GetPoseGraph());
+        gnuplotHelper.DrawPoseGraph(poseGraphNodes, poseGraphEdges);
     }
 
+    /* Stop the SLAM backend */
+    pLidarGraphSlam->StopBackend();
+
     IO::MapSaver* const pMapSaver = IO::MapSaver::Instance();
-    pMapSaver->SaveMap(pLidarGraphSlam->GetGridMapBuilder(),
-                       pLidarGraphSlam->GetPoseGraph(),
+
+    /* Retrieve a latest map that contains latest scans */
+    int latestMapNodeIdxMin;
+    int latestMapNodeIdxMax;
+    MapType latestMap = pLidarGraphSlam->GetLatestMap(
+        latestMapNodeIdxMin, latestMapNodeIdxMax);
+
+    /* Build a global map that contains all local grid maps */
+    int globalMapNodeIdxMin;
+    int globalMapNodeIdxMax;
+    MapType globalMap = pLidarGraphSlam->GetGlobalMap(
+        globalMapNodeIdxMin, globalMapNodeIdxMax);
+
+    /* Retrieve all pose graph nodes and edges */
+    std::vector<Mapping::PoseGraph::Node> poseGraphNodes;
+    std::vector<Mapping::PoseGraph::Edge> poseGraphEdges;
+    pLidarGraphSlam->GetPoseGraph(poseGraphNodes, poseGraphEdges);
+
+    /* Save the global map, the pose graph, and the latest map */
+    pMapSaver->SaveMap(globalMap, poseGraphNodes,
                        outputFilePath, true, true);
-    pMapSaver->SavePoseGraph(pLidarGraphSlam->GetPoseGraph(),
-                             outputFilePath);
-    pMapSaver->SaveLatestMap(pLidarGraphSlam->GetGridMapBuilder(),
-                             pLidarGraphSlam->GetPoseGraph(),
-                             outputFilePath, true, true);
-    
+    pMapSaver->SavePoseGraph(poseGraphNodes, poseGraphEdges, outputFilePath);
+    pMapSaver->SaveLatestMap(latestMap, poseGraphNodes, true,
+                             latestMapNodeIdxMin, latestMapNodeIdxMax,
+                             true, outputFilePath);
+
     /* Wait for key input */
     const bool waitKey = jsonSettings.get("Launcher.WaitForKey", false);
 
