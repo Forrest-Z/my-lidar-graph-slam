@@ -35,9 +35,9 @@ struct NodePosition final
     { return this->mIdx < other.mIdx; }
 
     /* Index of the node */
-    int                 mIdx;
+    const int                 mIdx;
     /* Robot pose */
-    RobotPose2D<double> mPose;
+    const RobotPose2D<double> mPose;
 };
 
 /*
@@ -59,12 +59,12 @@ struct EdgeConnection final
     ~EdgeConnection() = default;
 
     /* Index of the start node */
-    int  mStartNodeIdx;
+    const int  mStartNodeIdx;
     /* Index of the end node */
-    int  mEndNodeIdx;
+    const int  mEndNodeIdx;
     /* Flag to determine whether the edge represents
      * odometry or loop constraint */
-    bool mIsOdometry;
+    const bool mIsOdometry;
 };
 
 /*
