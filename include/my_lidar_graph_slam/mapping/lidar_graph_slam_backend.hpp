@@ -10,8 +10,8 @@
 #include <thread>
 
 #include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_candidate.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector.hpp"
+#include "my_lidar_graph_slam/mapping/loop_searcher.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
 
 namespace MyLidarGraphSlam {

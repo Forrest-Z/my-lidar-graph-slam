@@ -1,10 +1,10 @@
 
-/* loop_closure_candidate_nearest.hpp */
+/* loop_searcher_nearest.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_CANDIDATE_NEAREST_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_CANDIDATE_NEAREST_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_SEARCHER_NEAREST_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_SEARCHER_NEAREST_HPP
 
-#include "my_lidar_graph_slam/mapping/loop_closure_candidate.hpp"
+#include "my_lidar_graph_slam/mapping/loop_searcher.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -40,4 +40,4 @@ private:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_CANDIDATE_NEAREST_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_SEARCHER_NEAREST_HPP */

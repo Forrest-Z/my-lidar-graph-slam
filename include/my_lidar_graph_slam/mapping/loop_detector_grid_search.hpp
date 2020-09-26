@@ -1,13 +1,13 @@
 
-/* loop_closure_grid_search.hpp */
+/* loop_detector_grid_search.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_GRID_SEARCH_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_GRID_SEARCH_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_GRID_SEARCH_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_GRID_SEARCH_HPP
 
 #include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -84,4 +84,4 @@ private:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_GRID_SEARCH_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_GRID_SEARCH_HPP */

@@ -1,10 +1,10 @@
 
-/* loop_closure_empty.hpp */
+/* loop_detector_empty.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_EMPTY_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_EMPTY_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_EMPTY_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_EMPTY_HPP
 
-#include "my_lidar_graph_slam/mapping/loop_closure.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -26,4 +26,4 @@ public:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_EMPTY_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_EMPTY_HPP */

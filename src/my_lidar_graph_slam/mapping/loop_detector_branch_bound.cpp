@@ -1,12 +1,12 @@
 
-/* loop_closure_branch_bound.cpp */
+/* loop_detector_branch_bound.cpp */
 
 #include <cassert>
 #include <deque>
 #include <limits>
 
 #include "my_lidar_graph_slam/io/map_saver.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_branch_bound.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector_branch_bound.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {

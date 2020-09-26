@@ -1,8 +1,8 @@
 
-/* loop_closure_candidate.hpp */
+/* loop_searcher.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_CANDIDATE_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_CANDIDATE_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_SEARCHER_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_SEARCHER_HPP
 
 #include <map>
 #include <memory>
@@ -101,4 +101,4 @@ public:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_CANDIDATE_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_SEARCHER_HPP */

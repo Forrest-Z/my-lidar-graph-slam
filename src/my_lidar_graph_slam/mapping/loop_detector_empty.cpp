@@ -1,7 +1,7 @@
 
-/* loop_closure_empty.cpp */
+/* loop_detector_empty.cpp */
 
-#include "my_lidar_graph_slam/mapping/loop_closure_empty.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector_empty.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {

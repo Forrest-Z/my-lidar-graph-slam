@@ -1,12 +1,12 @@
 
-/* loop_closure_grid_search.cpp */
+/* loop_detector_grid_search.cpp */
 
 #include <cassert>
 #include <limits>
 
 #include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/io/map_saver.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_grid_search.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector_grid_search.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {

@@ -1,8 +1,8 @@
 
-/* loop_closure.hpp */
+/* loop_detector.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_HPP
 
 #include <memory>
 #include <vector>
@@ -11,7 +11,7 @@
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_candidate.hpp"
+#include "my_lidar_graph_slam/mapping/loop_searcher.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
@@ -115,4 +115,4 @@ public:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_HPP */

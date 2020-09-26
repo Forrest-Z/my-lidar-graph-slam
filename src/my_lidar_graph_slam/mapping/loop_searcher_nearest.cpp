@@ -1,9 +1,9 @@
 
-/* loop_closure_candidate_nearest.cpp */
+/* loop_searcher_nearest.cpp */
 
 #include <cassert>
 
-#include "my_lidar_graph_slam/mapping/loop_closure_candidate_nearest.hpp"
+#include "my_lidar_graph_slam/mapping/loop_searcher_nearest.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
