@@ -7,13 +7,15 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Do not perform loop detection */
-bool LoopDetectorEmpty::Detect(
+void LoopDetectorEmpty::Detect(
     LoopDetectionQueryVector& /* loopDetectionQueries */,
-    LoopDetectionResultVector& /* loopDetectionResults */)
+    LoopDetectionResultVector& loopDetectionResults)
 {
     /* Do not perform loop detection */
-    /* Return false to indicate that the loop detection failed */
-    return false;
+    /* Clear the loop detection results */
+    /* Empty result indicates that the loop detection failed */
+    loopDetectionResults.clear();
+    return;
 }
 
 } /* namespace Mapping */

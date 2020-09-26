@@ -36,10 +36,10 @@ void LidarGraphSlamBackend::Run(
             pParent->GetLoopDetectionQueries(loopCandidates);
         LoopDetectionResultVector loopDetectionResults;
 
-        const bool loopDetected = this->mLoopDetector->Detect(
+        this->mLoopDetector->Detect(
             loopDetectionQueries, loopDetectionResults);
 
-        if (!loopDetected)
+        if (loopDetectionResults.empty())
             continue;
 
         /* Append loop closing constraints using the loop detection results */

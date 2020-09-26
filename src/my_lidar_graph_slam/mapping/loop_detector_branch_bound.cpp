@@ -12,7 +12,7 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Find a loop and return a loop constraint */
-bool LoopDetectorBranchBound::Detect(
+void LoopDetectorBranchBound::Detect(
     LoopDetectionQueryVector& loopDetectionQueries,
     LoopDetectionResultVector& loopDetectionResults)
 {
@@ -21,7 +21,7 @@ bool LoopDetectorBranchBound::Detect(
 
     /* Do not perform loop detection if no query exists */
     if (loopDetectionQueries.empty())
-        return false;
+        return;
 
     /* Perform loop detection for each query */
     for (auto& loopDetectionQuery : loopDetectionQueries) {
@@ -71,7 +71,7 @@ bool LoopDetectorBranchBound::Detect(
         }
     }
 
-    return !loopDetectionResults.empty();
+    return;
 }
 
 /* Find a corresponding pose of the current robot pose
