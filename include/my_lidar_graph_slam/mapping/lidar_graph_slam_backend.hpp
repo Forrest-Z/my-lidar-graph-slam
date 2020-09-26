@@ -24,7 +24,7 @@ public:
     LidarGraphSlamBackend(
         const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
         const std::shared_ptr<LoopSearcher>& loopSearcher,
-        const std::shared_ptr<LoopClosure>& loopClosure);
+        const std::shared_ptr<LoopDetector>& loopDetector);
     /* Destructor */
     ~LidarGraphSlamBackend() = default;
 
@@ -47,7 +47,7 @@ private:
     /* Loop searcher */
     std::shared_ptr<LoopSearcher>       mLoopSearcher;
     /* Loop detector */
-    std::shared_ptr<LoopClosure>        mLoopClosure;
+    std::shared_ptr<LoopDetector>       mLoopDetector;
 };
 
 } /* namespace Mapping */

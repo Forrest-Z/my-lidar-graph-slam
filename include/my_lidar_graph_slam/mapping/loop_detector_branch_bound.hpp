@@ -15,13 +15,13 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-class LoopClosureBranchBound final : public LoopClosure
+class LoopDetectorBranchBound final : public LoopDetector
 {
 public:
     /* Type definitions */
-    using LoopClosure::ScanPtr;
-    using LoopClosure::GridMapType;
-    using LoopClosure::PrecomputedMapType;
+    using LoopDetector::ScanPtr;
+    using LoopDetector::GridMapType;
+    using LoopDetector::PrecomputedMapType;
 
     /*
      * Node struct holds the necessary information for Branch-and-Bound method
@@ -43,15 +43,15 @@ public:
 
 public:
     /* Constructor */
-    LoopClosureBranchBound(const ScoreFuncPtr& scoreFunc,
-                           const CostFuncPtr& costFunc,
-                           int nodeHeightMax,
-                           double rangeX,
-                           double rangeY,
-                           double rangeTheta,
-                           double scanRangeMax,
-                           double scoreThreshold,
-                           double matchRateThreshold) :
+    LoopDetectorBranchBound(const ScoreFuncPtr& scoreFunc,
+                            const CostFuncPtr& costFunc,
+                            int nodeHeightMax,
+                            double rangeX,
+                            double rangeY,
+                            double rangeTheta,
+                            double scanRangeMax,
+                            double scoreThreshold,
+                            double matchRateThreshold) :
         mScoreFunc(scoreFunc),
         mCostFunc(costFunc),
         mNodeHeightMax(nodeHeightMax),
@@ -63,16 +63,16 @@ public:
         mMatchRateThreshold(matchRateThreshold) { }
 
     /* Destructor */
-    ~LoopClosureBranchBound() = default;
+    ~LoopDetectorBranchBound() = default;
 
     /* Find a loop and return a loop constraint */
     bool FindLoop(
-        LoopClosureCandidateInfoVector& loopClosureCandidates,
-        LoopClosureResultVector& loopClosureResults) override;
+        LoopDetectionQueryVector& loopDetectionQueries,
+        LoopDetectionResultVector& loopDetectionResults) override;
 
 private:
     /* Find a corresponding pose of the current robot pose
-     * from the loop-closure candidate local grid map */
+     * from the local grid map */
     bool FindCorrespondingPose(
         const GridMapType& localMap,
         const std::map<int, PrecomputedMapType>& precompMaps,
@@ -94,11 +94,11 @@ private:
     double                      mRangeY;
     /* Angular size of the search window */
     double                      mRangeTheta;
-    /* Maximum laser scan range considered for loop closure */
+    /* Maximum laser scan range considered for loop detector */
     double                      mScanRangeMax;
-    /* Normalized matching score threshold for loop closure */
+    /* Normalized matching score threshold for loop detector */
     double                      mScoreThreshold;
-    /* Match rate threshold for loop closure */
+    /* Match rate threshold for loop detector */
     double                      mMatchRateThreshold;
 };
 

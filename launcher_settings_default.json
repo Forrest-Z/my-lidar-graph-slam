@@ -58,7 +58,7 @@
         "PoseGraphNodeDistMax": 5.0
     },
 
-    "LoopClosureGridSearch": {
+    "LoopDetectorGridSearch": {
         "SearchRangeX": 2.0,
         "SearchRangeY": 2.0,
         "SearchRangeTheta": 0.5,
@@ -70,7 +70,7 @@
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
         "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopClosureGridSearch.CostGreedyEndpoint",
+        "CostConfigGroup": "LoopDetectorGridSearch.CostGreedyEndpoint",
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 50.0,
@@ -85,7 +85,7 @@
         }
     },
 
-    "LoopClosureBranchBound": {
+    "LoopDetectorBranchBound": {
         "NodeHeightMax": 6,
         "SearchRangeX": 5.0,
         "SearchRangeY": 5.0,
@@ -96,7 +96,7 @@
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
         "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopClosureBranchBound.CostGreedyEndpoint",
+        "CostConfigGroup": "LoopDetectorBranchBound.CostGreedyEndpoint",
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 20.0,
@@ -140,9 +140,9 @@
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
         "LoopSearcherType": "Nearest",
         "LoopSearcherConfigGroup": "LoopSearcherNearest",
-        "LoopClosureType": "BranchBound",
-        "LoopClosureConfigGroup": "LoopClosureBranchBound",
-        "LoopClosureInterval": 5,
+        "LoopDetectorType": "BranchBound",
+        "LoopDetectorConfigGroup": "LoopDetectorBranchBound",
+        "LoopDetectionInterval": 5,
         "UseScanInterpolator": "true",
         "ScanInterpolatorConfigGroup": "ScanInterpolator",
         "InitialPose": {

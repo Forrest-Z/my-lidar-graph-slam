@@ -12,40 +12,40 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Find a loop and return a loop constraint */
-bool LoopClosureGridSearch::FindLoop(
-    LoopClosureCandidateInfoVector& loopClosureCandidates,
-    LoopClosureResultVector& loopClosureResults)
+bool LoopDetectorGridSearch::FindLoop(
+    LoopDetectionQueryVector& loopDetectionQueries,
+    LoopDetectionResultVector& loopDetectionResults)
 {
-    /* Clear the loop closure results */
-    loopClosureResults.clear();
+    /* Clear the loop detection results */
+    loopDetectionResults.clear();
 
-    /* Do not perform loop detection if no candidate exists */
-    if (loopClosureCandidates.empty())
+    /* Do not perform loop detection if no query exists */
+    if (loopDetectionQueries.empty())
         return false;
 
-    /* Perform loop detection for each candidate */
-    for (const auto& loopClosureCandidate : loopClosureCandidates) {
+    /* Perform loop detection for each query */
+    for (const auto& loopDetectionQuery : loopDetectionQueries) {
         /* Retrieve the pose graph nodes, each of whose scan data is
          * matched against the local grid map to detect a loop */
-        const auto& candidateNodes = loopClosureCandidate.mCandidateNodes;
+        const auto& poseGraphNodes = loopDetectionQuery.mPoseGraphNodes;
         /* Retrieve the local grid map information */
-        auto& localMapInfo = loopClosureCandidate.mLocalMapInfo;
+        auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
         /* Retrieve the pose graph node inside the local grid map */
-        const auto& localMapNode = loopClosureCandidate.mLocalMapNode;
+        const auto& localMapNode = loopDetectionQuery.mLocalMapNode;
 
         /* Make sure that the node is inside the local grid map */
         assert(localMapNode.Index() >= localMapInfo.mPoseGraphNodeIdxMin &&
                localMapNode.Index() <= localMapInfo.mPoseGraphNodeIdxMax);
 
-        /* Perform loop detection for each candidate node */
-        for (const auto& candidateNode : candidateNodes) {
+        /* Perform loop detection for each node */
+        for (const auto& poseGraphNode : poseGraphNodes) {
             /* Find the corresponding position of the node
              * inside the local grid map */
             RobotPose2D<double> correspondingPose;
             Eigen::Matrix3d covarianceMatrix;
             const bool loopDetected = this->FindCorrespondingPose(
                 localMapInfo.mMap,
-                candidateNode.ScanData(), candidateNode.Pose(),
+                poseGraphNode.ScanData(), poseGraphNode.Pose(),
                 correspondingPose, covarianceMatrix);
 
             /* Do not build a new loop closing edge if loop not detected */
@@ -58,21 +58,21 @@ bool LoopClosureGridSearch::FindLoop(
                 InverseCompound(localMapNode.Pose(), correspondingPose);
             /* Indices of the start and end node */
             const int startNodeIdx = localMapNode.Index();
-            const int endNodeIdx = candidateNode.Index();
+            const int endNodeIdx = poseGraphNode.Index();
 
-            /* Append to the loop closure results */
-            loopClosureResults.emplace_back(
+            /* Append to the loop detection results */
+            loopDetectionResults.emplace_back(
                 relativePose, localMapNode.Pose(),
                 startNodeIdx, endNodeIdx, covarianceMatrix);
         }
     }
 
-    return !loopClosureResults.empty();
+    return !loopDetectionResults.empty();
 }
 
 /* Find a corresponding pose of the current robot pose
- * from the loop-closure candidate local grid map */
-bool LoopClosureGridSearch::FindCorrespondingPose(
+ * from the local grid map */
+bool LoopDetectorGridSearch::FindCorrespondingPose(
     const GridMapType& gridMap,
     const ScanPtr& scanData,
     const RobotPose2D<double>& robotPose,
@@ -85,7 +85,7 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
         Compound(robotPose, scanData->RelativeSensorPose());
     RobotPose2D<double> bestSensorPose = sensorPose;
     double scoreMax = std::numeric_limits<double>::min();
-    
+
     const double rx = this->mRangeX / 2.0;
     const double ry = this->mRangeY / 2.0;
     const double rt = this->mRangeTheta / 2.0;
@@ -114,22 +114,22 @@ bool LoopClosureGridSearch::FindCorrespondingPose(
         }
     }
 
-    /* Loop closure fails if the matching score falls below the threshold */
+    /* Loop detection fails if the matching score falls below the threshold */
     if (scoreMax < this->mScoreThreshold)
         return false;
 
     /* Estimate the covariance matrix */
     const Eigen::Matrix3d covMat =
         this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
-    
+
     /* Calculate the robot pose from the sensor pose */
     const RobotPose2D<double> bestPose =
         MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
-    
+
     /* Return the result */
     correspondingPose = bestPose;
     estimatedCovMat = covMat;
-    
+
     return true;
 }
 

@@ -19,28 +19,27 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
- * LoopClosureCandidateInfo struct holds the detailed information for
- * a single loop closure candidate, including a collection of nodes and
- * a local grid map. Each node contains its pose in a world frame and
- * an associated scan data
+ * LoopDetectionQuery struct holds the detailed information for
+ * a loop detection, including a collection of nodes and a local grid map.
+ * Each node contains its pose in a world frame and an associated scan data
  */
-struct LoopClosureCandidateInfo final
+struct LoopDetectionQuery final
 {
     /* Constructor */
-    LoopClosureCandidateInfo(
-        std::vector<PoseGraph::Node>&& candidateNodes,
+    LoopDetectionQuery(
+        std::vector<PoseGraph::Node>&& poseGraphNodes,
         const GridMapBuilder::LocalMapInfo& localMapInfo,
         const PoseGraph::Node& localMapNode) :
-        mCandidateNodes(std::move(candidateNodes)),
+        mPoseGraphNodes(std::move(poseGraphNodes)),
         mLocalMapInfo(localMapInfo),
         mLocalMapNode(localMapNode) { }
 
     /* Destructor */
-    ~LoopClosureCandidateInfo() = default;
+    ~LoopDetectionQuery() = default;
 
     /* Vector of pose graph nodes, each of which is matched against
      * the local grid map using the node pose and its associated scan data */
-    const std::vector<PoseGraph::Node> mCandidateNodes;
+    const std::vector<PoseGraph::Node> mPoseGraphNodes;
     /* Local grid map, which is not constant since the precomputation
      * of the coarser grid maps is needed */
     GridMapBuilder::LocalMapInfo       mLocalMapInfo;
@@ -50,22 +49,22 @@ struct LoopClosureCandidateInfo final
     const PoseGraph::Node              mLocalMapNode;
 };
 
-/* Vector of the loop closure candidate information */
-using LoopClosureCandidateInfoVector = std::vector<LoopClosureCandidateInfo>;
+/* Vector of the loop detection query */
+using LoopDetectionQueryVector = std::vector<LoopDetectionQuery>;
 
 /*
- * LoopClosureResult struct holds the result for a single loop closure,
+ * LoopDetectionResult struct holds the result for a loop detection,
  * necessary information for constructing a pose graph edge that represents
  * a loop closing constraint
  */
-struct LoopClosureResult final
+struct LoopDetectionResult final
 {
     /* Constructor */
-    LoopClosureResult(const RobotPose2D<double>& relativePose,
-                      const RobotPose2D<double>& startNodePose,
-                      const int startNodeIdx,
-                      const int endNodeIdx,
-                      const Eigen::Matrix3d& estimatedCovMat) :
+    LoopDetectionResult(const RobotPose2D<double>& relativePose,
+                        const RobotPose2D<double>& startNodePose,
+                        const int startNodeIdx,
+                        const int endNodeIdx,
+                        const Eigen::Matrix3d& estimatedCovMat) :
         mRelativePose(relativePose),
         mStartNodePose(startNodePose),
         mStartNodeIdx(startNodeIdx),
@@ -73,7 +72,7 @@ struct LoopClosureResult final
         mEstimatedCovMat(estimatedCovMat) { }
 
     /* Destructor */
-    ~LoopClosureResult() = default;
+    ~LoopDetectionResult() = default;
 
     /* Actual relative pose between two nodes */
     const RobotPose2D<double> mRelativePose;
@@ -87,10 +86,10 @@ struct LoopClosureResult final
     const Eigen::Matrix3d     mEstimatedCovMat;
 };
 
-/* Vector of the loop closure results */
-using LoopClosureResultVector = std::vector<LoopClosureResult>;
+/* Vector of the loop detection results */
+using LoopDetectionResultVector = std::vector<LoopDetectionResult>;
 
-class LoopClosure
+class LoopDetector
 {
 public:
     /* Type definitions */
@@ -99,17 +98,17 @@ public:
     using PrecomputedMapType = GridMapBuilder::PrecomputedMapType;
 
     /* Constructor */
-    LoopClosure() = default;
+    LoopDetector() = default;
 
     /* Destructor */
-    virtual ~LoopClosure() = default;
+    virtual ~LoopDetector() = default;
 
     /* Find a loop and return a loop constraint
      * Current scan data stored in the latest pose graph node is
      * matched against the previous local grid map */
     virtual bool FindLoop(
-        LoopClosureCandidateInfoVector& loopClosureCandidates,
-        LoopClosureResultVector& loopClosureResults) = 0;
+        LoopDetectionQueryVector& loopDetectionQueries,
+        LoopDetectionResultVector& loopDetectionResults) = 0;
 };
 
 } /* namespace Mapping */

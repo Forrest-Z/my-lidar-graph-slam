@@ -6,12 +6,12 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-/* Find a loop and return a loop constraint */
-bool LoopClosureEmpty::FindLoop(
-    LoopClosureCandidateInfoVector& /* loopClosureCandidates */,
-    LoopClosureResultVector& /* loopClosureResults */)
+/* Do not perform loop detection */
+bool LoopDetectorEmpty::FindLoop(
+    LoopDetectionQueryVector& /* loopDetectionQueries */,
+    LoopDetectionResultVector& /* loopDetectionResults */)
 {
-    /* Do not perform loop closure */
+    /* Do not perform loop detection */
     /* Return false to indicate that the loop detection failed */
     return false;
 }

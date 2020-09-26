@@ -275,22 +275,22 @@ std::shared_ptr<Mapping::LoopSearcher> CreateLoopSearcher(
     return nullptr;
 }
 
-/* Create the dummy loop closure object */
-std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureEmpty(
+/* Create an empty loop detector object */
+std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorEmpty(
     const pt::ptree& /* jsonSettings */,
     const std::string& /* configGroup */)
 {
-    /* Construct dummy loop closure object */
-    auto pLoopClosure = std::make_shared<Mapping::LoopClosureEmpty>();
-    return pLoopClosure;
+    /* Construct an empty loop detector object */
+    auto pLoopDetector = std::make_shared<Mapping::LoopDetectorEmpty>();
+    return pLoopDetector;
 }
 
-/* Create the grid search loop closure object */
-std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureGridSearch(
+/* Create a grid search loop detector object */
+std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorGridSearch(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
-    /* Read settings for grid search loop closure */
+    /* Read settings for a grid search loop detector */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
     const double rangeX = config.get("SearchRangeX", 2.0);
@@ -318,21 +318,21 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureGridSearch(
     auto pCostFunc = CreateCostFunction(
         jsonSettings, costType, costConfigGroup);
 
-    /* Construct grid search loop closure object */
-    auto pLoopClosure = std::make_shared<Mapping::LoopClosureGridSearch>(
+    /* Construct a grid search loop detector object */
+    auto pLoopDetector = std::make_shared<Mapping::LoopDetectorGridSearch>(
         pScoreFunc, pCostFunc,
         rangeX, rangeY, rangeTheta, stepX, stepY, stepTheta,
         scoreThreshold, matchRateThreshold);
 
-    return pLoopClosure;
+    return pLoopDetector;
 }
 
-/* Create the branch-and-bound loop closure object */
-std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureBranchBound(
+/* Create a branch-and-bound loop detector object */
+std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorBranchBound(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
-    /* Read settings for branch-and-bound loop closure */
+    /* Read settings for a branch-and-bound loop detector */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
     const int nodeHeightMax = config.get("NodeHeightMax", 6);
@@ -359,28 +359,28 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureBranchBound(
     auto pCostFunc = CreateCostFunction(
         jsonSettings, costType, costConfigGroup);
 
-    /* Construct branch-and-bound loop closure object */
-    auto pLoopClosure = std::make_shared<Mapping::LoopClosureBranchBound>(
+    /* Construct a branch-and-bound loop detector object */
+    auto pLoopDetector = std::make_shared<Mapping::LoopDetectorBranchBound>(
         pScoreFunc, pCostFunc,
         nodeHeightMax, rangeX, rangeY, rangeTheta, scanRangeMax,
         scoreThreshold, matchRateThreshold);
 
-    return pLoopClosure;
+    return pLoopDetector;
 }
 
-/* Create the loop closure object */
-std::shared_ptr<Mapping::LoopClosure> CreateLoopClosure(
+/* Create a loop detector object */
+std::shared_ptr<Mapping::LoopDetector> CreateLoopDetector(
     const pt::ptree& jsonSettings,
-    const std::string& loopClosureType,
+    const std::string& loopDetectorType,
     const std::string& configGroup)
 {
-    if (loopClosureType == "GridSearch")
-        return CreateLoopClosureGridSearch(jsonSettings, configGroup);
-    else if (loopClosureType == "BranchBound")
-        return CreateLoopClosureBranchBound(jsonSettings, configGroup);
-    else if (loopClosureType == "Empty")
-        return CreateLoopClosureEmpty(jsonSettings, configGroup);
-    
+    if (loopDetectorType == "GridSearch")
+        return CreateLoopDetectorGridSearch(jsonSettings, configGroup);
+    else if (loopDetectorType == "BranchBound")
+        return CreateLoopDetectorBranchBound(jsonSettings, configGroup);
+    else if (loopDetectorType == "Empty")
+        return CreateLoopDetectorEmpty(jsonSettings, configGroup);
+
     return nullptr;
 }
 
@@ -513,16 +513,16 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     auto pLoopSearcher = CreateLoopSearcher(
         jsonSettings, loopSearcherType, loopSearcherConfigGroup);
 
-    /* Create loop closure object */
-    const std::string loopClosureType =
-        config.get("LoopClosureType", "GridSearch");
-    const std::string loopClosureConfigGroup =
-        config.get("LoopClosureConfigGroup", "LoopClosureGridSearch");
-    auto pLoopClosure = CreateLoopClosure(
-        jsonSettings, loopClosureType, loopClosureConfigGroup);
+    /* Create loop detector object */
+    const std::string loopDetectorType =
+        config.get("LoopDetectorType", "GridSearch");
+    const std::string loopDetectorConfigGroup =
+        config.get("LoopDetectorConfigGroup", "LoopDetectorGridSearch");
+    auto pLoopDetector = CreateLoopDetector(
+        jsonSettings, loopDetectorType, loopDetectorConfigGroup);
 
     /* Load settings for LiDAR Graph-Based SLAM */
-    const int loopClosureInterval = config.get("LoopClosureInterval", 10);
+    const int loopDetectionInterval = config.get("LoopDetectionInterval", 10);
 
     /* Create scan interpolator object if necessary */
     const bool useInterpolator =
@@ -552,11 +552,11 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     auto pFrontend = std::make_shared<Mapping::LidarGraphSlamFrontend>(
         pScanInterpolator, pScanMatcher, initialPose,
         updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime,
-        loopClosureInterval);
+        loopDetectionInterval);
 
     /* Create SLAM backend object */
     auto pBackend = std::make_shared<Mapping::LidarGraphSlamBackend>(
-        pOptimizer, pLoopSearcher, pLoopClosure);
+        pOptimizer, pLoopSearcher, pLoopDetector);
 
     /* Create LiDAR Graph-Based SLAM object */
     auto pLidarGraphSlam = std::make_shared<Mapping::LidarGraphSlam>(

@@ -145,25 +145,25 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
 }
 
 /* Retrieve the necessary information for loop detection */
-LoopClosureCandidateInfoVector LidarGraphSlam::GetLoopDetectionCandidates(
+LoopDetectionQueryVector LidarGraphSlam::GetLoopDetectionQueries(
     const LoopCandidateVector& loopCandidates) const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
-    LoopClosureCandidateInfoVector loopDetectionCandidates;
-    loopDetectionCandidates.reserve(loopCandidates.size());
+    LoopDetectionQueryVector loopDetectionQueries;
+    loopDetectionQueries.reserve(loopCandidates.size());
 
     /* Setup the data needed for loop detection */
     for (const auto& loopCandidate : loopCandidates) {
         /* Retrieve the information for pose graph nodes consisting of
          * poses, indices, and scan data, each of which is matched against
          * the local grid map */
-        std::vector<PoseGraph::Node> candidateNodes;
-        candidateNodes.reserve(loopCandidate.mNodeIndices.size());
+        std::vector<PoseGraph::Node> nodes;
+        nodes.reserve(loopCandidate.mNodeIndices.size());
 
         for (const int& nodeIdx : loopCandidate.mNodeIndices)
-            candidateNodes.push_back(this->mPoseGraph->NodeAt(nodeIdx));
+            nodes.push_back(this->mPoseGraph->NodeAt(nodeIdx));
 
         /* Retrieve the information for the local grid map */
         GridMapBuilder::LocalMapInfo localMapInfo =
@@ -173,11 +173,11 @@ LoopClosureCandidateInfoVector LidarGraphSlam::GetLoopDetectionCandidates(
             this->mPoseGraph->NodeAt(loopCandidate.mLocalMapNodeIdx);
 
         /* Append the data needed for loop detection */
-        loopDetectionCandidates.emplace_back(
-            std::move(candidateNodes), localMapInfo, localMapNode);
+        loopDetectionQueries.emplace_back(
+            std::move(nodes), localMapInfo, localMapNode);
     }
 
-    return loopDetectionCandidates;
+    return loopDetectionQueries;
 }
 
 /* Append a new pose graph node with an associated scan data */
@@ -236,7 +236,7 @@ void LidarGraphSlam::AppendOdometryNodeAndEdge(
 
 /* Append new loop closing edges */
 void LidarGraphSlam::AppendLoopClosingEdges(
-    const LoopClosureResultVector& loopDetectionResults)
+    const LoopDetectionResultVector& loopDetectionResults)
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
@@ -286,7 +286,7 @@ void LidarGraphSlam::PerformOptimization(
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
-    /* Perform loop closure */
+    /* Perform pose graph optimization */
     poseGraphOptimizer->Optimize(this->mPoseGraph);
     /* Rebuild the grid maps */
     this->mGridMapBuilder->AfterLoopClosure(this->mPoseGraph);

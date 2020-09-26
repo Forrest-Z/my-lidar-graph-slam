@@ -9,18 +9,18 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-class LoopClosureEmpty final : public LoopClosure
+class LoopDetectorEmpty final : public LoopDetector
 {
 public:
     /* Constructor */
-    LoopClosureEmpty() = default;
+    LoopDetectorEmpty() = default;
     /* Destructor */
-    ~LoopClosureEmpty() = default;
+    ~LoopDetectorEmpty() = default;
 
-    /* Do nothing for a loop closure */
+    /* Do nothing for a loop detection */
     bool FindLoop(
-        LoopClosureCandidateInfoVector& loopClosureCandidates,
-        LoopClosureResultVector& loopClosureResults) override;
+        LoopDetectionQueryVector& loopDetectionQueries,
+        LoopDetectionResultVector& loopDetectionResults) override;
 };
 
 } /* namespace Mapping */

@@ -12,23 +12,23 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Find a loop and return a loop constraint */
-bool LoopClosureBranchBound::FindLoop(
-    LoopClosureCandidateInfoVector& loopClosureCandidates,
-    LoopClosureResultVector& loopClosureResults)
+bool LoopDetectorBranchBound::FindLoop(
+    LoopDetectionQueryVector& loopDetectionQueries,
+    LoopDetectionResultVector& loopDetectionResults)
 {
-    /* Clear the loop closure results */
-    loopClosureResults.clear();
+    /* Clear the loop detection results */
+    loopDetectionResults.clear();
 
-    /* Do not perform loop closure if candidate not found */
-    if (loopClosureCandidates.empty())
+    /* Do not perform loop detection if no query exists */
+    if (loopDetectionQueries.empty())
         return false;
 
-    /* Perform loop detection for each candidate */
-    for (auto& loopClosureCandidate : loopClosureCandidates) {
-        /* Retrieve the information about each candidate */
-        const auto& candidateNodes = loopClosureCandidate.mCandidateNodes;
-        auto& localMapInfo = loopClosureCandidate.mLocalMapInfo;
-        const auto& localMapNode = loopClosureCandidate.mLocalMapNode;
+    /* Perform loop detection for each query */
+    for (auto& loopDetectionQuery : loopDetectionQueries) {
+        /* Retrieve the information about each query */
+        const auto& poseGraphNodes = loopDetectionQuery.mPoseGraphNodes;
+        auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
+        const auto& localMapNode = loopDetectionQuery.mLocalMapNode;
 
         /* Make sure that the node is inside the local grid map */
         assert(localMapNode.Index() >= localMapInfo.mPoseGraphNodeIdxMin &&
@@ -41,15 +41,15 @@ bool LoopClosureBranchBound::FindLoop(
         if (!localMapInfo.mPrecomputed)
             PrecomputeGridMaps(localMapInfo, this->mNodeHeightMax);
 
-        /* Perform loop detection for each candidate node */
-        for (const auto& candidateNode : candidateNodes) {
+        /* Perform loop detection for each node */
+        for (const auto& poseGraphNode : poseGraphNodes) {
             /* Find the corresponding position of the node
              * inside the local grid map */
             RobotPose2D<double> correspondingPose;
             Eigen::Matrix3d covarianceMatrix;
             const bool loopDetected = this->FindCorrespondingPose(
                 localMapInfo.mMap, localMapInfo.mPrecomputedMaps,
-                candidateNode.ScanData(), candidateNode.Pose(),
+                poseGraphNode.ScanData(), poseGraphNode.Pose(),
                 correspondingPose, covarianceMatrix);
 
             /* Do not build a new loop closing edge if loop not detected */
@@ -62,21 +62,21 @@ bool LoopClosureBranchBound::FindLoop(
                 InverseCompound(localMapNode.Pose(), correspondingPose);
             /* Indices of the start and end node */
             const int startNodeIdx = localMapNode.Index();
-            const int endNodeIdx = candidateNode.Index();
+            const int endNodeIdx = poseGraphNode.Index();
 
-            /* Append to the loop closure results */
-            loopClosureResults.emplace_back(
+            /* Append to the loop detection results */
+            loopDetectionResults.emplace_back(
                 relativePose, localMapNode.Pose(),
                 startNodeIdx, endNodeIdx, covarianceMatrix);
         }
     }
 
-    return !loopClosureResults.empty();
+    return !loopDetectionResults.empty();
 }
 
 /* Find a corresponding pose of the current robot pose
- * from the loop-closure candidate local grid map */
-bool LoopClosureBranchBound::FindCorrespondingPose(
+ * from the local grid map */
+bool LoopDetectorBranchBound::FindCorrespondingPose(
     const GridMapType& localMap,
     const std::map<int, PrecomputedMapType>& precompMaps,
     const ScanPtr& scanData,
@@ -172,7 +172,7 @@ bool LoopClosureBranchBound::FindCorrespondingPose(
         }
     }
 
-    /* Loop closure fails if the solution is not found */
+    /* Loop detection fails if the solution is not found */
     if (!solutionFound)
         return false;
 

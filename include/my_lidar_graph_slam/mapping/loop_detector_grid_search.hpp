@@ -12,24 +12,24 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-class LoopClosureGridSearch final : public LoopClosure
+class LoopDetectorGridSearch final : public LoopDetector
 {
 public:
     /* Type definitions */
-    using LoopClosure::ScanPtr;
-    using LoopClosure::GridMapType;
+    using LoopDetector::ScanPtr;
+    using LoopDetector::GridMapType;
 
     /* Constructor */
-    LoopClosureGridSearch(const ScoreFuncPtr& scoreFunc,
-                          const CostFuncPtr& costFunc,
-                          double rangeX,
-                          double rangeY,
-                          double rangeTheta,
-                          double stepX,
-                          double stepY,
-                          double stepTheta,
-                          double scoreThreshold,
-                          double matchRateThreshold) :
+    LoopDetectorGridSearch(const ScoreFuncPtr& scoreFunc,
+                           const CostFuncPtr& costFunc,
+                           double rangeX,
+                           double rangeY,
+                           double rangeTheta,
+                           double stepX,
+                           double stepY,
+                           double stepTheta,
+                           double scoreThreshold,
+                           double matchRateThreshold) :
         mScoreFunc(scoreFunc),
         mCostFunc(costFunc),
         mRangeX(rangeX),
@@ -42,16 +42,16 @@ public:
         mMatchRateThreshold(matchRateThreshold) { }
 
     /* Destructor */
-    ~LoopClosureGridSearch() = default;
+    ~LoopDetectorGridSearch() = default;
 
     /* Find a loop and return a loop constraint */
     bool FindLoop(
-        LoopClosureCandidateInfoVector& loopClosureCandidates,
-        LoopClosureResultVector& loopClosureResults) override;
+        LoopDetectionQueryVector& loopDetectionQueries,
+        LoopDetectionResultVector& loopDetectionResults) override;
 
 private:
     /* Find a corresponding pose of the current robot pose
-     * from the loop-closure candidate local grid map */
+     * from the local grid map */
     bool FindCorrespondingPose(const GridMapType& gridMap,
                                const ScanPtr& scanData,
                                const RobotPose2D<double>& robotPose,
@@ -75,9 +75,9 @@ private:
     double                      mStepY;
     /* Angular step size */
     double                      mStepTheta;
-    /* Normalized matching score threshold for loop closure */
+    /* Normalized matching score threshold for loop detection */
     double                      mScoreThreshold;
-    /* Match rate threshold for loop closure */
+    /* Match rate threshold for loop detection */
     double                      mMatchRateThreshold;
 };
 

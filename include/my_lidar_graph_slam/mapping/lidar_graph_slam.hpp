@@ -88,9 +88,8 @@ public:
 
     /* Retrieve the necessary information for loop search */
     LoopSearchHint GetLoopSearchHint() const;
-
     /* Retrieve the necessary information for loop detection */
-    LoopClosureCandidateInfoVector GetLoopDetectionCandidates(
+    LoopDetectionQueryVector GetLoopDetectionQueries(
         const LoopCandidateVector& loopCandidates) const;
 
     /* Append a new pose graph node with an associated scan data */
@@ -106,7 +105,7 @@ public:
 
     /* Append new loop closing edges */
     void AppendLoopClosingEdges(
-        const LoopClosureResultVector& loopDetectionResults);
+        const LoopDetectionResultVector& loopDetectionResults);
 
     /* Update the grid map according to the modified pose graph */
     bool UpdateGridMap();
