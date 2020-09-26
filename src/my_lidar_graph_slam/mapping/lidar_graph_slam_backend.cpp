@@ -9,10 +9,10 @@ namespace Mapping {
 /* Constructor */
 LidarGraphSlamBackend::LidarGraphSlamBackend(
     const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer,
-    const std::shared_ptr<LoopClosureCandidate>& loopDetectionSearch,
+    const std::shared_ptr<LoopSearcher>& loopSearcher,
     const std::shared_ptr<LoopClosure>& loopClosure) :
     mPoseGraphOptimizer(poseGraphOptimizer),
-    mLoopDetectionSearch(loopDetectionSearch),
+    mLoopSearcher(loopSearcher),
     mLoopClosure(loopClosure)
 {
 }
@@ -26,16 +26,14 @@ void LidarGraphSlamBackend::Run(
         /* Wait for the update from the SLAM frontend */
         pParent->WaitForNotification();
 
-        /* Find loop detection candidates */
-        const LoopClosureCandidateSearchHint searchHint =
-            pParent->GetLoopDetectionSearchHint();
-        LoopClosurePairVector loopDetectionPairs =
-            this->mLoopDetectionSearch->Find(searchHint);
+        /* Find loop candidates */
+        const auto searchHint = pParent->GetLoopSearchHint();
+        auto loopCandidates = this->mLoopSearcher->Find(searchHint);
 
         /* Perform loop detection using candidates, each of which consists of
          * a collection of pose graph nodes and a local grid map */
         LoopClosureCandidateInfoVector loopDetectionCandidates =
-            pParent->GetLoopDetectionCandidates(loopDetectionPairs);
+            pParent->GetLoopDetectionCandidates(loopCandidates);
         LoopClosureResultVector loopDetectionResults;
 
         const bool loopDetected = this->mLoopClosure->FindLoop(

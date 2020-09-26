@@ -53,7 +53,7 @@
         "DistThresholdEmpty": 0.25
     },
 
-    "LoopClosureCandidateNearest": {
+    "LoopSearcherNearest": {
         "TravelDistThreshold": 10.0,
         "PoseGraphNodeDistMax": 5.0
     },
@@ -138,8 +138,8 @@
         },
         "PoseGraphOptimizerType": "SpChol",
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
-        "LoopClosureCandidateSearchType": "Nearest",
-        "LoopClosureCandidateSearchConfigGroup": "LoopClosureCandidateNearest",
+        "LoopSearcherType": "Nearest",
+        "LoopSearcherConfigGroup": "LoopSearcherNearest",
         "LoopClosureType": "BranchBound",
         "LoopClosureConfigGroup": "LoopClosureBranchBound",
         "LoopClosureInterval": 5,

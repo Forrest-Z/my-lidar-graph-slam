@@ -8,9 +8,9 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-/* Find a local map and a pose graph node used for loop closure */
-LoopClosurePairVector LoopClosureCandidateNearest::Find(
-    const LoopClosureCandidateSearchHint& searchHint)
+/* Find a local map and a pose graph node used for loop detection */
+LoopCandidateVector LoopSearcherNearest::Find(
+    const LoopSearchHint& searchHint)
 {
     const auto& poseGraphNodes = searchHint.mPoseGraphNodes;
     const auto& localMapPositions = searchHint.mLocalMapPositions;
@@ -77,22 +77,22 @@ LoopClosurePairVector LoopClosureCandidateNearest::Find(
     }
 
 Done:
-    /* LoopClosureCandidateNearest class selects the closest pose graph node
+    /* LoopSearcherNearest class selects the closest pose graph node
      * and its corresponding local grid map from the current robot pose */
-    LoopClosurePairVector loopClosureCandidates;
+    LoopCandidateVector loopCandidates;
 
     /* Return an empty collection of candidates if not found */
     if (candidateMapIdx < 0 || candidateMapIdx >= numOfMaps ||
         candidateNodeIdx < 0 || candidateNodeIdx >= numOfNodes)
-        return loopClosureCandidates;
+        return loopCandidates;
 
     /* Set the closest pose graph node index and its corresponding
      * local grid map index */
     std::vector<int> nodeIndices { latestNodeIdx };
-    loopClosureCandidates.emplace_back(
+    loopCandidates.emplace_back(
         std::move(nodeIndices), candidateMapIdx, candidateNodeIdx);
 
-    return loopClosureCandidates;
+    return loopCandidates;
 }
 
 } /* namespace Mapping */

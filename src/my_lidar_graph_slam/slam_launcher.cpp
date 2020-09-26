@@ -245,34 +245,32 @@ std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcher(
     return nullptr;
 }
 
-/* Create the nearest loop closure candidate searcher */
-std::shared_ptr<Mapping::LoopClosureCandidateNearest>
-    CreateLoopClosureCandidateNearest(
-        const pt::ptree& jsonSettings,
-        const std::string& configGroup)
+/* Create the nearest loop searcher */
+std::shared_ptr<Mapping::LoopSearcherNearest> CreateLoopSearcherNearest(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
 {
-    /* Read settings for nearest loop closure candidate searcher */
+    /* Read settings for nearest loop searcher */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
     const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
     const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
 
-    /* Construct loop closure candidate searcher */
-    auto pCandidateSearch = std::make_shared<
-        Mapping::LoopClosureCandidateNearest>(
-            travelDistThreshold, nodeDistMax);
+    /* Construct loop searcher */
+    auto pLoopSearcher = std::make_shared<Mapping::LoopSearcherNearest>(
+        travelDistThreshold, nodeDistMax);
 
-    return pCandidateSearch;
+    return pLoopSearcher;
 }
 
-/* Create the loop closure candidate searcher */
-std::shared_ptr<Mapping::LoopClosureCandidate> CreateLoopClosureCandidate(
+/* Create the loop searcher */
+std::shared_ptr<Mapping::LoopSearcher> CreateLoopSearcher(
     const pt::ptree& jsonSettings,
-    const std::string& candidateSearchType,
+    const std::string& searcherType,
     const std::string& configGroup)
 {
-    if (candidateSearchType == "Nearest")
-        return CreateLoopClosureCandidateNearest(jsonSettings, configGroup);
+    if (searcherType == "Nearest")
+        return CreateLoopSearcherNearest(jsonSettings, configGroup);
 
     return nullptr;
 }
@@ -507,14 +505,13 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     auto pOptimizer = CreatePoseGraphOptimizer(
         jsonSettings, optimizerType, optimizerConfigGroup);
 
-    /* Create loop detection candidate searcher object */
-    const std::string candidateSearchType =
-        config.get("LoopClosureCandidateSearchType", "Nearest");
-    const std::string candidateSearchConfigGroup =
-        config.get("LoopClosureCandidateSearchConfigGroup",
-                   "LoopClosureCandidateNearest");
-    auto pCandidateSearch = CreateLoopClosureCandidate(
-        jsonSettings, candidateSearchType, candidateSearchConfigGroup);
+    /* Create loop searcher object */
+    const std::string loopSearcherType =
+        config.get("LoopSearcherType", "Nearest");
+    const std::string loopSearcherConfigGroup =
+        config.get("LoopSearcherConfigGroup", "LoopSearcherNearest");
+    auto pLoopSearcher = CreateLoopSearcher(
+        jsonSettings, loopSearcherType, loopSearcherConfigGroup);
 
     /* Create loop closure object */
     const std::string loopClosureType =
@@ -559,7 +556,7 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
 
     /* Create SLAM backend object */
     auto pBackend = std::make_shared<Mapping::LidarGraphSlamBackend>(
-        pOptimizer, pCandidateSearch, pLoopClosure);
+        pOptimizer, pLoopSearcher, pLoopClosure);
 
     /* Create LiDAR Graph-Based SLAM object */
     auto pLidarGraphSlam = std::make_shared<Mapping::LidarGraphSlam>(

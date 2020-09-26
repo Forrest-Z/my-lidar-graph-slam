@@ -98,9 +98,8 @@ void LidarGraphSlam::GetLatestPoseAndMap(
     latestMap = this->mGridMapBuilder->LatestMap();
 }
 
-/* Retrieve the data for loop detection candidate search */
-LoopClosureCandidateSearchHint
-    LidarGraphSlam::GetLoopDetectionSearchHint() const
+/* Retrieve the necessary information for loop search */
+LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
@@ -136,8 +135,8 @@ LoopClosureCandidateSearchHint
     assert(latestNodeIdx >= latestLocalMap.mPoseGraphNodeIdxMin &&
            latestNodeIdx <= latestLocalMap.mPoseGraphNodeIdxMax);
 
-    /* Return the data for loop detection candidate search */
-    return LoopClosureCandidateSearchHint {
+    /* Return the necessary information for loop search */
+    return LoopSearchHint {
         std::move(poseGraphNodes),
         std::move(localMapPositions),
         this->mGridMapBuilder->AccumTravelDist(),
@@ -145,34 +144,33 @@ LoopClosureCandidateSearchHint
         latestLocalMapIdx };
 }
 
-/* Retrieve the data for loop detection */
-LoopClosureCandidateInfoVector
-    LidarGraphSlam::GetLoopDetectionCandidates(
-    const LoopClosurePairVector& loopDetectionPairs) const
+/* Retrieve the necessary information for loop detection */
+LoopClosureCandidateInfoVector LidarGraphSlam::GetLoopDetectionCandidates(
+    const LoopCandidateVector& loopCandidates) const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
     LoopClosureCandidateInfoVector loopDetectionCandidates;
-    loopDetectionCandidates.reserve(loopDetectionPairs.size());
+    loopDetectionCandidates.reserve(loopCandidates.size());
 
     /* Setup the data needed for loop detection */
-    for (const auto& loopDetectionPair : loopDetectionPairs) {
+    for (const auto& loopCandidate : loopCandidates) {
         /* Retrieve the information for pose graph nodes consisting of
          * poses, indices, and scan data, each of which is matched against
          * the local grid map */
         std::vector<PoseGraph::Node> candidateNodes;
-        candidateNodes.reserve(loopDetectionPair.mNodeIndices.size());
+        candidateNodes.reserve(loopCandidate.mNodeIndices.size());
 
-        for (const int& nodeIdx : loopDetectionPair.mNodeIndices)
+        for (const int& nodeIdx : loopCandidate.mNodeIndices)
             candidateNodes.push_back(this->mPoseGraph->NodeAt(nodeIdx));
 
         /* Retrieve the information for the local grid map */
         GridMapBuilder::LocalMapInfo localMapInfo =
-            this->mGridMapBuilder->LocalMapAt(loopDetectionPair.mLocalMapIdx);
+            this->mGridMapBuilder->LocalMapAt(loopCandidate.mLocalMapIdx);
         /* Retrieve the pose graph node that is inside the local grid map */
         PoseGraph::Node localMapNode =
-            this->mPoseGraph->NodeAt(loopDetectionPair.mLocalMapNodeIdx);
+            this->mPoseGraph->NodeAt(loopCandidate.mLocalMapNodeIdx);
 
         /* Append the data needed for loop detection */
         loopDetectionCandidates.emplace_back(

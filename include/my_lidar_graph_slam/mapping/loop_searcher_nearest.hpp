@@ -9,31 +9,31 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-class LoopClosureCandidateNearest final : public LoopClosureCandidate
+class LoopSearcherNearest final : public LoopSearcher
 {
 public:
     /* Constructor */
-    LoopClosureCandidateNearest(double travelDistThreshold,
-                                double nodeDistThreshold) :
-        LoopClosureCandidate(),
+    LoopSearcherNearest(double travelDistThreshold,
+                        double nodeDistThreshold) :
+        LoopSearcher(),
         mTravelDistThreshold(travelDistThreshold),
         mNodeDistThreshold(nodeDistThreshold) { }
 
     /* Destructor */
-    ~LoopClosureCandidateNearest() = default;
+    ~LoopSearcherNearest() = default;
 
-    /* Find a local map and a pose graph node used for loop closure */
-    LoopClosurePairVector Find(
-        const LoopClosureCandidateSearchHint& searchHint) override;
+    /* Find a local map and a pose graph node used for loop detection */
+    LoopCandidateVector Find(
+        const LoopSearchHint& searchHint) override;
 
 private:
-    /* Travel distance threhsold for loop closure
+    /* Travel distance threhsold for loop search
      * Pose graph node that can be traversed from the current node
      * with the travel distance less than this threshold is not considered
-     * for loop closure */
+     * for loop search */
     double mTravelDistThreshold;
     /* Maximum distance between the current robot pose and
-     * the pose of the node which is considered for loop closure */
+     * the pose of the node which is considered for loop search */
     double mNodeDistThreshold;
 };
 

@@ -17,14 +17,14 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
- * LoopClosureCandidateSearchHint struct holds the necessary information
+ * LoopSearchHint struct holds the necessary information
  * for searching the local grid map and the pose graph node, which are used
  * for the loop detection based on exhaustive scan matching
  */
-struct LoopClosureCandidateSearchHint final
+struct LoopSearchHint final
 {
     /* Constructor */
-    LoopClosureCandidateSearchHint(
+    LoopSearchHint(
         std::map<int, NodePosition>&& poseGraphNodes,
         std::vector<LocalMapPosition>&& localMapPositions,
         const double accumTravelDist,
@@ -37,7 +37,7 @@ struct LoopClosureCandidateSearchHint final
         mLatestLocalMapIdx(latestLocalMapIdx) { }
 
     /* Destructor */
-    ~LoopClosureCandidateSearchHint() = default;
+    ~LoopSearchHint() = default;
 
     /* Information about the pose graph nodes (poses) */
     const std::map<int, NodePosition>   mPoseGraphNodes;
@@ -53,23 +53,23 @@ struct LoopClosureCandidateSearchHint final
 };
 
 /*
- * LoopClosurePair struct holds a collection of local map indices and
+ * LoopCandidate struct holds a collection of local map indices and
  * a pose graph node index, which are used for the loop detection.
  * A scan data that is associated to each node is matched against
  * a single local grid map for many-to-one scan matching
  */
-struct LoopClosurePair final
+struct LoopCandidate final
 {
     /* Constructor */
-    LoopClosurePair(std::vector<int>&& nodeIndices,
-                    const int localMapIdx,
-                    const int localMapNodeIdx) :
+    LoopCandidate(std::vector<int>&& nodeIndices,
+                  const int localMapIdx,
+                  const int localMapNodeIdx) :
         mNodeIndices(std::move(nodeIndices)),
         mLocalMapIdx(localMapIdx),
         mLocalMapNodeIdx(localMapNodeIdx) { }
 
     /* Destructor */
-    ~LoopClosurePair() = default;
+    ~LoopCandidate() = default;
 
     /* Indices of the pose graph nodes */
     const std::vector<int> mNodeIndices;
@@ -81,21 +81,21 @@ struct LoopClosurePair final
     const int              mLocalMapNodeIdx;
 };
 
-/* Vector of the loop closure candidates */
-using LoopClosurePairVector = std::vector<LoopClosurePair>;
+/* Vector of the loop candidates */
+using LoopCandidateVector = std::vector<LoopCandidate>;
 
-class LoopClosureCandidate
+class LoopSearcher
 {
 public:
     /* Constructor */
-    LoopClosureCandidate() = default;
+    LoopSearcher() = default;
 
     /* Destructor */
-    virtual ~LoopClosureCandidate() = default;
+    virtual ~LoopSearcher() = default;
 
-    /* Find a local map and a pose graph node used for loop closure */
-    virtual LoopClosurePairVector Find(
-        const LoopClosureCandidateSearchHint& searchHint) = 0;
+    /* Find a local map and a pose graph node for loop detection */
+    virtual LoopCandidateVector Find(
+        const LoopSearchHint& searchHint) = 0;
 };
 
 } /* namespace Mapping */

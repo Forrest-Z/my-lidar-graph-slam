@@ -86,12 +86,12 @@ public:
         RobotPose2D<double>& latestPose,
         GridMapType& latestMap) const;
 
-    /* Retrieve the data for loop detection candidate search */
-    LoopClosureCandidateSearchHint GetLoopDetectionSearchHint() const;
+    /* Retrieve the necessary information for loop search */
+    LoopSearchHint GetLoopSearchHint() const;
 
-    /* Retrieve the data for loop detection */
+    /* Retrieve the necessary information for loop detection */
     LoopClosureCandidateInfoVector GetLoopDetectionCandidates(
-        const LoopClosurePairVector& loopDetectionPairs) const;
+        const LoopCandidateVector& loopCandidates) const;
 
     /* Append a new pose graph node with an associated scan data */
     void AppendNode(
