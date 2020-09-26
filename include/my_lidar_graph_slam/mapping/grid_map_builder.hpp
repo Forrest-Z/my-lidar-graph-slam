@@ -99,10 +99,10 @@ public:
         /* Flags to determine whether the grid maps are finished and
          * will not be changed (no more new scan data will be added) */
         bool                              mFinished;
-        /* Flags to determine whether the grid maps for the loop closure are
+        /* Flags to determine whether the grid maps for the loop detection are
          * already precomputed */
         bool                              mPrecomputed;
-        /* List of precomputed grid maps for loop closure */
+        /* List of precomputed grid maps for loop detection */
         std::map<int, PrecomputedMapType> mPrecomputedMaps;
     };
 

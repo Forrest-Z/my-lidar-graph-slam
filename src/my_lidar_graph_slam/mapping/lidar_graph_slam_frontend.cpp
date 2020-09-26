@@ -14,7 +14,7 @@ LidarGraphSlamFrontend::LidarGraphSlamFrontend(
     const double updateThresholdTravelDist,
     const double updateThresholdAngle,
     const double updateThresholdTime,
-    const int loopClosureInterval) :
+    const int loopDetectionInterval) :
     mProcessCount(0),
     mScanInterpolator(scanInterpolator),
     mScanMatcher(scanMatcher),
@@ -27,7 +27,7 @@ LidarGraphSlamFrontend::LidarGraphSlamFrontend(
     mUpdateThresholdTravelDist(updateThresholdTravelDist),
     mUpdateThresholdAngle(updateThresholdAngle),
     mUpdateThresholdTime(updateThresholdTime),
-    mLoopClosureInterval(loopClosureInterval)
+    mLoopDetectionInterval(loopDetectionInterval)
 {
 }
 
@@ -111,8 +111,8 @@ bool LidarGraphSlamFrontend::ProcessScan(
 
     /* Notify the worker thread for the SLAM backend
      * if the new local map is added to the entire grid map */
-    if (this->mProcessCount > this->mLoopClosureInterval &&
-        this->mProcessCount % this->mLoopClosureInterval == 0)
+    if (this->mProcessCount > this->mLoopDetectionInterval &&
+        this->mProcessCount % this->mLoopDetectionInterval == 0)
         pParent->NotifyBackend();
 
     /* Update miscellaneous parameters */

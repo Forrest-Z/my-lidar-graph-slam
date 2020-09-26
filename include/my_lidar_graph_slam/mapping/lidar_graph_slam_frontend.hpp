@@ -31,7 +31,7 @@ public:
         const double updateThresholdTravelDist,
         const double updateThresholdAngle,
         const double updateThresholdTime,
-        const int loopClosureInterval);
+        const int loopDetectionInterval);
     /* Destructor */
     ~LidarGraphSlamFrontend() = default;
 
@@ -77,8 +77,8 @@ private:
     double                mUpdateThresholdAngle;
     /* Map update threshold for the elapsed time since the last map update */
     double                mUpdateThresholdTime;
-    /* Frame interval for performing loop closure */
-    int                   mLoopClosureInterval;
+    /* Frame interval for performing loop detection */
+    int                   mLoopDetectionInterval;
 };
 
 } /* namespace Mapping */
