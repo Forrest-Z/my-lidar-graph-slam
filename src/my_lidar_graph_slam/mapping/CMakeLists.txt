@@ -6,6 +6,8 @@ target_sources(lidar_graph_slam PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/cost_function_square_error.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/grid_map_builder.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/lidar_graph_slam.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/lidar_graph_slam_backend.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/lidar_graph_slam_frontend.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/loop_closure_branch_bound.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/loop_closure_candidate_nearest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/loop_closure_empty.cpp
