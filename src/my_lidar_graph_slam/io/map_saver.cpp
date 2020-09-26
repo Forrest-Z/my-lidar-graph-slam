@@ -29,65 +29,63 @@ MapSaver* MapSaver::Instance()
 }
 
 /* Save the entire map */
-bool MapSaver::SaveMap(const GridMapBuilderPtr& gridMapBuilder,
-                       const PoseGraphPtr& poseGraph,
-                       const std::string& fileName,
-                       bool drawTrajectory,
-                       bool saveMetadata) const
+bool MapSaver::SaveMap(
+    const GridMapType& globalMap,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const std::string& fileName,
+    const bool drawTrajectory,
+    const bool saveMetadata) const
 {
-    assert(gridMapBuilder->LocalMaps().size() > 0 &&
-           "Grid map is empty (contains no local map)");
-    assert(poseGraph->Nodes().size() > 0 &&
+    assert(!poseGraphNodes.empty() &&
            "Pose graph is empty (contains no node)");
 
     Options saveOptions;
     saveOptions.mDrawTrajectory = drawTrajectory;
     saveOptions.mTrajectoryNodeIdxMin = 0;
-    saveOptions.mTrajectoryNodeIdxMax = poseGraph->Nodes().size() - 1;
+    saveOptions.mTrajectoryNodeIdxMax = poseGraphNodes.size() - 1;
     saveOptions.mDrawScans = false;
     saveOptions.mSaveMetadata = saveMetadata;
     saveOptions.mFileName = fileName;
 
-    /* Construct the map that accommodates all scan data */
-    const GridMapType globalMap =
-        gridMapBuilder->ConstructGlobalMap(poseGraph);
-    
+    /* Global map accommodates all local grid maps acquired */
     /* Save the map image and metadata */
-    return this->SaveMapCore(globalMap, poseGraph, saveOptions);
+    return this->SaveMapCore(globalMap, poseGraphNodes, saveOptions);
 }
 
 /* Save the pose graph as JSON format */
-bool MapSaver::SavePoseGraph(const PoseGraphPtr& poseGraph,
-                             const std::string& fileName) const
+bool MapSaver::SavePoseGraph(
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const std::vector<Mapping::PoseGraph::Edge>& poseGraphEdges,
+    const std::string& fileName) const
 {
     pt::ptree jsonPoseGraph;
 
     /* Write the pose graph nodes */
-    pt::ptree poseGraphNodes;
+    pt::ptree poseGraphNodesTree;
 
-    for (const auto& node : poseGraph->Nodes()) {
+    for (const auto& node : poseGraphNodes) {
         pt::ptree nodeInfo;
         nodeInfo.put("Index", node.Index());
         nodeInfo.put("Pose.X", node.Pose().mX);
         nodeInfo.put("Pose.Y", node.Pose().mY);
         nodeInfo.put("Pose.Theta", node.Pose().mTheta);
         nodeInfo.put("TimeStamp", node.ScanData()->TimeStamp());
-        poseGraphNodes.push_back(std::make_pair("", nodeInfo));
+        poseGraphNodesTree.push_back(std::make_pair("", nodeInfo));
     }
 
-    jsonPoseGraph.add_child("PoseGraph.Nodes", poseGraphNodes);
+    jsonPoseGraph.add_child("PoseGraph.Nodes", poseGraphNodesTree);
 
     /* Write the pose graph edges */
-    pt::ptree poseGraphEdges;
+    pt::ptree poseGraphEdgesTree;
 
-    for (const auto& edge : poseGraph->Edges()) {
+    for (const auto& edge : poseGraphEdges) {
         pt::ptree edgeInfo;
         edgeInfo.put("StartNodeIdx", edge.StartNodeIndex());
         edgeInfo.put("EndNodeIdx", edge.EndNodeIndex());
         edgeInfo.put("RelativePose.X", edge.RelativePose().mX);
         edgeInfo.put("RelativePose.Y", edge.RelativePose().mY);
         edgeInfo.put("RelativePose.Theta", edge.RelativePose().mTheta);
-        
+
         /* Store information matrix elements (upper triangular) */
         pt::ptree infoMatElements;
         const Eigen::Matrix3d& infoMat = edge.InformationMatrix();
@@ -101,10 +99,10 @@ bool MapSaver::SavePoseGraph(const PoseGraphPtr& poseGraph,
         }
 
         edgeInfo.add_child("InformationMatrix", infoMatElements);
-        poseGraphEdges.push_back(std::make_pair("", edgeInfo));
+        poseGraphEdgesTree.push_back(std::make_pair("", edgeInfo));
     }
 
-    jsonPoseGraph.add_child("PoseGraph.Edges", poseGraphEdges);
+    jsonPoseGraph.add_child("PoseGraph.Edges", poseGraphEdgesTree);
 
     /* Save the pose graph as JSON format */
     try {
@@ -122,24 +120,25 @@ bool MapSaver::SavePoseGraph(const PoseGraphPtr& poseGraph,
 }
 
 /* Save local maps individually */
-bool MapSaver::SaveLocalMaps(const GridMapBuilderPtr& gridMapBuilder,
-                             const PoseGraphPtr& poseGraph,
-                             const std::string& fileName,
-                             bool drawTrajectory,
-                             bool saveMetadata) const
+bool MapSaver::SaveLocalMaps(
+    const std::vector<Mapping::GridMapBuilder::LocalMapInfo>& localMaps,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const bool drawTrajectory,
+    const bool saveMetadata,
+    const std::string& fileName) const
 {
-    assert(gridMapBuilder->LocalMaps().size() > 0 &&
+    assert(!localMaps.empty() &&
            "Grid map is empty (contains no local map)");
-    assert(poseGraph->Nodes().size() > 0 &&
+    assert(!poseGraphNodes.empty() &&
            "Pose graph is empty (contains no node)");
-    
+
     /* Save local maps individually as PNG images */
-    for (std::size_t i = 0; i < gridMapBuilder->LocalMaps().size(); ++i) {
+    for (std::size_t i = 0; i < localMaps.size(); ++i) {
         /* Retrieve the local map */
-        const auto& localMapInfo = gridMapBuilder->LocalMapAt(i);
+        const auto& localMapInfo = localMaps.at(i);
         const std::string localMapFileName =
             fileName + "-localmap-" + std::to_string(i);
-        
+
         Options saveOptions;
         saveOptions.mDrawTrajectory = drawTrajectory;
         saveOptions.mTrajectoryNodeIdxMin = localMapInfo.mPoseGraphNodeIdxMin;
@@ -149,7 +148,7 @@ bool MapSaver::SaveLocalMaps(const GridMapBuilderPtr& gridMapBuilder,
         saveOptions.mFileName = localMapFileName;
 
         /* Save the map image and metadata */
-        if (!this->SaveMapCore(localMapInfo.mMap, poseGraph, saveOptions))
+        if (!this->SaveMapCore(localMapInfo.mMap, poseGraphNodes, saveOptions))
             return false;
     }
 
@@ -157,39 +156,37 @@ bool MapSaver::SaveLocalMaps(const GridMapBuilderPtr& gridMapBuilder,
 }
 
 /* Save the grid map constructed from the latest scans */
-bool MapSaver::SaveLatestMap(const GridMapBuilderPtr& gridMapBuilder,
-                             const PoseGraphPtr& poseGraph,
-                             const std::string& fileName,
-                             bool drawTrajectory,
-                             bool saveMetadata) const
+bool MapSaver::SaveLatestMap(
+    const GridMapType& latestMap,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const bool drawTrajectory,
+    const int trajectoryNodeIdxMin,
+    const int trajectoryNodeIdxMax,
+    const bool saveMetadata,
+    const std::string& fileName) const
 {
-    const std::string latestMapFileName = fileName + "-latest-scans";
-
     Options saveOptions;
     saveOptions.mDrawTrajectory = drawTrajectory;
-    saveOptions.mTrajectoryNodeIdxMin = gridMapBuilder->LatestScanIdxMin();
-    saveOptions.mTrajectoryNodeIdxMax = gridMapBuilder->LatestScanIdxMax();
+    saveOptions.mTrajectoryNodeIdxMin = trajectoryNodeIdxMin;
+    saveOptions.mTrajectoryNodeIdxMax = trajectoryNodeIdxMax;
     saveOptions.mDrawScans = false;
     saveOptions.mSaveMetadata = saveMetadata;
-    saveOptions.mFileName = latestMapFileName;
+    saveOptions.mFileName = fileName + "-latest-map";
 
     /* Save the map image and metadata */
-    return this->SaveMapCore(
-        gridMapBuilder->LatestMap(), poseGraph, saveOptions);
+    return this->SaveMapCore(latestMap, poseGraphNodes, saveOptions);
 }
 
 /* Save the map and the scan */
-bool MapSaver::SaveLocalMapAndScan(const GridMapBuilderPtr& gridMapBuilder,
-                                   const PoseGraphPtr& poseGraph,
-                                   const std::size_t localMapIdx,
-                                   const RobotPose2D<double>& scanPose,
-                                   const ScanPtr& scanData,
-                                   bool drawTrajectory,
-                                   bool saveMetadata,
-                                   const std::string& fileName) const
+bool MapSaver::SaveLocalMapAndScan(
+    const Mapping::GridMapBuilder::LocalMapInfo& localMapInfo,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const RobotPose2D<double>& scanPose,
+    const ScanPtr& scanData,
+    bool drawTrajectory,
+    bool saveMetadata,
+    const std::string& fileName) const
 {
-    const auto& localMapInfo = gridMapBuilder->LocalMapAt(localMapIdx);
-
     Options saveOptions;
     saveOptions.mDrawTrajectory = drawTrajectory;
     saveOptions.mTrajectoryNodeIdxMin = localMapInfo.mPoseGraphNodeIdxMin;
@@ -199,24 +196,27 @@ bool MapSaver::SaveLocalMapAndScan(const GridMapBuilderPtr& gridMapBuilder,
     saveOptions.mScanData = scanData;
     saveOptions.mSaveMetadata = saveMetadata;
     saveOptions.mFileName = fileName;
-    
+
     /* Save the map image */
-    return this->SaveMapCore(localMapInfo.mMap, poseGraph, saveOptions);
+    return this->SaveMapCore(localMapInfo.mMap, poseGraphNodes, saveOptions);
 }
 
 /* Save the latest map and the scan */
-bool MapSaver::SaveLatestMapAndScan(const GridMapBuilderPtr& gridMapBuilder,
-                                    const PoseGraphPtr& poseGraph,
-                                    const RobotPose2D<double>& scanPose,
-                                    const ScanPtr& scanData,
-                                    bool drawTrajectory,
-                                    bool saveMetadata,
-                                    const std::string& fileName) const
+bool MapSaver::SaveLatestMapAndScan(
+    const GridMapType& latestMap,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const RobotPose2D<double>& scanPose,
+    const ScanPtr& scanData,
+    const bool drawTrajectory,
+    const int trajectoryNodeIdxMin,
+    const int trajectoryNodeIdxMax,
+    const bool saveMetadata,
+    const std::string& fileName) const
 {
     Options saveOptions;
     saveOptions.mDrawTrajectory = drawTrajectory;
-    saveOptions.mTrajectoryNodeIdxMin = gridMapBuilder->LatestScanIdxMin();
-    saveOptions.mTrajectoryNodeIdxMax = gridMapBuilder->LatestScanIdxMax();
+    saveOptions.mTrajectoryNodeIdxMin = trajectoryNodeIdxMin;
+    saveOptions.mTrajectoryNodeIdxMax = trajectoryNodeIdxMax;
     saveOptions.mDrawScans = true;
     saveOptions.mScanPose = scanPose;
     saveOptions.mScanData = scanData;
@@ -224,22 +224,20 @@ bool MapSaver::SaveLatestMapAndScan(const GridMapBuilderPtr& gridMapBuilder,
     saveOptions.mFileName = fileName;
 
     /* Save the map image */
-    return this->SaveMapCore(
-        gridMapBuilder->LatestMap(), poseGraph, saveOptions);
+    return this->SaveMapCore(latestMap, poseGraphNodes, saveOptions);
 }
 
-/* Save the precomputed grid maps */
-bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
-                                       const PoseGraphPtr& poseGraph,
-                                       const int mapIdx,
-                                       const std::string& fileName) const
+/* Save precomputed grid maps stored in a local grid map */
+bool MapSaver::SavePrecomputedGridMaps(
+    const Mapping::GridMapBuilder::LocalMapInfo& localMapInfo,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const std::string& fileName) const
 {
     Options saveOptions;
     saveOptions.mDrawTrajectory = false;
     saveOptions.mDrawScans = false;
     saveOptions.mSaveMetadata = false;
 
-    const auto& localMapInfo = gridMapBuilder->LocalMapAt(mapIdx);
     const auto& precompMaps = localMapInfo.mPrecomputedMaps;
 
     /* Convert the precomputed grid map and save */
@@ -268,7 +266,7 @@ bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
         const int winSize = 1 << nodeHeight;
         saveOptions.mFileName = fileName + "-" + std::to_string(winSize);
 
-        if (!this->SaveMapCore(gridMap, poseGraph, saveOptions))
+        if (!this->SaveMapCore(gridMap, poseGraphNodes, saveOptions))
             return false;
     }
 
@@ -276,20 +274,21 @@ bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
 }
 
 /* Draw the grid cells to the image */
-void MapSaver::DrawMap(const GridMapType& gridMap,
-                       const gil::rgb8_view_t& mapImageView,
-                       const Point2D<int>& patchIdxMin,
-                       const Point2D<int>& mapSizeInPatches) const
+void MapSaver::DrawMap(
+    const gil::rgb8_view_t& mapImageView,
+    const GridMapType& gridMap,
+    const Point2D<int>& patchIdxMin,
+    const Point2D<int>& mapSizeInPatches) const
 {
     /* Draw the patches to the image */
     for (int y = 0; y < mapSizeInPatches.mY; ++y) {
         for (int x = 0; x < mapSizeInPatches.mX; ++x) {
-            const Mapping::GridMapBuilder::PatchType& patch =
-                gridMap.PatchAt(patchIdxMin.mX + x, patchIdxMin.mY + y);
-            
+            const auto& patch = gridMap.PatchAt(
+                patchIdxMin.mX + x, patchIdxMin.mY + y);
+
             if (!patch.IsAllocated())
                 continue;
-            
+
             /* Draw the grid cells in the patch */
             for (int yy = 0; yy < gridMap.PatchSize(); ++yy) {
                 for (int xx = 0; xx < gridMap.PatchSize(); ++xx) {
@@ -317,43 +316,40 @@ void MapSaver::DrawMap(const GridMapType& gridMap,
 }
 
 /* Draw the trajectory lines to the image */
-void MapSaver::DrawTrajectory(const GridMapType& gridMap,
-                              const PoseGraphPtr& poseGraph,
-                              const gil::rgb8_view_t& mapImageView,
-                              const Point2D<int>& gridCellIdxMin,
-                              const Point2D<int>& mapSizeInGridCells,
-                              const std::size_t nodeIdxMin,
-                              const std::size_t nodeIdxMax) const
+void MapSaver::DrawTrajectory(
+    const gil::rgb8_view_t& mapImageView,
+    const GridMapType& gridMap,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const Point2D<int>& gridCellIdxMin,
+    const Point2D<int>& gridCellIdxMax,
+    const int nodeIdxMin,
+    const int nodeIdxMax) const
 {
     /* Input validity checks */
-    assert(nodeIdxMin < poseGraph->Nodes().size());
-    assert(nodeIdxMax < poseGraph->Nodes().size());
+    assert(nodeIdxMin >= 0 && nodeIdxMin < poseGraphNodes.size());
+    assert(nodeIdxMax >= 0 && nodeIdxMax < poseGraphNodes.size());
 
     /* Draw the trajectory lines to the image */
-    const auto& initialNode = poseGraph->NodeAt(nodeIdxMin);
+    const auto& initialNode = poseGraphNodes.at(nodeIdxMin);
     Point2D<int> prevGridCellIdx =
         gridMap.WorldCoordinateToGridCellIndex(
             initialNode.Pose().mX, initialNode.Pose().mY);
-    
-    const Point2D<int> gridCellIdxMax {
-        gridCellIdxMin.mX + mapSizeInGridCells.mX,
-        gridCellIdxMin.mY + mapSizeInGridCells.mY };
 
-    for (std::size_t i = nodeIdxMin + 1; i <= nodeIdxMax; ++i) {
-        const auto& node = poseGraph->NodeAt(i);
+    for (int i = nodeIdxMin + 1; i <= nodeIdxMax; ++i) {
+        const auto& node = poseGraphNodes.at(i);
         const Point2D<int> gridCellIdx =
             gridMap.WorldCoordinateToGridCellIndex(
                 node.Pose().mX, node.Pose().mY);
         const std::vector<Point2D<int>> lineIndices =
             Bresenham(prevGridCellIdx, gridCellIdx);
-        
-        for (const Point2D<int>& interpolatedIdx : lineIndices) {
+
+        for (const auto& interpolatedIdx : lineIndices) {
             if (interpolatedIdx.mX < gridCellIdxMin.mX ||
                 interpolatedIdx.mX >= gridCellIdxMax.mX - 1 ||
                 interpolatedIdx.mY < gridCellIdxMin.mY ||
                 interpolatedIdx.mY >= gridCellIdxMax.mY - 1)
                 continue;
-            
+
             const int x = interpolatedIdx.mX - gridCellIdxMin.mX;
             const int y = interpolatedIdx.mY - gridCellIdxMin.mY;
             gil::fill_pixels(gil::subimage_view(mapImageView, x, y, 2, 2),
@@ -365,21 +361,18 @@ void MapSaver::DrawTrajectory(const GridMapType& gridMap,
 }
 
 /* Draw the scans obtained at the specified node to the image */
-void MapSaver::DrawScan(const GridMapType& gridMap,
-                        const boost::gil::rgb8_view_t& mapImageView,
-                        const Point2D<int>& gridCellIdxMin,
-                        const Point2D<int>& mapSizeInGridCells,
-                        const RobotPose2D<double>& scanPose,
-                        const ScanPtr& scanData) const
+void MapSaver::DrawScan(
+    const boost::gil::rgb8_view_t& mapImageView,
+    const GridMapType& gridMap,
+    const Point2D<int>& gridCellIdxMin,
+    const Point2D<int>& gridCellIdxMax,
+    const RobotPose2D<double>& scanPose,
+    const ScanPtr& scanData) const
 {
-    const Point2D<int> gridCellIdxMax {
-        gridCellIdxMin.mX + mapSizeInGridCells.mX,
-        gridCellIdxMin.mY + mapSizeInGridCells.mY };
-    
     /* Draw the pose where the scan data is obtained to the image */
     const Point2D<int> scanPoseIdx =
         gridMap.WorldCoordinateToGridCellIndex(scanPose.mX, scanPose.mY);
-    
+
     if (scanPoseIdx.mX >= gridCellIdxMin.mX &&
         scanPoseIdx.mX < gridCellIdxMax.mX - 2 &&
         scanPoseIdx.mY >= gridCellIdxMin.mY &&
@@ -400,7 +393,7 @@ void MapSaver::DrawScan(const GridMapType& gridMap,
             scanData->HitPoint(sensorPose, i);
         const Point2D<int> hitPointIdx =
             gridMap.WorldCoordinateToGridCellIndex(hitPoint);
-        
+
         if (hitPointIdx.mX < gridCellIdxMin.mX ||
             hitPointIdx.mX >= gridCellIdxMax.mX - 1 ||
             hitPointIdx.mY < gridCellIdxMin.mY ||
@@ -416,9 +409,10 @@ void MapSaver::DrawScan(const GridMapType& gridMap,
 }
 
 /* Save the map image and metadata */
-bool MapSaver::SaveMapCore(const GridMapType& gridMap,
-                           const PoseGraphPtr& poseGraph,
-                           const Options& saveOptions) const
+bool MapSaver::SaveMapCore(
+    const GridMapType& gridMap,
+    const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
+    const Options& saveOptions) const
 {
     /* Compute the map size to be written to the image */
     Point2D<int> patchIdxMin;
@@ -436,22 +430,22 @@ bool MapSaver::SaveMapCore(const GridMapType& gridMap,
                                  mapSizeInGridCells.mY };
     const gil::rgb8_view_t& mapImageView = gil::view(mapImage);
     gil::fill_pixels(mapImageView, gil::rgb8_pixel_t(192, 192, 192));
-    
+
     /* Draw the grid cells to the image */
-    this->DrawMap(gridMap, mapImageView,
+    this->DrawMap(mapImageView, gridMap,
                   patchIdxMin, mapSizeInPatches);
 
     /* Draw the trajectory (pose graph nodes) of the robot */
     if (saveOptions.mDrawTrajectory)
-        this->DrawTrajectory(gridMap, poseGraph, mapImageView,
-                             gridCellIdxMin, mapSizeInGridCells,
+        this->DrawTrajectory(mapImageView, gridMap, poseGraphNodes,
+                             gridCellIdxMin, gridCellIdxMax,
                              saveOptions.mTrajectoryNodeIdxMin,
                              saveOptions.mTrajectoryNodeIdxMax);
-    
+
     /* Draw the scans to the image */
     if (saveOptions.mDrawScans)
-        this->DrawScan(gridMap, mapImageView,
-                       gridCellIdxMin, mapSizeInGridCells,
+        this->DrawScan(mapImageView, gridMap,
+                       gridCellIdxMin, gridCellIdxMax,
                        saveOptions.mScanPose, saveOptions.mScanData);
 
     /* Save the map as PNG image
@@ -474,15 +468,14 @@ bool MapSaver::SaveMapCore(const GridMapType& gridMap,
 
     if (!saveOptions.mSaveMetadata)
         return true;
-    
+
     /* Save the map metadata as JSON format */
     try {
         const std::string metadataFileName = saveOptions.mFileName + ".json";
         const Point2D<double> bottomLeft =
             gridMap.GridCellIndexToWorldCoordinate(gridCellIdxMin);
-        const Point2D<double> topRight {
-            bottomLeft.mX + mapSizeInGridCells.mX * gridMap.Resolution(),
-            bottomLeft.mY + mapSizeInGridCells.mY * gridMap.Resolution() };
+        const Point2D<double> topRight =
+            gridMap.GridCellIndexToWorldCoordinate(gridCellIdxMax);
         this->SaveMapMetadata(
             gridMap.Resolution(), gridMap.PatchSize(),
             mapSizeInPatches, mapSizeInGridCells,
@@ -502,15 +495,16 @@ bool MapSaver::SaveMapCore(const GridMapType& gridMap,
 }
 
 /* Save the map metadata as JSON format */
-void MapSaver::SaveMapMetadata(double mapResolution,
-                               int patchSize,
-                               const Point2D<int>& mapSizeInPatches,
-                               const Point2D<int>& mapSizeInGridCells,
-                               const Point2D<double>& bottomLeft,
-                               const Point2D<double>& topRight,
-                               const std::size_t nodeIdxMin,
-                               const std::size_t nodeIdxMax,
-                               const std::string& fileName) const
+void MapSaver::SaveMapMetadata(
+    const double mapResolution,
+    const int patchSize,
+    const Point2D<int>& mapSizeInPatches,
+    const Point2D<int>& mapSizeInGridCells,
+    const Point2D<double>& bottomLeft,
+    const Point2D<double>& topRight,
+    const std::size_t nodeIdxMin,
+    const std::size_t nodeIdxMax,
+    const std::string& fileName) const
 {
     pt::ptree jsonMetadata;
 
