@@ -44,26 +44,36 @@ struct ScanMatchingQuery final
     const RobotPose2D<double>         mInitialPose;
 };
 
+/*
+ * ScanMatchingSummary struct holds the details of the scan matching result
+ */
+struct ScanMatchingSummary final
+{
+    /* Constructor */
+    ScanMatchingSummary(const double normalizedCost,
+                        const RobotPose2D<double>& estimatedPose,
+                        const Eigen::Matrix3d& estimatedCovariance) :
+        mNormalizedCost(normalizedCost),
+        mEstimatedPose(estimatedPose),
+        mEstimatedCovariance(estimatedCovariance) { }
+
+    /* Destructor */
+    ~ScanMatchingSummary() = default;
+
+    /* Normalized cost value */
+    const double              mNormalizedCost;
+    /* Estimated robot pose */
+    const RobotPose2D<double> mEstimatedPose;
+    /* Estimated pose covariance */
+    const Eigen::Matrix3d     mEstimatedCovariance;
+};
+
 /* Type definitions for convenience */
 class ScanMatcher;
 using ScanMatcherPtr = std::shared_ptr<ScanMatcher>;
 
 class ScanMatcher
 {
-public:
-    /*
-     * Summary struct holds the details of the scan matching result
-     */
-    struct Summary
-    {
-        /* Normalized cost value */
-        double              mNormalizedCost;
-        /* Estimated robot pose */
-        RobotPose2D<double> mEstimatedPose;
-        /* Estimated pose covariance */
-        Eigen::Matrix3d     mEstimatedCovariance;
-    };
-
 public:
     /* Type definitions */
     using GridMapType = GridMapBuilder::GridMapType;
@@ -84,10 +94,8 @@ public:
     ScanMatcher& operator=(ScanMatcher&&) = delete;
 
     /* Optimize the robot pose by scan matching */
-    virtual void OptimizePose(
-        const ScanMatchingQuery& queryInfo,
-        Summary& resultSummary) = 0;
-
+    virtual ScanMatchingSummary OptimizePose(
+        const ScanMatchingQuery& queryInfo) = 0;
 };
 
 } /* namespace Mapping */

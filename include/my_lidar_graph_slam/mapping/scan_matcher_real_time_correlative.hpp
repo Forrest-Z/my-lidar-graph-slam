@@ -31,8 +31,8 @@ public:
     ~ScanMatcherRealTimeCorrelative() = default;
 
     /* Optimize the robot pose by scan matching */
-    void OptimizePose(const ScanMatchingQuery& queryInfo,
-                      Summary& resultSummary) override;
+    ScanMatchingSummary OptimizePose(
+        const ScanMatchingQuery& queryInfo) override;
 
 private:
     /* Compute the search step */

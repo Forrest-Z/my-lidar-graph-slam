@@ -35,9 +35,8 @@ ScanMatcherLinearSolver::ScanMatcherLinearSolver(
 }
 
 /* Optimize the robot pose by scan matching */
-void ScanMatcherLinearSolver::OptimizePose(
-    const ScanMatchingQuery& queryInfo,
-    Summary& resultSummary)
+ScanMatchingSummary ScanMatcherLinearSolver::OptimizePose(
+    const ScanMatchingQuery& queryInfo)
 {
     /* Retrieve the query information */
     const auto& gridMap = queryInfo.mGridMap;
@@ -68,22 +67,19 @@ void ScanMatcherLinearSolver::OptimizePose(
         prevCost = cost;
     }
 
+    /* Compute the normalized cost value */
+    const double normalizedCost = cost / scanData->NumOfScans();
     /* Calculate the pose covariance matrix */
-    const Eigen::Matrix3d covMat = this->mCostFunc->ComputeCovariance(
-        gridMap, scanData, sensorPose);
-
+    const Eigen::Matrix3d estimatedCovariance =
+        this->mCostFunc->ComputeCovariance(gridMap, scanData, sensorPose);
     /* Calculate the robot pose from the updated sensor pose */
-    const RobotPose2D<double> robotPose = MoveBackward(sensorPose, relPose);
+    const RobotPose2D<double> estimatedPose =
+        MoveBackward(sensorPose, relPose);
 
-    /* Setup the result summary */
-    /* Set the normalized cost value */
-    resultSummary.mNormalizedCost = cost / scanData->NumOfScans();
-    /* Set the estimated robot pose */
-    resultSummary.mEstimatedPose = robotPose;
-    /* Set the estimated pose covariance matrix */
-    resultSummary.mEstimatedCovariance = covMat;
-
-    return;
+    /* Return the normalized cost value, the estimated robot pose,
+     * and the estimated pose covariance matrix in a world frame */
+    return ScanMatchingSummary {
+        normalizedCost, estimatedPose, estimatedCovariance };
 }
 
 /* Perform one optimization step */

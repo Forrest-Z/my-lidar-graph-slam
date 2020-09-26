@@ -28,9 +28,8 @@ ScanMatcherRealTimeCorrelative::ScanMatcherRealTimeCorrelative(
 }
 
 /* Optimize the robot pose by scan matching */
-void ScanMatcherRealTimeCorrelative::OptimizePose(
-    const ScanMatchingQuery& queryInfo,
-    Summary& resultSummary)
+ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
+    const ScanMatchingQuery& queryInfo)
 {
     /* Retrieve the query information */
     const auto& gridMap = queryInfo.mGridMap;
@@ -105,27 +104,23 @@ void ScanMatcherRealTimeCorrelative::OptimizePose(
         sensorPose.mX + bestWinX * stepX,
         sensorPose.mY + bestWinY * stepY,
         sensorPose.mTheta + bestWinTheta * stepTheta };
-
-    /* Compute the pose covariance matrix */
-    const Eigen::Matrix3d covMat = this->mCostFunc->ComputeCovariance(
-        gridMap, scanData, bestSensorPose);
     /* Evaluate the cost value */
     const double costVal = this->mCostFunc->Cost(
         gridMap, scanData, bestSensorPose);
 
+    /* Compute the normalized cost value */
+    const double normalizedCost = costVal / scanData->NumOfScans();
+    /* Compute the pose covariance matrix */
+    const Eigen::Matrix3d estimatedCovariance =
+        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
     /* Compute the robot pose from the updated sensor pose */
-    const RobotPose2D<double> robotPose =
+    const RobotPose2D<double> estimatedPose =
         MoveBackward(bestSensorPose, relPose);
 
-    /* Setup the result summary */
-    /* Set the normalized cost value */
-    resultSummary.mNormalizedCost = costVal / scanData->NumOfScans();
-    /* Set the estimated robot pose */
-    resultSummary.mEstimatedPose = robotPose;
-    /* Set the estimated pose covariance matrix */
-    resultSummary.mEstimatedCovariance = covMat;
-
-    return;
+    /* Return the normalized cost value, the estimated robot pose,
+     * and the estimated pose covariance matrix in a world frame */
+    return ScanMatchingSummary {
+        normalizedCost, estimatedPose, estimatedCovariance };
 }
 
 /* Compute the search step */

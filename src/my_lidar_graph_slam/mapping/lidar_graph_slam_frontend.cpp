@@ -94,17 +94,14 @@ bool LidarGraphSlamFrontend::ProcessScan(
             std::move(latestMap), scanData, initialPose };
         /* Perform scan matching against the grid map that contains
          * the latest scans and obtain the result */
-        ScanMatcher::Summary scanMatchSummary;
-        this->mScanMatcher->OptimizePose(queryInfo, scanMatchSummary);
-
-        const RobotPose2D<double>& estimatedPose =
-            scanMatchSummary.mEstimatedPose;
-        const Eigen::Matrix3d& estimatedCovariance =
-            scanMatchSummary.mEstimatedCovariance;
+        const ScanMatchingSummary matchingSummary =
+            this->mScanMatcher->OptimizePose(queryInfo);
 
         /* Append a new pose graph node and odometry edge */
         pParent->AppendOdometryNodeAndEdge(
-            estimatedPose, estimatedCovariance, scanData);
+            matchingSummary.mEstimatedPose,
+            matchingSummary.mEstimatedCovariance,
+            scanData);
     }
 
     /* Integrate the scan data into the grid map and

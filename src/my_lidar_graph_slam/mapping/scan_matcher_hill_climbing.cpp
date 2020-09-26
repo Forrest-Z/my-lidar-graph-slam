@@ -23,9 +23,8 @@ ScanMatcherHillClimbing::ScanMatcherHillClimbing(
 }
 
 /* Optimize the robot pose by scan matching */
-void ScanMatcherHillClimbing::OptimizePose(
-    const ScanMatchingQuery& queryInfo,
-    Summary& resultSummary)
+ScanMatchingSummary ScanMatcherHillClimbing::OptimizePose(
+    const ScanMatchingQuery& queryInfo)
 {
     /* Constants used for hill-climbing method */
     static const double moveX[] = { 1.0, -1.0, 0.0, 0.0, 0.0, 0.0 };
@@ -49,7 +48,7 @@ void ScanMatcherHillClimbing::OptimizePose(
     int numOfIterations = 0;
     /* The number of refinements (step parameter updates) */
     int numOfRefinements = 0;
-    
+
     double currentLinearStep = this->mLinearStep;
     double currentAngularStep = this->mAngularStep;
     bool poseUpdated = false;
@@ -92,23 +91,20 @@ void ScanMatcherHillClimbing::OptimizePose(
         }
     } while ((poseUpdated || numOfRefinements < this->mMaxNumOfRefinements) &&
              (++numOfIterations < this->mMaxIterations));
-    
+
+    /* Compute the normalized cost value */
+    const double normalizedCost = minCost / scanData->NumOfScans();
     /* Calculate the pose covariance matrix */
-    const Eigen::Matrix3d covMat = this->mCostFunc->ComputeCovariance(
-        gridMap, scanData, bestPose);
-
+    const Eigen::Matrix3d estimatedCovariance =
+        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestPose);
     /* Calculate the robot pose from the updated sensor pose */
-    const RobotPose2D<double> robotPose = MoveBackward(bestPose, relPose);
-    
-    /* Setup the result summary */
-    /* Set the normalized cost value */
-    resultSummary.mNormalizedCost = minCost / scanData->NumOfScans();
-    /* Set the estimated robot pose */
-    resultSummary.mEstimatedPose = robotPose;
-    /* Set the estimated pose covariance matrix */
-    resultSummary.mEstimatedCovariance = covMat;
+    const RobotPose2D<double> estimatedPose =
+        MoveBackward(bestPose, relPose);
 
-    return;
+    /* Return the normalized cost value, the estimated robot pose,
+     * and the estimated pose covariance matrix in a world frame */
+    return ScanMatchingSummary {
+        normalizedCost, estimatedPose, estimatedCovariance };
 }
 
 } /* namespace Mapping */
