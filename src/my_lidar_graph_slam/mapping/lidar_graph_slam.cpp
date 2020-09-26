@@ -47,8 +47,24 @@ int LidarGraphSlam::ProcessCount() const
     return this->mFrontend->ProcessCount();
 }
 
+/* Retrieve the full pose graph information */
+void LidarGraphSlam::GetPoseGraph(
+    std::vector<PoseGraph::Node>& poseGraphNodes,
+    std::vector<PoseGraph::Edge>& poseGraphEdges) const
+{
+    /* Acquire the unique lock */
+    std::unique_lock uniqueLock { this->mMutex };
+
+    poseGraphNodes.reserve(this->mPoseGraph->Nodes().size());
+    poseGraphEdges.reserve(this->mPoseGraph->Edges().size());
+
+    /* Copy the pose graph nodes and edges */
+    poseGraphNodes = this->mPoseGraph->Nodes();
+    poseGraphEdges = this->mPoseGraph->Edges();
+}
+
 /* Retrieve the pose graph information */
-void LidarGraphSlam::GetPoseGraphData(
+void LidarGraphSlam::GetPoseGraph(
     std::map<int, NodePosition>& poseGraphNodes,
     std::vector<EdgeConnection>& poseGraphEdges) const
 {

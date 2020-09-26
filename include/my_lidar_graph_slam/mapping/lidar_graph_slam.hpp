@@ -72,8 +72,12 @@ public:
     /* Retrieve the total number of the processed input data */
     int ProcessCount() const;
 
+    /* Retrieve the full pose graph information */
+    void GetPoseGraph(
+        std::vector<PoseGraph::Node>& poseGraphNodes,
+        std::vector<PoseGraph::Edge>& poseGraphEdges) const;
     /* Retrieve the pose graph information */
-    void GetPoseGraphData(
+    void GetPoseGraph(
         std::map<int, NodePosition>& poseGraphNodes,
         std::vector<EdgeConnection>& poseGraphEdges) const;
 
