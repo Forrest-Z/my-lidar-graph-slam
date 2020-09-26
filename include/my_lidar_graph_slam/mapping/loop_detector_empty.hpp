@@ -18,7 +18,7 @@ public:
     ~LoopDetectorEmpty() = default;
 
     /* Do nothing for a loop detection */
-    bool FindLoop(
+    bool Detect(
         LoopDetectionQueryVector& loopDetectionQueries,
         LoopDetectionResultVector& loopDetectionResults) override;
 };

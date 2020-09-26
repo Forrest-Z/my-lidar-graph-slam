@@ -45,7 +45,7 @@ public:
     ~LoopDetectorGridSearch() = default;
 
     /* Find a loop and return a loop constraint */
-    bool FindLoop(
+    bool Detect(
         LoopDetectionQueryVector& loopDetectionQueries,
         LoopDetectionResultVector& loopDetectionResults) override;
 

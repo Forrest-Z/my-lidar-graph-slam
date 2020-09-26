@@ -106,7 +106,7 @@ public:
     /* Find a loop and return a loop constraint
      * Current scan data stored in the latest pose graph node is
      * matched against the previous local grid map */
-    virtual bool FindLoop(
+    virtual bool Detect(
         LoopDetectionQueryVector& loopDetectionQueries,
         LoopDetectionResultVector& loopDetectionResults) = 0;
 };

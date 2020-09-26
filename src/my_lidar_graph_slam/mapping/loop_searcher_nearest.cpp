@@ -9,7 +9,7 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Find a local map and a pose graph node used for loop detection */
-LoopCandidateVector LoopSearcherNearest::Find(
+LoopCandidateVector LoopSearcherNearest::Search(
     const LoopSearchHint& searchHint)
 {
     const auto& poseGraphNodes = searchHint.mPoseGraphNodes;

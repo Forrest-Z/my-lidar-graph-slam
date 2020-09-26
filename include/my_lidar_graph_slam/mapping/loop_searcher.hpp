@@ -94,7 +94,7 @@ public:
     virtual ~LoopSearcher() = default;
 
     /* Find a local map and a pose graph node for loop detection */
-    virtual LoopCandidateVector Find(
+    virtual LoopCandidateVector Search(
         const LoopSearchHint& searchHint) = 0;
 };
 

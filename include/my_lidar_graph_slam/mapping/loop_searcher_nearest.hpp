@@ -23,7 +23,7 @@ public:
     ~LoopSearcherNearest() = default;
 
     /* Find a local map and a pose graph node used for loop detection */
-    LoopCandidateVector Find(
+    LoopCandidateVector Search(
         const LoopSearchHint& searchHint) override;
 
 private:

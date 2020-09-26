@@ -12,7 +12,7 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Find a loop and return a loop constraint */
-bool LoopDetectorBranchBound::FindLoop(
+bool LoopDetectorBranchBound::Detect(
     LoopDetectionQueryVector& loopDetectionQueries,
     LoopDetectionResultVector& loopDetectionResults)
 {
