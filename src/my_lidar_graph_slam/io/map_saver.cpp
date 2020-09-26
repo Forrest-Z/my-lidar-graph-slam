@@ -275,54 +275,6 @@ bool MapSaver::SavePrecomputedGridMaps(const GridMapBuilderPtr& gridMapBuilder,
     return true;
 }
 
-/* Determine the actual map size */
-void MapSaver::ComputeActualMapSize(const GridMapType& gridMap,
-                                    Point2D<int>& patchIdxMin,
-                                    Point2D<int>& gridCellIdxMin,
-                                    Point2D<int>& mapSizeInPatches,
-                                    Point2D<int>& mapSizeInGridCells) const
-{
-    /* Get the range of the patch index (bounding box)
-     * [patchIdxMin.mX, patchIdxMax.mX], [patchIdxMin.mY, patchIdxMax.mY] */
-    patchIdxMin.mX = std::numeric_limits<int>::max();
-    patchIdxMin.mY = std::numeric_limits<int>::max();
-    
-    Point2D<int> patchIdxMax;
-    patchIdxMax.mX = std::numeric_limits<int>::min();
-    patchIdxMax.mY = std::numeric_limits<int>::min();
-    
-    for (int y = 0; y < gridMap.NumOfPatchesY(); ++y) {
-        for (int x = 0; x < gridMap.NumOfPatchesX(); ++x) {
-            if (!gridMap.PatchIsAllocated(x, y))
-                continue;
-            
-            patchIdxMin.mX = std::min(patchIdxMin.mX, x);
-            patchIdxMin.mY = std::min(patchIdxMin.mY, y);
-            patchIdxMax.mX = std::max(patchIdxMax.mX, x);
-            patchIdxMax.mY = std::max(patchIdxMax.mY, y);
-        }
-    }
-
-    /* Convert the patch index ranges to grid cell index ranges */
-    Point2D<int> gridCellIdxTmp;
-    Point2D<int> gridCellIdxMax;
-    gridMap.PatchIndexToGridCellIndexRange(
-        patchIdxMin, gridCellIdxMin, gridCellIdxTmp);
-    gridMap.PatchIndexToGridCellIndexRange(
-        patchIdxMax, gridCellIdxTmp, gridCellIdxMax);
-    
-    /* Compute the actual map size */
-    mapSizeInPatches.mX = patchIdxMax.mX - patchIdxMin.mX + 1;
-    mapSizeInPatches.mY = patchIdxMax.mY - patchIdxMin.mY + 1;
-    mapSizeInGridCells.mX = gridCellIdxMax.mX - gridCellIdxMin.mX;
-    mapSizeInGridCells.mY = gridCellIdxMax.mY - gridCellIdxMin.mY;
-
-    assert(mapSizeInGridCells.mX ==
-           mapSizeInPatches.mX * gridMap.PatchSize());
-    assert(mapSizeInGridCells.mY ==
-           mapSizeInPatches.mY * gridMap.PatchSize());
-}
-
 /* Draw the grid cells to the image */
 void MapSaver::DrawMap(const GridMapType& gridMap,
                        const gil::rgb8_view_t& mapImageView,
@@ -470,12 +422,14 @@ bool MapSaver::SaveMapCore(const GridMapType& gridMap,
 {
     /* Compute the map size to be written to the image */
     Point2D<int> patchIdxMin;
+    Point2D<int> patchIdxMax;
     Point2D<int> gridCellIdxMin;
+    Point2D<int> gridCellIdxMax;
     Point2D<int> mapSizeInPatches;
     Point2D<int> mapSizeInGridCells;
-    this->ComputeActualMapSize(gridMap,
-                               patchIdxMin, gridCellIdxMin,
-                               mapSizeInPatches, mapSizeInGridCells);
+    gridMap.ComputeActualMapSize(patchIdxMin, patchIdxMax,
+                                 gridCellIdxMin, gridCellIdxMax,
+                                 mapSizeInPatches, mapSizeInGridCells);
 
     /* Initialize the image */
     gil::rgb8_image_t mapImage { mapSizeInGridCells.mX,

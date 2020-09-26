@@ -128,13 +128,6 @@ public:
                                  const std::string& fileName) const;
     
 private:
-    /* Determine the actual map size */
-    void ComputeActualMapSize(const GridMapType& gridMap,
-                              Point2D<int>& patchIdxMin,
-                              Point2D<int>& gridCellIdxMin,
-                              Point2D<int>& mapSizeInPatches,
-                              Point2D<int>& mapSizeInGridCells) const;
-    
     /* Draw the grid cells to the image */
     void DrawMap(const GridMapType& gridMap,
                  const boost::gil::rgb8_view_t& mapImageView,

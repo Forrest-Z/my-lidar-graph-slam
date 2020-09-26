@@ -251,6 +251,14 @@ public:
     const Patch<T>& PatchAt(const Point2D<int>& patchIdx) const
     { return this->PatchAt(patchIdx.mX, patchIdx.mY); }
 
+    /* Compute the actual grid map size */
+    void ComputeActualMapSize(Point2D<int>& patchIdxMin,
+                              Point2D<int>& patchIdxMax,
+                              Point2D<int>& gridCellIdxMin,
+                              Point2D<int>& gridCellIdxMax,
+                              Point2D<int>& mapSizeInPatches,
+                              Point2D<int>& mapSizeInGridCells) const;
+
     /* Get the map resolution (grid cell size in meters) */
     inline double Resolution() const override
     { return this->mResolution; }
@@ -954,6 +962,56 @@ const Patch<T>& GridMap<T>::PatchAt(int patchIdxX, int patchIdxY) const
 {
     assert(this->PatchIsInside(patchIdxX, patchIdxY));
     return this->mPatches[patchIdxY * this->mNumOfPatchesX + patchIdxX];
+}
+
+/* Compute the actual grid map size */
+template <typename T>
+void GridMap<T>::ComputeActualMapSize(
+    Point2D<int>& patchIdxMin,
+    Point2D<int>& patchIdxMax,
+    Point2D<int>& gridCellIdxMin,
+    Point2D<int>& gridCellIdxMax,
+    Point2D<int>& mapSizeInPatches,
+    Point2D<int>& mapSizeInGridCells) const
+{
+    /* Get the range of the patch index (bounding box)
+     * [patchIdxMin.mX, patchIdxMax.mX], [patchIdxMin.mY, patchIdxMax.mY] */
+    patchIdxMin.mX = std::numeric_limits<int>::max();
+    patchIdxMin.mY = std::numeric_limits<int>::max();
+    patchIdxMax.mX = std::numeric_limits<int>::min();
+    patchIdxMax.mY = std::numeric_limits<int>::min();
+
+    for (int y = 0; y < this->mNumOfPatchesY; ++y) {
+        for (int x = 0; x < this->mNumOfPatchesX; ++x) {
+            if (!this->PatchIsAllocated(x, y))
+                continue;
+
+            patchIdxMin.mX = std::min(patchIdxMin.mX, x);
+            patchIdxMin.mY = std::min(patchIdxMin.mY, y);
+            patchIdxMax.mX = std::max(patchIdxMax.mX, x);
+            patchIdxMax.mY = std::max(patchIdxMax.mY, y);
+        }
+    }
+
+    /* Convert the patch index ranges to grid cell index ranges */
+    Point2D<int> gridCellIdxTmp;
+    this->PatchIndexToGridCellIndexRange(
+        patchIdxMin, gridCellIdxMin, gridCellIdxTmp);
+    this->PatchIndexToGridCellIndexRange(
+        patchIdxMax, gridCellIdxTmp, gridCellIdxMax);
+
+    /* Correct the maximum grid patch index */
+    patchIdxMax.mX += 1;
+    patchIdxMax.mY += 1;
+
+    /* Compute the actual map size */
+    mapSizeInPatches.mX = patchIdxMax.mX - patchIdxMin.mX;
+    mapSizeInPatches.mY = patchIdxMax.mY - patchIdxMin.mY;
+    mapSizeInGridCells.mX = gridCellIdxMax.mX - gridCellIdxMin.mX;
+    mapSizeInGridCells.mY = gridCellIdxMax.mY - gridCellIdxMin.mY;
+
+    assert(mapSizeInGridCells.mX == mapSizeInPatches.mX * this->mPatchSize);
+    assert(mapSizeInGridCells.mY == mapSizeInPatches.mY * this->mPatchSize);
 }
 
 } /* namespace MyLidarGraphSlam */
