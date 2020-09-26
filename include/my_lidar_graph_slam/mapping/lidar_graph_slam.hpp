@@ -115,6 +115,13 @@ public:
     void PerformOptimization(
         const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer);
 
+    /* Retrieve a latest map that contains latest scans */
+    GridMapType GetLatestMap(int& poseGraphNodeIdxMin,
+                             int& poseGraphNodeIdxMax) const;
+    /* Build a global map that contains all local grid maps acquired */
+    GridMapType GetGlobalMap(int& poseGraphNodeIdxMin,
+                             int& poseGraphNodeIdxMax) const;
+
     /* Start the SLAM backend */
     void StartBackend();
     /* Stop the SLAM backend */

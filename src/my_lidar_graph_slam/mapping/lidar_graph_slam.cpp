@@ -294,6 +294,32 @@ void LidarGraphSlam::PerformOptimization(
     this->mGridMapBuilder->AfterLoopClosure(this->mPoseGraph);
 }
 
+/* Retrieve a latest map that contains latest scans */
+LidarGraphSlam::GridMapType LidarGraphSlam::GetLatestMap(
+    int& poseGraphNodeIdxMin, int& poseGraphNodeIdxMax) const
+{
+    /* Acquire the unique lock */
+    std::unique_lock uniqueLock { this->mMutex };
+    /* Set the index range of the pose graph node */
+    poseGraphNodeIdxMin = this->mGridMapBuilder->LatestScanIdxMin();
+    poseGraphNodeIdxMax = this->mGridMapBuilder->LatestScanIdxMax();
+    /* Return a latest map */
+    return this->mGridMapBuilder->LatestMap();
+}
+
+/* Build a global map that contains all local grid maps acquired */
+LidarGraphSlam::GridMapType LidarGraphSlam::GetGlobalMap(
+    int& poseGraphNodeIdxMin, int& poseGraphNodeIdxMax) const
+{
+    /* Acquire the unique lock */
+    std::unique_lock uniqueLock { this->mMutex };
+    /* Set the index range of the pose graph node */
+    poseGraphNodeIdxMin = this->mPoseGraph->Nodes().front().Index();
+    poseGraphNodeIdxMax = this->mPoseGraph->Nodes().back().Index();
+    /* Return a global map */
+    return this->mGridMapBuilder->ConstructGlobalMap(this->mPoseGraph);
+}
+
 /* Start the SLAM backend */
 void LidarGraphSlam::StartBackend()
 {
