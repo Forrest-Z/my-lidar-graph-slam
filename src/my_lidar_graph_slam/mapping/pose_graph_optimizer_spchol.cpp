@@ -23,23 +23,24 @@ void PoseGraphOptimizerSpChol::Optimize(
 
     /* Total number of the variables in the linear system */
     const int numOfVariables = 3 * numOfNodes;
-
-    /* Allocate memory space for vectors and matrices */
-    /* Left-hand side sparse matrix of the linear system */
-    Eigen::SparseMatrix<double> matA { numOfVariables, numOfVariables };
-    /* Right-hand side vector of the linear system */
-    Eigen::VectorXd vecB { numOfVariables };
-    /* Result of the Sparse Cholesky factorization */
-    Eigen::VectorXd vecDelta { numOfVariables };
-
-    /* Initialize triplets */
+    /* Total number of the non-zero elements in the sparse matrix */
     const std::size_t numOfNonzeroElements = 4 * (3 * 3) * numOfEdges;
-    std::vector<Eigen::Triplet<double>> matATriplets { numOfNonzeroElements };
+
+    /* Resize vectors and matrices */
+    /* Resize the left-hand side sparse matrix of the linear system */
+    this->mMatA.resize(numOfVariables, numOfVariables);
+    /* Resize the right-hand side vector of the linear system */
+    this->mVecB.resize(numOfVariables);
+    /* Resize the result of the Sparse Cholesky factorization */
+    this->mVecDelta.resize(numOfVariables);
+    /* Resize the vector of the sparse matrix non-zero elements */
+    this->mMatATriplets.reserve(numOfNonzeroElements);
 
     while (true) {
         /* Perform one optimization step */
         this->OptimizeStep(poseGraphNodes, poseGraphEdges,
-                           matA, vecB, vecDelta, matATriplets);
+                           this->mMatA, this->mVecB,
+                           this->mVecDelta, this->mMatATriplets);
         /* Compute the total error */
         totalError = this->ComputeTotalError(poseGraphNodes, poseGraphEdges);
 
@@ -74,10 +75,8 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
     const int numOfVariables = 3 * numOfNodes;
 
     /* Clear all vectors and matrices */
-    matA.setZero();
     matATriplets.clear();
     vecB.setZero();
-    vecDelta.setZero();
 
     /* Setup the left-hand side sparse matrix H */
     for (const auto& edge : poseGraphEdges) {

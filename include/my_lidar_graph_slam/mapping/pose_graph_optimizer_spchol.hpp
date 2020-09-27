@@ -76,13 +76,22 @@ private:
 
 private:
     /* Maximum number of the optimization iterations */
-    int    mNumOfIterationsMax;
+    int                                 mNumOfIterationsMax;
     /* Error tolerance to check the convergence */
-    double mErrorTolerance;
+    double                              mErrorTolerance;
     /* Damping factor used in Levenberg-Marquardt method
      * The method is almost the same as Gauss-Newton method when small,
      * and is gradient descent method when large */
-    double mLambda;
+    double                              mLambda;
+
+    /* Left-hand side sparse matrix of the linear system */
+    Eigen::SparseMatrix<double>         mMatA;
+    /* Right-hand side vector of the linear system */
+    Eigen::VectorXd                     mVecB;
+    /* Result of the Sparse Cholesky factorization */
+    Eigen::VectorXd                     mVecDelta;
+    /* Vector of the sparse matrix non-zero elements (triplets) */
+    std::vector<Eigen::Triplet<double>> mMatATriplets;
 };
 
 } /* namespace Mapping */
