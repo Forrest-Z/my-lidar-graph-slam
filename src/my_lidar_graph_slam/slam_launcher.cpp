@@ -613,6 +613,37 @@ void LoadCarmenLog(const fs::path& logFilePath,
     logFile.close();
 }
 
+/* LauncherSettings struct stores configurations for SLAM launcher */
+struct LauncherSettings
+{
+    bool mGuiEnabled;
+    int  mDrawFrameInterval;
+    bool mWaitForKey;
+};
+
+/* Load settings from JSON format configuration file */
+void LoadSettings(const fs::path& settingsFilePath,
+                  Mapping::LidarGraphSlamPtr& pLidarGraphSlam,
+                  LauncherSettings& launcherSettings)
+{
+    /* Load settings from JSON configuration file */
+    pt::ptree jsonSettings;
+    pt::read_json(settingsFilePath, jsonSettings);
+
+    /* Read settings for gnuplot GUI */
+    launcherSettings.mGuiEnabled =
+        jsonSettings.get("Launcher.GuiEnabled", true);
+    launcherSettings.mDrawFrameInterval =
+        jsonSettings.get("Launcher.DrawFrameInterval", 5);
+
+    /* Read settings for SLAM launcher */
+    launcherSettings.mWaitForKey =
+        jsonSettings.get("Launcher.WaitForKey", false);
+
+    /* Construct LiDAR Graph-Based SLAM */
+    pLidarGraphSlam = CreateLidarGraphSlam(jsonSettings);
+}
+
 int main(int argc, char** argv)
 {
     if (argc < 3) {
@@ -640,30 +671,17 @@ int main(int argc, char** argv)
     if (logData.empty())
         return EXIT_FAILURE;
 
-    /* Load settings from JSON file */
-    pt::ptree jsonSettings;
-    pt::read_json(settingsFilePath, jsonSettings);
-
-    /* Construct LiDAR Graph-Based SLAM */
-    auto pLidarGraphSlam = CreateLidarGraphSlam(jsonSettings);
-
-    /* Read the settings for Gnuplot GUI */
-    const bool guiEnabled =
-        jsonSettings.get("Launcher.GuiEnabled", true);
-    const int drawFrameInterval =
-        jsonSettings.get("Launcher.DrawFrameInterval", 5);
-    
-    std::cerr << "Carmen log file loaded: "
-              << logFilePath.c_str() << std::endl
-              << "JSON setting file loaded: "
-              << settingsFilePath.c_str() << std::endl
-              << "Output name: "
-              << outputFilePath.c_str() << std::endl;
+    /* Load settings from JSON configuration file */
+    Mapping::LidarGraphSlamPtr pLidarGraphSlam;
+    LauncherSettings launcherSettings;
+    LoadSettings(settingsFilePath, pLidarGraphSlam, launcherSettings);
 
     /* Start the SLAM backend */
     pLidarGraphSlam->StartBackend();
 
-    IO::GnuplotHelper gnuplotHelper;
+    /* Setup gnuplot helper */
+    auto pGnuplotHelper = launcherSettings.mGuiEnabled ?
+        std::make_unique<IO::GnuplotHelper>() : nullptr;
 
     for (const auto& sensorData : logData) {
         auto scanData = std::dynamic_pointer_cast<
@@ -676,9 +694,10 @@ int main(int argc, char** argv)
         const bool mapUpdated = pLidarGraphSlam->ProcessScan(
             scanData, scanData->OdomPose());
 
-        if (!guiEnabled || !mapUpdated)
+        if (!launcherSettings.mGuiEnabled || !mapUpdated)
             continue;
-        if (pLidarGraphSlam->ProcessCount() % drawFrameInterval != 0)
+        if (pLidarGraphSlam->ProcessCount() %
+            launcherSettings.mDrawFrameInterval != 0)
             continue;
 
         /* Get the pose graph information */
@@ -687,7 +706,7 @@ int main(int argc, char** argv)
         pLidarGraphSlam->GetPoseGraph(poseGraphNodes, poseGraphEdges);
 
         /* Draw the current pose graph if necessary */
-        gnuplotHelper.DrawPoseGraph(poseGraphNodes, poseGraphEdges);
+        pGnuplotHelper->DrawPoseGraph(poseGraphNodes, poseGraphEdges);
     }
 
     /* Stop the SLAM backend */
@@ -720,10 +739,7 @@ int main(int argc, char** argv)
                              latestMapNodeIdxMin, latestMapNodeIdxMax,
                              true, outputFilePath);
 
-    /* Wait for key input */
-    const bool waitKey = jsonSettings.get("Launcher.WaitForKey", false);
-
-    if (waitKey)
+    if (launcherSettings.mWaitForKey)
         std::getchar();
 
     return EXIT_SUCCESS;
