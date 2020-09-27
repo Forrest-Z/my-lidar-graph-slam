@@ -9,7 +9,8 @@ namespace Mapping {
 /* Optimize a pose graph using the combination of
  * Sparse Cholesky Factorization and Levenberg-Marquardt method */
 void PoseGraphOptimizerSpChol::Optimize(
-    std::shared_ptr<PoseGraph>& poseGraph)
+    std::vector<PoseGraph::Node>& poseGraphNodes,
+    const std::vector<PoseGraph::Edge>& poseGraphEdges)
 {
     double prevTotalError = std::numeric_limits<double>::max();
     double totalError = std::numeric_limits<double>::max();
@@ -17,8 +18,8 @@ void PoseGraphOptimizerSpChol::Optimize(
 
     /* Retrieve the number of nodes and edges
      * These remain constant during the optimization */
-    const int numOfNodes = static_cast<int>(poseGraph->Nodes().size());
-    const int numOfEdges = static_cast<int>(poseGraph->Edges().size());
+    const int numOfNodes = static_cast<int>(poseGraphNodes.size());
+    const int numOfEdges = static_cast<int>(poseGraphEdges.size());
 
     /* Total number of the variables in the linear system */
     const int numOfVariables = 3 * numOfNodes;
@@ -37,16 +38,17 @@ void PoseGraphOptimizerSpChol::Optimize(
 
     while (true) {
         /* Perform one optimization step */
-        this->OptimizeStep(poseGraph, matA, vecB, vecDelta, matATriplets);
+        this->OptimizeStep(poseGraphNodes, poseGraphEdges,
+                           matA, vecB, vecDelta, matATriplets);
         /* Compute the total error */
-        totalError = this->ComputeTotalError(poseGraph);
+        totalError = this->ComputeTotalError(poseGraphNodes, poseGraphEdges);
 
         /* Stop the graph optimization if the number of iteration steps
          * exceeded the maximum or the total error converged */
         if (++numOfIterations >= this->mNumOfIterationsMax ||
             std::fabs(prevTotalError - totalError) < this->mErrorTolerance)
             break;
-        
+
         /* Update damping factor (lambda)
          * If error decreased, halve the damping factor
          * If error increased, double the damping factor */
@@ -61,13 +63,14 @@ void PoseGraphOptimizerSpChol::Optimize(
 
 /* Perform one optimization step and return the total error */
 void PoseGraphOptimizerSpChol::OptimizeStep(
-    std::shared_ptr<PoseGraph>& poseGraph,
+    std::vector<PoseGraph::Node>& poseGraphNodes,
+    const std::vector<PoseGraph::Edge>& poseGraphEdges,
     Eigen::SparseMatrix<double>& matA,
     Eigen::VectorXd& vecB,
     Eigen::VectorXd& vecDelta,
     std::vector<Eigen::Triplet<double>>& matATriplets)
 {
-    const int numOfNodes = static_cast<int>(poseGraph->Nodes().size());
+    const int numOfNodes = static_cast<int>(poseGraphNodes.size());
     const int numOfVariables = 3 * numOfNodes;
 
     /* Clear all vectors and matrices */
@@ -77,7 +80,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
     vecDelta.setZero();
 
     /* Setup the left-hand side sparse matrix H */
-    for (const auto& edge : poseGraph->Edges()) {
+    for (const auto& edge : poseGraphEdges) {
         /* Retrieve the relative pose \bar{z}_{ij} from the edge */
         const RobotPose2D<double>& edgeRelPose = edge.RelativePose();
         /* Retrieve the information matrix \Lambda_{ij} of the edge */
@@ -88,9 +91,9 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
         const int endNodeIdx = edge.EndNodeIndex();
 
         const RobotPose2D<double>& startNodePose =
-            poseGraph->NodeAt(startNodeIdx).Pose();
+            poseGraphNodes.at(startNodeIdx).Pose();
         const RobotPose2D<double>& endNodePose =
-            poseGraph->NodeAt(endNodeIdx).Pose();
+            poseGraphNodes.at(endNodeIdx).Pose();
 
         /* Compute Jacobian matrices of the error function */
         Eigen::Matrix3d startNodeJacobian;
@@ -102,7 +105,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
         Eigen::Vector3d errorVec;
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
-        
+
         /* Compute 4 non-zero block matrices denoted as 
          * J_i^T \Lambda_{ij} J_i, J_i^T \Lambda_{ij} J_j,
          * J_j^T \Lambda_{ij} J_i, and J_j^T \Lambda_{ij} J_j in the paper
@@ -115,7 +118,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
             startNodeJacobian.transpose() * infoMat;
         const Eigen::Matrix3d trJeInfo =
             endNodeJacobian.transpose() * infoMat;
-        
+
         /* Compute 4 non-zero block matrices */
         const Eigen::Matrix3d trJsInfoJs = trJsInfo * startNodeJacobian;
         const Eigen::Matrix3d trJsInfoJe = trJsInfo * endNodeJacobian;
@@ -129,7 +132,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
                 const int bottomRow = 3 * endNodeIdx + i;
                 const int leftCol = 3 * startNodeIdx + j;
                 const int rightCol = 3 * endNodeIdx + j;
-                
+
                 /* Append the element of J_i^T \Lambda_{ij} J_i */
                 matATriplets.emplace_back(
                     upRow, leftCol, trJsInfoJs(i, j));
@@ -144,7 +147,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
                     bottomRow, leftCol, trJsInfoJe(j, i));
             }
         }
-        
+
         /* Update the elements of vector J^T \Lambda e */
         vecB.segment<3>(3 * startNodeIdx) += trJsInfo * errorVec;
         vecB.segment<3>(3 * endNodeIdx) += trJeInfo * errorVec;
@@ -155,11 +158,11 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
      * first node pose to zero */
     for (int i = 0; i < 3; ++i)
         matATriplets.emplace_back(i, i, 1e9);
-    
+
     /* Add the damping factor (lambda) to the diagonals of H */
     for (int i = 0; i < numOfVariables; ++i)
         matATriplets.emplace_back(i, i, this->mLambda);
-    
+
     /* Create a sparse matrix H */
     matA.setFromTriplets(matATriplets.cbegin(), matATriplets.cend());
 
@@ -174,12 +177,12 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
     /* Update the poses stored in pose graph */
     for (int i = 0; i < numOfNodes; ++i) {
         const RobotPose2D<double>& prevNodePose =
-            poseGraph->NodeAt(i).Pose();
+            poseGraphNodes.at(i).Pose();
         const RobotPose2D<double> newPose {
             prevNodePose.mX + vecDelta(3 * i),
             prevNodePose.mY + vecDelta(3 * i + 1),
             prevNodePose.mTheta + vecDelta(3 * i + 2) };
-        poseGraph->NodeAt(i).Pose() = newPose;
+        poseGraphNodes.at(i).Pose() = newPose;
     }
 
     return;
@@ -266,12 +269,13 @@ void PoseGraphOptimizerSpChol::ComputeErrorFunction(
 
 /* Compute total error */
 double PoseGraphOptimizerSpChol::ComputeTotalError(
-    const std::shared_ptr<PoseGraph>& poseGraph) const
+    const std::vector<PoseGraph::Node>& poseGraphNodes,
+    const std::vector<PoseGraph::Edge>& poseGraphEdges) const
 {
     double totalError = 0.0;
 
     /* Compute error function for each edge */
-    for (const auto& edge : poseGraph->Edges()) {
+    for (const auto& edge : poseGraphEdges) {
         /* Retrieve the relative pose \bar{z}_{ij} from the edge */
         const RobotPose2D<double>& edgeRelPose = edge.RelativePose();
         /* Retrieve the information matrix \Lambda_{ij} of the edge */
@@ -282,15 +286,15 @@ double PoseGraphOptimizerSpChol::ComputeTotalError(
         const int endNodeIdx = edge.EndNodeIndex();
 
         const RobotPose2D<double>& startNodePose =
-            poseGraph->NodeAt(startNodeIdx).Pose();
+            poseGraphNodes.at(startNodeIdx).Pose();
         const RobotPose2D<double>& endNodePose =
-            poseGraph->NodeAt(endNodeIdx).Pose();
-        
+            poseGraphNodes.at(endNodeIdx).Pose();
+
         /* Compute error function */
         Eigen::Vector3d errorVec;
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
-        
+
         /* Compute Mahalanobis distance */
         totalError += errorVec.transpose() * infoMat * errorVec;
     }

@@ -113,9 +113,9 @@ public:
     /* Update the grid map according to the modified pose graph */
     bool UpdateGridMap();
 
-    /* Perform pose graph optimization and rebuild grid maps */
-    void PerformOptimization(
-        const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer);
+    /* Rebuild grid maps after loop closure */
+    void AfterLoopClosure(
+        const std::vector<PoseGraph::Node>& poseGraphNodes);
 
     /* Retrieve a latest map that contains latest scans */
     GridMapType GetLatestMap(int& poseGraphNodeIdxMin,

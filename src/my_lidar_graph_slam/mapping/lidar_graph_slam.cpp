@@ -313,14 +313,23 @@ bool LidarGraphSlam::UpdateGridMap()
     return localMapCreated;
 }
 
-/* Perform pose graph optimization and rebuild grid maps */
-void LidarGraphSlam::PerformOptimization(
-    const std::shared_ptr<PoseGraphOptimizer>& poseGraphOptimizer)
+/* Update pose graph nodes and rebuild grid maps after loop closure */
+void LidarGraphSlam::AfterLoopClosure(
+    const std::vector<PoseGraph::Node>& poseGraphNodes)
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
-    /* Perform pose graph optimization */
-    poseGraphOptimizer->Optimize(this->mPoseGraph);
+
+    /* Update pose graph nodes using the results from the pose graph
+     * optimization, edges are not updated since they are constants */
+    for (std::size_t i = 0; i < poseGraphNodes.size(); ++i) {
+        /* Retrieve the old and new pose graph node */
+        auto& oldNode = this->mPoseGraph->NodeAt(i);
+        const auto& newNode = poseGraphNodes.at(i);
+        /* Update the node pose */
+        oldNode.Pose() = newNode.Pose();
+    }
+
     /* Rebuild the grid maps */
     this->mGridMapBuilder->AfterLoopClosure(this->mPoseGraph);
 }

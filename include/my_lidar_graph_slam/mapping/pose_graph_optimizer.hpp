@@ -20,7 +20,9 @@ public:
     virtual ~PoseGraphOptimizer() = default;
 
     /* Optimize a pose graph */
-    virtual void Optimize(std::shared_ptr<PoseGraph>& poseGraph) = 0;
+    virtual void Optimize(
+        std::vector<PoseGraph::Node>& poseGraphNodes,
+        const std::vector<PoseGraph::Edge>& poseGraphEdges) = 0;
 };
 
 } /* namespace Mapping */

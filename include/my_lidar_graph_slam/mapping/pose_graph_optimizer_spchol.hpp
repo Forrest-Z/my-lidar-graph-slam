@@ -43,11 +43,14 @@ public:
 
     /* Optimize a pose graph using the combination of
      * Sparse Cholesky Factorization and Levenberg-Marquardt method */
-    void Optimize(std::shared_ptr<PoseGraph>& poseGraph) override;
+    void Optimize(
+        std::vector<PoseGraph::Node>& poseGraphNodes,
+        const std::vector<PoseGraph::Edge>& poseGraphEdges) override;
 
 private:
     /* Perform one optimization step and return the total error */
-    void OptimizeStep(std::shared_ptr<PoseGraph>& poseGraph,
+    void OptimizeStep(std::vector<PoseGraph::Node>& poseGraphNodes,
+                      const std::vector<PoseGraph::Edge>& poseGraphEdges,
                       Eigen::SparseMatrix<double>& matA,
                       Eigen::VectorXd& vecB,
                       Eigen::VectorXd& vecDelta,
@@ -67,7 +70,9 @@ private:
                               Eigen::Vector3d& errorVec) const;
     
     /* Compute total error */
-    double ComputeTotalError(const std::shared_ptr<PoseGraph>& poseGraph) const;
+    double ComputeTotalError(
+        const std::vector<PoseGraph::Node>& poseGraphNodes,
+        const std::vector<PoseGraph::Edge>& poseGraphEdges) const;
 
 private:
     /* Maximum number of the optimization iterations */
