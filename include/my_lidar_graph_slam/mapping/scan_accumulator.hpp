@@ -5,6 +5,7 @@
 #define MY_LIDAR_GRAPH_SLAM_MAPPING_SCAN_ACCUMULATOR_HPP
 
 #include <deque>
+#include <memory>
 #include <vector>
 
 #include "my_lidar_graph_slam/point.hpp"
@@ -14,6 +15,10 @@
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
+
+/* Type definitions for convenience */
+class ScanAccumulator;
+using ScanAccumulatorPtr = std::shared_ptr<ScanAccumulator>;
 
 class ScanAccumulator final
 {

@@ -8,6 +8,7 @@ namespace Mapping {
 
 /* Constructor */
 LidarGraphSlamFrontend::LidarGraphSlamFrontend(
+    const ScanAccumulatorPtr& scanAccumulator,
     const ScanInterpolatorPtr& scanInterpolator,
     const ScanMatcherPtr& scanMatcher,
     const RobotPose2D<double>& initialPose,
@@ -16,6 +17,7 @@ LidarGraphSlamFrontend::LidarGraphSlamFrontend(
     const double updateThresholdTime,
     const int loopDetectionInterval) :
     mProcessCount(0),
+    mScanAccumulator(scanAccumulator),
     mScanInterpolator(scanInterpolator),
     mScanMatcher(scanMatcher),
     mInitialPose(initialPose),
@@ -37,10 +39,6 @@ bool LidarGraphSlamFrontend::ProcessScan(
     const Sensor::ScanDataPtr<double>& rawScanData,
     const RobotPose2D<double>& odomPose)
 {
-    /* Interpolate scan data if necessary */
-    auto scanData = (this->mScanInterpolator != nullptr) ?
-        this->mScanInterpolator->Interpolate(rawScanData) : rawScanData;
-
     /* Calculate the relative odometry pose */
     const RobotPose2D<double> relOdomPose = (this->mProcessCount == 0) ?
         RobotPose2D<double>(0.0, 0.0, 0.0) :
@@ -52,9 +50,13 @@ bool LidarGraphSlamFrontend::ProcessScan(
     this->mAccumulatedTravelDist += Distance(relOdomPose);
     this->mAccumulatedAngle += std::fabs(relOdomPose.mTheta);
 
+    /* Accumulate scan data if necessary */
+    if (this->mScanAccumulator != nullptr)
+        this->mScanAccumulator->AppendScan(rawScanData);
+
     /* Compute the elapsed time since the last map update */
     const double elapsedTime = (this->mProcessCount == 0) ?
-        0.0 : scanData->TimeStamp() - this->mLastMapUpdateTime;
+        0.0 : rawScanData->TimeStamp() - this->mLastMapUpdateTime;
 
     /* Map is updated only when the robot moved more than the specified
      * distance or the specified time has elapsed since the last map update */
@@ -71,6 +73,14 @@ bool LidarGraphSlamFrontend::ProcessScan(
 
     if (!mapUpdateNeeded)
         return false;
+
+    /* Interpolate scan data if necessary */
+    auto accumulatedScanData = (this->mScanAccumulator != nullptr) ?
+        this->mScanAccumulator->ComputeConcatenatedScan() :
+        rawScanData;
+    auto scanData = (this->mScanInterpolator != nullptr) ?
+        this->mScanInterpolator->Interpolate(accumulatedScanData) :
+        accumulatedScanData;
 
     /* Update the pose graph */
     if (this->mProcessCount == 0) {
