@@ -465,18 +465,23 @@ std::shared_ptr<Mapping::GridMapBuilder> CreateGridMapBuilder(
     return pGridMapBuilder;
 }
 
-/* Create LiDAR Graph-Based SLAM object */
-std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
-    const pt::ptree& jsonSettings)
+/* Create SLAM frontend */
+std::shared_ptr<Mapping::LidarGraphSlamFrontend> CreateSlamFrontend(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
 {
-    /* Load settings for LiDAR Graph-Based SLAM */
-    const pt::ptree& config = jsonSettings.get_child("LidarGraphSlam");
+    /* Load settings for SLAM frontend */
+    const auto& config = jsonSettings.get_child(configGroup);
 
-    /* Create grid map builder */
-    const std::string gridMapBuilderConfigGroup =
-        config.get("GridMapBuilderConfigGroup", "GridMapBuilder");
-    auto pGridMapBuilder = CreateGridMapBuilder(
-        jsonSettings, gridMapBuilderConfigGroup);
+    /* Create scan interpolator if necessary */
+    const bool useInterpolator =
+        config.get("UseScanInterpolator", true);
+    const std::string interpolatorConfigGroup =
+        config.get("ScanInterpolatorConfigGroup", "ScanInterpolator");
+
+    auto pScanInterpolator = useInterpolator ?
+        CreateScanInterpolator(jsonSettings, interpolatorConfigGroup) :
+        nullptr;
 
     /* Create the scan matcher for local SLAM */
     const std::string localScanMatcherType =
@@ -484,11 +489,43 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     const std::string localScanMatcherConfigGroup =
         config.get("LocalSlam.ScanMatcherConfigGroup",
                    "ScanMatcherHillClimbing");
+
     auto pScanMatcher = CreateScanMatcher(
         jsonSettings, localScanMatcherType, localScanMatcherConfigGroup);
 
-    /* Create pose graph */
-    auto pPoseGraph = CreatePoseGraph(jsonSettings);
+    /* Load the initial pose */
+    const double initialPoseX = config.get("InitialPose.X", 0.0);
+    const double initialPoseY = config.get("InitialPose.Y", 0.0);
+    const double initialPoseTheta = config.get("InitialPose.Theta", 0.0);
+
+    const RobotPose2D<double> initialPose {
+        initialPoseX, initialPoseY, initialPoseTheta };
+
+    /* Load the threshold values for local SLAM */
+    const double updateThresholdTravelDist =
+        config.get("UpdateThresholdTravelDist", 1.0);
+    const double updateThresholdAngle =
+        config.get("UpdateThresholdAngle", 0.5);
+    const double updateThresholdTime =
+        config.get("UpdateThresholdTime", 5.0);
+
+    /* Load settings for trigering loop detection */
+    const int loopDetectionInterval = config.get("LoopDetectionInterval", 10);
+
+    /* Create SLAM frontend */
+    auto pFrontend = std::make_shared<Mapping::LidarGraphSlamFrontend>(
+        pScanInterpolator, pScanMatcher, initialPose,
+        updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime,
+        loopDetectionInterval);
+}
+
+/* Create SLAM backend */
+std::shared_ptr<Mapping::LidarGraphSlamBackend> CreateSlamBackend(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Load settings for SLAM backend */
+    const auto& config = jsonSettings.get_child(configGroup);
 
     /* Create pose graph optimizer */
     const std::string optimizerType =
@@ -499,7 +536,7 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     auto pOptimizer = CreatePoseGraphOptimizer(
         jsonSettings, optimizerType, optimizerConfigGroup);
 
-    /* Create loop searcher object */
+    /* Create loop searcher */
     const std::string loopSearcherType =
         config.get("LoopSearcherType", "Nearest");
     const std::string loopSearcherConfigGroup =
@@ -515,42 +552,36 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     auto pLoopDetector = CreateLoopDetector(
         jsonSettings, loopDetectorType, loopDetectorConfigGroup);
 
-    /* Load settings for LiDAR Graph-Based SLAM */
-    const int loopDetectionInterval = config.get("LoopDetectionInterval", 10);
-
-    /* Create scan interpolator object if necessary */
-    const bool useInterpolator =
-        config.get("UseScanInterpolator", true);
-    const std::string interpolatorConfigGroup =
-        config.get("ScanInterpolatorConfigGroup", "ScanInterpolator");
-
-    auto pScanInterpolator = useInterpolator ?
-        CreateScanInterpolator(jsonSettings, interpolatorConfigGroup) :
-        nullptr;
-
-    const double initialPoseX = config.get("InitialPose.X", 0.0);
-    const double initialPoseY = config.get("InitialPose.Y", 0.0);
-    const double initialPoseTheta = config.get("InitialPose.Theta", 0.0);
-
-    const RobotPose2D<double> initialPose {
-        initialPoseX, initialPoseY, initialPoseTheta };
-
-    const double updateThresholdTravelDist =
-        config.get("UpdateThresholdTravelDist", 1.0);
-    const double updateThresholdAngle =
-        config.get("UpdateThresholdAngle", 0.5);
-    const double updateThresholdTime =
-        config.get("UpdateThresholdTime", 5.0);
-
-    /* Create SLAM frontend object */
-    auto pFrontend = std::make_shared<Mapping::LidarGraphSlamFrontend>(
-        pScanInterpolator, pScanMatcher, initialPose,
-        updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime,
-        loopDetectionInterval);
-
-    /* Create SLAM backend object */
+    /* Create SLAM backend */
     auto pBackend = std::make_shared<Mapping::LidarGraphSlamBackend>(
         pOptimizer, pLoopSearcher, pLoopDetector);
+}
+
+/* Create LiDAR Graph-Based SLAM object */
+std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
+    const pt::ptree& jsonSettings)
+{
+    /* Load settings for LiDAR Graph-Based SLAM */
+    const pt::ptree& config = jsonSettings.get_child("LidarGraphSlam");
+
+    /* Create grid map builder */
+    const std::string gridMapBuilderConfigGroup =
+        config.get("GridMapBuilderConfigGroup", "GridMapBuilder");
+    auto pGridMapBuilder = CreateGridMapBuilder(
+        jsonSettings, gridMapBuilderConfigGroup);
+
+    /* Create pose graph */
+    auto pPoseGraph = CreatePoseGraph(jsonSettings);
+
+    /* Create SLAM frontend object */
+    const std::string frontendConfigGroup =
+        config.get("FrontendConfigGroup", "Frontend");
+    auto pFrontend = CreateSlamFrontend(jsonSettings, frontendConfigGroup);
+
+    /* Create SLAM backend object */
+    const std::string backendConfigGroup =
+        config.get("BackendConfigGroup", "Backend");
+    auto pBackend = CreateSlamBackend(jsonSettings, backendConfigGroup);
 
     /* Create LiDAR Graph-Based SLAM object */
     auto pLidarGraphSlam = std::make_shared<Mapping::LidarGraphSlam>(

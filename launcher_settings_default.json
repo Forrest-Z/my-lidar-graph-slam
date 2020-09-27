@@ -130,21 +130,13 @@
         "ProbabilityMiss": 0.45
     },
 
-    "LidarGraphSlam": {
-        "GridMapBuilderConfigGroup": "GridMapBuilder",
+    "Frontend": {
+        "UseScanInterpolator": "true",
+        "ScanInterpolatorConfigGroup": "ScanInterpolator",
         "LocalSlam": {
             "ScanMatcherType": "RealTimeCorrelative",
             "ScanMatcherConfigGroup": "ScanMatcherRealTimeCorrelative"
         },
-        "PoseGraphOptimizerType": "SpChol",
-        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
-        "LoopSearcherType": "Nearest",
-        "LoopSearcherConfigGroup": "LoopSearcherNearest",
-        "LoopDetectorType": "BranchBound",
-        "LoopDetectorConfigGroup": "LoopDetectorBranchBound",
-        "LoopDetectionInterval": 5,
-        "UseScanInterpolator": "true",
-        "ScanInterpolatorConfigGroup": "ScanInterpolator",
         "InitialPose": {
             "X": 0.0,
             "Y": 0.0,
@@ -152,7 +144,23 @@
         },
         "UpdateThresholdTravelDist": 0.5,
         "UpdateThresholdAngle": 0.5,
-        "UpdateThresholdTime": 5.0
+        "UpdateThresholdTime": 5.0,
+        "LoopDetectionInterval": 5
+    },
+
+    "Backend": {
+        "PoseGraphOptimizerType": "SpChol",
+        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
+        "LoopSearcherType": "Nearest",
+        "LoopSearcherConfigGroup": "LoopSearcherNearest",
+        "LoopDetectorType": "BranchBound",
+        "LoopDetectorConfigGroup": "LoopDetectorBranchBound"
+    },
+
+    "LidarGraphSlam": {
+        "GridMapBuilderConfigGroup": "GridMapBuilder",
+        "FrontendConfigGroup": "Frontend",
+        "BackendConfigGroup": "Backend"
     },
 
     "Launcher": {
