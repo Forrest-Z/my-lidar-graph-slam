@@ -280,6 +280,27 @@ void LidarGraphSlam::AppendLoopClosingEdges(
     }
 }
 
+/* Update the coarser grid maps if modified in the loop detection process */
+void LidarGraphSlam::UpdatePrecomputedGridMaps(
+    LoopDetectionQueryVector& loopDetectionQueries)
+{
+    /* Acquire the unique lock */
+    std::unique_lock uniqueLock { this->mMutex };
+
+    /* Update the precomputed coarser grid maps if necessary */
+    for (auto& loopDetectionQuery : loopDetectionQueries) {
+        auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
+        const int localMapIdx = localMapInfo.mIdx;
+        auto& oldLocalMapInfo = this->mGridMapBuilder->LocalMapAt(localMapIdx);
+
+        if (localMapInfo.mPrecomputed && !oldLocalMapInfo.mPrecomputed) {
+            oldLocalMapInfo.mPrecomputedMaps =
+                std::move(localMapInfo.mPrecomputedMaps);
+            oldLocalMapInfo.mPrecomputed = true;
+        }
+    }
+}
+
 /* Update the grid map according to the modified pose graph */
 bool LidarGraphSlam::UpdateGridMap()
 {

@@ -39,6 +39,9 @@ void LidarGraphSlamBackend::Run(
         this->mLoopDetector->Detect(
             loopDetectionQueries, loopDetectionResults);
 
+        /* Update the local grid maps if modified in the loop detection */
+        pParent->UpdatePrecomputedGridMaps(loopDetectionQueries);
+
         if (loopDetectionResults.empty())
             continue;
 
