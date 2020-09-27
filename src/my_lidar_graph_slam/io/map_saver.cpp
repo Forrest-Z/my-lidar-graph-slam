@@ -30,7 +30,7 @@ MapSaver* MapSaver::Instance()
 
 /* Save the entire map */
 bool MapSaver::SaveMap(
-    const GridMapType& globalMap,
+    const Mapping::GridMapType& globalMap,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const std::string& fileName,
     const bool drawTrajectory,
@@ -121,7 +121,7 @@ bool MapSaver::SavePoseGraph(
 
 /* Save local maps individually */
 bool MapSaver::SaveLocalMaps(
-    const std::vector<Mapping::GridMapBuilder::LocalMapInfo>& localMaps,
+    const std::vector<Mapping::LocalMapInfo>& localMaps,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const bool drawTrajectory,
     const bool saveMetadata,
@@ -157,7 +157,7 @@ bool MapSaver::SaveLocalMaps(
 
 /* Save the grid map constructed from the latest scans */
 bool MapSaver::SaveLatestMap(
-    const GridMapType& latestMap,
+    const Mapping::GridMapType& latestMap,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const bool drawTrajectory,
     const int trajectoryNodeIdxMin,
@@ -179,7 +179,7 @@ bool MapSaver::SaveLatestMap(
 
 /* Save the map and the scan */
 bool MapSaver::SaveLocalMapAndScan(
-    const Mapping::GridMapBuilder::LocalMapInfo& localMapInfo,
+    const Mapping::LocalMapInfo& localMapInfo,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const RobotPose2D<double>& scanPose,
     const ScanPtr& scanData,
@@ -203,7 +203,7 @@ bool MapSaver::SaveLocalMapAndScan(
 
 /* Save the latest map and the scan */
 bool MapSaver::SaveLatestMapAndScan(
-    const GridMapType& latestMap,
+    const Mapping::GridMapType& latestMap,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const RobotPose2D<double>& scanPose,
     const ScanPtr& scanData,
@@ -229,7 +229,7 @@ bool MapSaver::SaveLatestMapAndScan(
 
 /* Save precomputed grid maps stored in a local grid map */
 bool MapSaver::SavePrecomputedGridMaps(
-    const Mapping::GridMapBuilder::LocalMapInfo& localMapInfo,
+    const Mapping::LocalMapInfo& localMapInfo,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const std::string& fileName) const
 {
@@ -246,9 +246,10 @@ bool MapSaver::SavePrecomputedGridMaps(
         const auto& precompMap = precompMapInfo.second;
 
         /* Create the occupancy grid map */
-        GridMapType gridMap = GridMapType::CreateSameSizeMap(precompMap);
+        Mapping::GridMapType gridMap =
+            Mapping::GridMapType::CreateSameSizeMap(precompMap);
 
-        const double unknownVal = PrecomputedMapType::GridCellType::Unknown;
+        const double unknownVal = precompMap.UnknownValue();
         const int numOfGridCellsX = precompMap.NumOfGridCellsX();
         const int numOfGridCellsY = precompMap.NumOfGridCellsY();
 
@@ -276,7 +277,7 @@ bool MapSaver::SavePrecomputedGridMaps(
 /* Draw the grid cells to the image */
 void MapSaver::DrawMap(
     const gil::rgb8_view_t& mapImageView,
-    const GridMapType& gridMap,
+    const Mapping::GridMapType& gridMap,
     const Point2D<int>& patchIdxMin,
     const Point2D<int>& mapSizeInPatches) const
 {
@@ -318,7 +319,7 @@ void MapSaver::DrawMap(
 /* Draw the trajectory lines to the image */
 void MapSaver::DrawTrajectory(
     const gil::rgb8_view_t& mapImageView,
-    const GridMapType& gridMap,
+    const Mapping::GridMapType& gridMap,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const Point2D<int>& gridCellIdxMin,
     const Point2D<int>& gridCellIdxMax,
@@ -363,7 +364,7 @@ void MapSaver::DrawTrajectory(
 /* Draw the scans obtained at the specified node to the image */
 void MapSaver::DrawScan(
     const boost::gil::rgb8_view_t& mapImageView,
-    const GridMapType& gridMap,
+    const Mapping::GridMapType& gridMap,
     const Point2D<int>& gridCellIdxMin,
     const Point2D<int>& gridCellIdxMax,
     const RobotPose2D<double>& scanPose,
@@ -410,7 +411,7 @@ void MapSaver::DrawScan(
 
 /* Save the map image and metadata */
 bool MapSaver::SaveMapCore(
-    const GridMapType& gridMap,
+    const Mapping::GridMapType& gridMap,
     const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
     const Options& saveOptions) const
 {

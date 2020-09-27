@@ -16,9 +16,6 @@ namespace Mapping {
 class ScanMatcherRealTimeCorrelative final : public ScanMatcher
 {
 public:
-    /* Type definitions */
-    using PrecomputedMapType = GridMapBuilder::PrecomputedMapType;
-
     /* Constructor */
     ScanMatcherRealTimeCorrelative(const CostFuncPtr& costFunc,
                                    int lowResolution,

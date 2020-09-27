@@ -20,9 +20,6 @@ namespace Mapping {
 class LidarGraphSlamFrontend
 {
 public:
-    /* Type declarations for convenience */
-    using GridMapType = LidarGraphSlam::GridMapType;
-
     /* Constructor */
     LidarGraphSlamFrontend(
         const ScanInterpolatorPtr& scanInterpolator,

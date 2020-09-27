@@ -166,7 +166,7 @@ LoopDetectionQueryVector LidarGraphSlam::GetLoopDetectionQueries(
             nodes.push_back(this->mPoseGraph->NodeAt(nodeIdx));
 
         /* Retrieve the information for the local grid map */
-        GridMapBuilder::LocalMapInfo localMapInfo =
+        LocalMapInfo localMapInfo =
             this->mGridMapBuilder->LocalMapAt(loopCandidate.mLocalMapIdx);
         /* Retrieve the pose graph node that is inside the local grid map */
         PoseGraph::Node localMapNode =
@@ -299,7 +299,7 @@ void LidarGraphSlam::PerformOptimization(
 }
 
 /* Retrieve a latest map that contains latest scans */
-LidarGraphSlam::GridMapType LidarGraphSlam::GetLatestMap(
+GridMapType LidarGraphSlam::GetLatestMap(
     int& poseGraphNodeIdxMin, int& poseGraphNodeIdxMax) const
 {
     /* Acquire the unique lock */
@@ -312,7 +312,7 @@ LidarGraphSlam::GridMapType LidarGraphSlam::GetLatestMap(
 }
 
 /* Build a global map that contains all local grid maps acquired */
-LidarGraphSlam::GridMapType LidarGraphSlam::GetGlobalMap(
+GridMapType LidarGraphSlam::GetGlobalMap(
     int& poseGraphNodeIdxMin, int& poseGraphNodeIdxMax) const
 {
     /* Acquire the unique lock */

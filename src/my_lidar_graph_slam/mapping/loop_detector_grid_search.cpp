@@ -74,7 +74,7 @@ void LoopDetectorGridSearch::Detect(
  * from the local grid map */
 bool LoopDetectorGridSearch::FindCorrespondingPose(
     const GridMapType& gridMap,
-    const ScanPtr& scanData,
+    const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& robotPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const

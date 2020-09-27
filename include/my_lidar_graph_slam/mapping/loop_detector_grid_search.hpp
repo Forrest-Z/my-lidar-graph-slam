@@ -15,10 +15,6 @@ namespace Mapping {
 class LoopDetectorGridSearch final : public LoopDetector
 {
 public:
-    /* Type definitions */
-    using LoopDetector::ScanPtr;
-    using LoopDetector::GridMapType;
-
     /* Constructor */
     LoopDetectorGridSearch(const ScoreFuncPtr& scoreFunc,
                            const CostFuncPtr& costFunc,
@@ -53,7 +49,7 @@ private:
     /* Find a corresponding pose of the current robot pose
      * from the local grid map */
     bool FindCorrespondingPose(const GridMapType& gridMap,
-                               const ScanPtr& scanData,
+                               const Sensor::ScanDataPtr<double>& scanData,
                                const RobotPose2D<double>& robotPose,
                                RobotPose2D<double>& correspondingPose,
                                Eigen::Matrix3d& estimatedCovMat) const;

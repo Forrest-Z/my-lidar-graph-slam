@@ -79,7 +79,7 @@ void LoopDetectorBranchBound::Detect(
 bool LoopDetectorBranchBound::FindCorrespondingPose(
     const GridMapType& localMap,
     const std::map<int, PrecomputedMapType>& precompMaps,
-    const ScanPtr& scanData,
+    const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& robotPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const

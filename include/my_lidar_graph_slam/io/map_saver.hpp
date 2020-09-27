@@ -42,9 +42,7 @@ public:
     /* Type definitions */
     using GridMapBuilderPtr = std::shared_ptr<Mapping::GridMapBuilder>;
     using PoseGraphPtr = std::shared_ptr<Mapping::PoseGraph>;
-    using GridMapType = Mapping::GridMapBuilder::GridMapType;
     using ScanPtr = Sensor::ScanDataPtr<double>;
-    using PrecomputedMapType = Mapping::GridMapBuilder::PrecomputedMapType;
 
     /*
      * Options struct holds the settings for MapSaver class
@@ -82,7 +80,7 @@ public:
 
     /* Save the entire map */
     bool SaveMap(
-        const GridMapType& globalMap,
+        const Mapping::GridMapType& globalMap,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const std::string& fileName,
         const bool drawTrajectory,
@@ -96,7 +94,7 @@ public:
 
     /* Save local maps individually */
     bool SaveLocalMaps(
-        const std::vector<Mapping::GridMapBuilder::LocalMapInfo>& localMaps,
+        const std::vector<Mapping::LocalMapInfo>& localMaps,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const bool drawTrajectory,
         const bool saveMetadata,
@@ -104,7 +102,7 @@ public:
 
     /* Save the grid map constructed from the latest scans */
     bool SaveLatestMap(
-        const GridMapType& latestMap,
+        const Mapping::GridMapType& latestMap,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const bool drawTrajectory,
         const int trajectoryNodeIdxMin,
@@ -114,7 +112,7 @@ public:
 
     /* Save the map and the scan */
     bool SaveLocalMapAndScan(
-        const Mapping::GridMapBuilder::LocalMapInfo& localMapInfo,
+        const Mapping::LocalMapInfo& localMapInfo,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const RobotPose2D<double>& scanPose,
         const ScanPtr& scanData,
@@ -124,7 +122,7 @@ public:
 
     /* Save the latest map and the scan */
     bool SaveLatestMapAndScan(
-        const GridMapType& latestMap,
+        const Mapping::GridMapType& latestMap,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const RobotPose2D<double>& scanPose,
         const ScanPtr& scanData,
@@ -136,7 +134,7 @@ public:
 
     /* Save precomputed grid maps stored in a local grid map */
     bool SavePrecomputedGridMaps(
-        const Mapping::GridMapBuilder::LocalMapInfo& localMapInfo,
+        const Mapping::LocalMapInfo& localMapInfo,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const std::string& fileName) const;
 
@@ -144,14 +142,14 @@ private:
     /* Draw the grid cells to the image */
     void DrawMap(
         const boost::gil::rgb8_view_t& mapImageView,
-        const GridMapType& gridMap,
+        const Mapping::GridMapType& gridMap,
         const Point2D<int>& patchIdxMin,
         const Point2D<int>& mapSizeInPatches) const;
 
     /* Draw the trajectory lines to the image */
     void DrawTrajectory(
         const boost::gil::rgb8_view_t& mapImageView,
-        const GridMapType& gridMap,
+        const Mapping::GridMapType& gridMap,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const Point2D<int>& gridCellIdxMin,
         const Point2D<int>& gridCellIdxMax,
@@ -161,7 +159,7 @@ private:
     /* Draw the scans obtained at the specified node to the image */
     void DrawScan(
         const boost::gil::rgb8_view_t& mapImageView,
-        const GridMapType& gridMap,
+        const Mapping::GridMapType& gridMap,
         const Point2D<int>& gridCellIdxMin,
         const Point2D<int>& gridCellIdxMax,
         const RobotPose2D<double>& scanPose,
@@ -169,7 +167,7 @@ private:
 
     /* Save the map image and metadata */
     bool SaveMapCore(
-        const GridMapType& gridMap,
+        const Mapping::GridMapType& gridMap,
         const std::vector<Mapping::PoseGraph::Node>& poseGraphNodes,
         const Options& saveOptions) const;
 

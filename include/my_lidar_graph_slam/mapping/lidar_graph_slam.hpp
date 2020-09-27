@@ -42,7 +42,6 @@ class LidarGraphSlam
 {
 public:
     /* Type definitions */
-    using GridMapType = GridMap<BinaryBayesGridCell<double>>;
     using FrontendType = LidarGraphSlamFrontend;
     using BackendType = LidarGraphSlamBackend;
 

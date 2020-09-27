@@ -19,6 +19,10 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/* Type definitions */
+using GridMapType = GridMap<BinaryBayesGridCell<double>>;
+using PrecomputedMapType = GridMap<ConstGridCell<double>>;
+
 /*
  * LocalMapPosition struct stores information about the local map bounding box,
  * indices of the pose graph nodes that reside in this local map, which are
@@ -52,60 +56,52 @@ struct LocalMapPosition
     bool            mFinished;
 };
 
+/*
+ * LocalMapInfo struct binds grid maps and pose graphs
+ */
+struct LocalMapInfo
+{
+    /* Constructor */
+    LocalMapInfo(GridMapType&& gridMap,
+                 int poseGraphNodeIdx) :
+        mMap(std::move(gridMap)),
+        mPoseGraphNodeIdxMin(poseGraphNodeIdx),
+        mPoseGraphNodeIdxMax(poseGraphNodeIdx),
+        mFinished(false),
+        mPrecomputed(false) { }
+
+    /* Destructor */
+    ~LocalMapInfo() = default;
+
+    /* Copy constructor */
+    LocalMapInfo(const LocalMapInfo& other) = default;
+    /* Copy assignment operator */
+    LocalMapInfo& operator=(const LocalMapInfo& other) = default;
+    /* Move constructor */
+    LocalMapInfo(LocalMapInfo&& other) noexcept = default;
+    /* Move assignment operator */
+    LocalMapInfo& operator=(LocalMapInfo&& other) noexcept = default;
+
+    /* Local grid map, which consists of the scan data
+     * from the pose graph nodes within the range of
+     * [mPoseGraphNodeIdxMin, mPoseGraphNodeIdxMax] */
+    GridMapType                       mMap;
+    /* Minimum index of the pose graph node */
+    int                               mPoseGraphNodeIdxMin;
+    /* Maximum index of the pose graph node */
+    int                               mPoseGraphNodeIdxMax;
+    /* Flags to determine whether the grid maps are finished and
+     * will not be changed (no more new scan data will be added) */
+    bool                              mFinished;
+    /* Flags to determine whether the grid maps for the loop detection are
+     * already precomputed */
+    bool                              mPrecomputed;
+    /* List of precomputed grid maps for loop detection */
+    std::map<int, PrecomputedMapType> mPrecomputedMaps;
+};
+
 class GridMapBuilder
 {
-public:
-    /* Type definitions */
-    using GridMapType = GridMap<BinaryBayesGridCell<double>>;
-    using PatchType = typename GridMapType::PatchType;
-    using PrecomputedMapType = GridMap<ConstGridCell<double>>;
-    using ScanType = Sensor::ScanDataPtr<double>;
-
-public:
-    /*
-     * LocalMapInfo struct binds grid maps and pose graphs
-     */
-    struct LocalMapInfo
-    {
-        /* Constructor */
-        LocalMapInfo(GridMapType&& gridMap,
-                     int poseGraphNodeIdx) :
-            mMap(std::move(gridMap)),
-            mPoseGraphNodeIdxMin(poseGraphNodeIdx),
-            mPoseGraphNodeIdxMax(poseGraphNodeIdx),
-            mFinished(false),
-            mPrecomputed(false) { }
-        
-        /* Destructor */
-        ~LocalMapInfo() = default;
-
-        /* Copy constructor */
-        LocalMapInfo(const LocalMapInfo& other) = default;
-        /* Copy assignment operator */
-        LocalMapInfo& operator=(const LocalMapInfo& other) = default;
-        /* Move constructor */
-        LocalMapInfo(LocalMapInfo&& other) noexcept = default;
-        /* Move assignment operator */
-        LocalMapInfo& operator=(LocalMapInfo&& other) noexcept = default;
-
-        /* Local grid map, which consists of the scan data
-         * from the pose graph nodes within the range of
-         * [mPoseGraphNodeIdxMin, mPoseGraphNodeIdxMax] */
-        GridMapType                       mMap;
-        /* Minimum index of the pose graph node */
-        int                               mPoseGraphNodeIdxMin;
-        /* Maximum index of the pose graph node */
-        int                               mPoseGraphNodeIdxMax;
-        /* Flags to determine whether the grid maps are finished and
-         * will not be changed (no more new scan data will be added) */
-        bool                              mFinished;
-        /* Flags to determine whether the grid maps for the loop detection are
-         * already precomputed */
-        bool                              mPrecomputed;
-        /* List of precomputed grid maps for loop detection */
-        std::map<int, PrecomputedMapType> mPrecomputedMaps;
-    };
-
 public:
     /* Constructor */
     GridMapBuilder(double mapResolution,
@@ -175,7 +171,7 @@ private:
     /* Compute the bounding box of the scan and scan points */
     void ComputeBoundingBoxAndScanPoints(
         const RobotPose2D<double>& robotPose,
-        const ScanType& scanData,
+        const Sensor::ScanDataPtr<double>& scanData,
         Point2D<double>& bottomLeft,
         Point2D<double>& topRight,
         std::vector<Point2D<double>>& hitPoints);
@@ -230,30 +226,30 @@ private:
 
 /* Compute the maximum of a 'winSize' pixel wide row at each pixel */
 void SlidingWindowMaxRow(
-    const GridMapBuilder::GridMapType& gridMap,
-    GridMapBuilder::PrecomputedMapType& intermediateMap,
+    const GridMapType& gridMap,
+    PrecomputedMapType& intermediateMap,
     int winSize);
 
 /* Compute the maximum of a 'winSize' pixel wide column at each pixel */
 void SlidingWindowMaxCol(
-    const GridMapBuilder::PrecomputedMapType& intermediateMap,
-    GridMapBuilder::PrecomputedMapType& precompMap,
+    const PrecomputedMapType& intermediateMap,
+    PrecomputedMapType& precompMap,
     int winSize);
 
 /* Precompute coarser grid maps for efficiency */
 void PrecomputeGridMaps(
-    GridMapBuilder::LocalMapInfo& localMapInfo,
+    LocalMapInfo& localMapInfo,
     const int nodeHeightMax);
 
 /* Precompute grid map for efficiency */
-GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
-    const GridMapBuilder::GridMapType& gridMap,
-    GridMapBuilder::PrecomputedMapType& intermediateMap,
+PrecomputedMapType PrecomputeGridMap(
+    const GridMapType& gridMap,
+    PrecomputedMapType& intermediateMap,
     int winSize);
 
 /* Precompute grid map for efficiency */
-GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
-    const GridMapBuilder::GridMapType& gridMap,
+PrecomputedMapType PrecomputeGridMap(
+    const GridMapType& gridMap,
     int winSize);
 
 } /* namespace Mapping */

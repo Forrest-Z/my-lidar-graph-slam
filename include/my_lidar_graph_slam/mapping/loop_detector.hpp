@@ -28,7 +28,7 @@ struct LoopDetectionQuery final
     /* Constructor */
     LoopDetectionQuery(
         std::vector<PoseGraph::Node>&& poseGraphNodes,
-        const GridMapBuilder::LocalMapInfo& localMapInfo,
+        const LocalMapInfo& localMapInfo,
         const PoseGraph::Node& localMapNode) :
         mPoseGraphNodes(std::move(poseGraphNodes)),
         mLocalMapInfo(localMapInfo),
@@ -42,7 +42,7 @@ struct LoopDetectionQuery final
     const std::vector<PoseGraph::Node> mPoseGraphNodes;
     /* Local grid map, which is not constant since the precomputation
      * of the coarser grid maps is needed */
-    GridMapBuilder::LocalMapInfo       mLocalMapInfo;
+    LocalMapInfo                       mLocalMapInfo;
     /* Pose graph node that resides in the local map, which is used to
      * specify the node index and to compute the relative pose of the
      * loop closing edge */
@@ -92,11 +92,6 @@ using LoopDetectionResultVector = std::vector<LoopDetectionResult>;
 class LoopDetector
 {
 public:
-    /* Type definitions */
-    using ScanPtr = Sensor::ScanDataPtr<double>;
-    using GridMapType = GridMapBuilder::GridMapType;
-    using PrecomputedMapType = GridMapBuilder::PrecomputedMapType;
-
     /* Constructor */
     LoopDetector() = default;
 

@@ -18,11 +18,6 @@ namespace Mapping {
 class LoopDetectorBranchBound final : public LoopDetector
 {
 public:
-    /* Type definitions */
-    using LoopDetector::ScanPtr;
-    using LoopDetector::GridMapType;
-    using LoopDetector::PrecomputedMapType;
-
     /*
      * Node struct holds the necessary information for Branch-and-Bound method
      */
@@ -76,7 +71,7 @@ private:
     bool FindCorrespondingPose(
         const GridMapType& localMap,
         const std::map<int, PrecomputedMapType>& precompMaps,
-        const ScanPtr& scanData,
+        const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& robotPose,
         RobotPose2D<double>& correspondingPose,
         Eigen::Matrix3d& estimatedCovMat) const;

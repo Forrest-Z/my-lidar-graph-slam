@@ -26,7 +26,7 @@ namespace Mapping {
 struct ScanMatchingQuery final
 {
     /* Constructor */
-    ScanMatchingQuery(GridMapBuilder::GridMapType&& gridMap,
+    ScanMatchingQuery(GridMapType&& gridMap,
                       const Sensor::ScanDataPtr<double>& scanData,
                       const RobotPose2D<double>& initialPose) :
         mGridMap(std::move(gridMap)),
@@ -37,7 +37,7 @@ struct ScanMatchingQuery final
     ~ScanMatchingQuery() = default;
 
     /* Grid map */
-    const GridMapBuilder::GridMapType mGridMap;
+    const GridMapType                 mGridMap;
     /* Scan data */
     const Sensor::ScanDataPtr<double> mScanData;
     /* Initial robot pose (in a world frame) */
@@ -79,10 +79,6 @@ using ScanMatcherPtr = std::shared_ptr<ScanMatcher>;
 class ScanMatcher
 {
 public:
-    /* Type definitions */
-    using GridMapType = GridMapBuilder::GridMapType;
-    using PrecomputedMapType = GridMapBuilder::PrecomputedMapType;
-
     /* Constructor */
     ScanMatcher() = default;
     /* Destructor */

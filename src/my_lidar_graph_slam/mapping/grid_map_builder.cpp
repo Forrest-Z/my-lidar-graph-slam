@@ -80,7 +80,7 @@ void GridMapBuilder::AfterLoopClosure(
 }
 
 /* Construct the global grid map */
-GridMapBuilder::GridMapType GridMapBuilder::ConstructGlobalMap(
+GridMapType GridMapBuilder::ConstructGlobalMap(
     const std::shared_ptr<PoseGraph>& poseGraph) const
 {
     const int nodeIdxMin = poseGraph->Nodes().front().Index();
@@ -101,7 +101,7 @@ bool GridMapBuilder::UpdateGridMap(
     /* Current robot pose (stored in the latest pose graph node) */
     const RobotPose2D<double>& robotPose = poseGraph->LatestNode().Pose();
     /* Current scan data (stored in the latest pose graph node) */
-    const ScanType& scanData = poseGraph->LatestNode().ScanData();
+    const auto& scanData = poseGraph->LatestNode().ScanData();
     /* Current node index */
     const int nodeIdx = poseGraph->LatestNode().Index();
 
@@ -240,12 +240,12 @@ void GridMapBuilder::ConstructMapFromScans(
         /* Retrieve the pose and scan data in the node */
         const PoseGraph::Node& node = poseGraph->NodeAt(nodeIdx);
         const RobotPose2D<double>& nodePose = node.Pose();
-        const ScanType& scanData = node.ScanData();
+        const auto& scanData = node.ScanData();
 
         /* Compute the sensor pose from the node pose */
         const RobotPose2D<double> sensorPose =
             Compound(nodePose, scanData->RelativeSensorPose());
-        
+
         bottomLeft.mX = std::min(bottomLeft.mX, sensorPose.mX);
         bottomLeft.mY = std::min(bottomLeft.mY, sensorPose.mY);
         topRight.mX = std::max(topRight.mX, sensorPose.mX);
@@ -267,7 +267,7 @@ void GridMapBuilder::ConstructMapFromScans(
 
             if (scanRange >= maxRange || scanRange <= minRange)
                 continue;
-            
+
             /* Compute the hit grid cell point */
             const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
             nodeHitPoints.push_back(hitPoint);
@@ -286,14 +286,14 @@ void GridMapBuilder::ConstructMapFromScans(
     gridMap.Resize(bottomLeft.mX, bottomLeft.mY,
                    topRight.mX, topRight.mY);
     gridMap.Reset();
-    
+
     /* Integrate the scan into the grid map */
     for (int nodeIdx = poseGraphNodeIdxMin;
          nodeIdx <= poseGraphNodeIdxMax; ++nodeIdx) {
         /* Retrieve the pose in the node */
         const PoseGraph::Node& node = poseGraph->NodeAt(nodeIdx);
         const RobotPose2D<double>& nodePose = node.Pose();
-        const ScanType& scanData = node.ScanData();
+        const auto& scanData = node.ScanData();
 
         /* Compute the sensor pose from the node pose */
         const RobotPose2D<double> sensorPose =
@@ -302,7 +302,7 @@ void GridMapBuilder::ConstructMapFromScans(
         const Point2D<int> sensorGridCellIdx =
             gridMap.WorldCoordinateToGridCellIndex(
                 sensorPose.mX, sensorPose.mY);
-        
+
         /* Integrate the scan into the grid map */
         const std::size_t numOfFilteredScans = hitPoints[nodeIdx].size();
 
@@ -311,16 +311,16 @@ void GridMapBuilder::ConstructMapFromScans(
             const Point2D<int> hitGridCellIdx =
                 gridMap.WorldCoordinateToGridCellIndex(
                     hitPoints[nodeIdx].at(i));
-            
+
             /* Compute the indices of the missed grid cells */
             const std::vector<Point2D<int>> missedGridCellIndices =
                 this->ComputeMissedGridCellIndices(
                     sensorGridCellIdx, hitGridCellIdx);
-            
+
             /* Update occupancy probability values for missed grid cells */
             for (std::size_t j = 0; j < missedGridCellIndices.size(); ++j)
                 gridMap.Update(missedGridCellIndices[j], this->mProbMiss);
-            
+
             /* Update occupancy probability values for hit grid cell */
             gridMap.Update(hitGridCellIdx, this->mProbHit);
         }
@@ -332,7 +332,7 @@ void GridMapBuilder::ConstructMapFromScans(
 /* Compute the bounding box of the scan and scan points */
 void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
     const RobotPose2D<double>& robotPose,
-    const ScanType& scanData,
+    const Sensor::ScanDataPtr<double>& scanData,
     Point2D<double>& bottomLeft,
     Point2D<double>& topRight,
     std::vector<Point2D<double>>& hitPoints)
@@ -340,7 +340,7 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
     /* Compute the sensor pose from the robot pose */
     const RobotPose2D<double> sensorPose =
         Compound(robotPose, scanData->RelativeSensorPose());
-    
+
     /* Bottom-left corner position of the given scan */
     bottomLeft.mX = sensorPose.mX;
     bottomLeft.mY = sensorPose.mY;
@@ -357,14 +357,14 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
         this->mUsableRangeMin, scanData->MinRange());
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
-    
+
     /* Calculate the bounding box and scan points */
     for (std::size_t i = 0; i < numOfScans; ++i) {
         const double scanRange = scanData->RangeAt(i);
 
         if (scanRange >= maxRange || scanRange <= minRange)
             continue;
-        
+
         /* Calculate the hit grid cell point */
         const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
         hitPoints.push_back(hitPoint);
@@ -386,7 +386,7 @@ std::vector<Point2D<int>> GridMapBuilder::ComputeMissedGridCellIndices(
     /* Use Bresenham algorithm for computing indices */
     std::vector<Point2D<int>> gridCellIndices =
         Bresenham(startGridCellIdx, endGridCellIdx);
-    
+
     /* Remove the last item since it is the hit grid cell */
     gridCellIndices.pop_back();
 
@@ -399,8 +399,8 @@ std::vector<Point2D<int>> GridMapBuilder::ComputeMissedGridCellIndices(
 
 /* Compute the maximum of a 'winSize' pixel wide row at each pixel */
 void SlidingWindowMaxRow(
-    const GridMapBuilder::GridMapType& gridMap,
-    GridMapBuilder::PrecomputedMapType& intermediateMap,
+    const GridMapType& gridMap,
+    PrecomputedMapType& intermediateMap,
     int winSize)
 {
     /* Compute the maximum for each column */
@@ -433,8 +433,8 @@ void SlidingWindowMaxRow(
 
 /* Compute the maximum of a 'winSize' pixel wide column at each pixel */
 void SlidingWindowMaxCol(
-    const GridMapBuilder::PrecomputedMapType& intermediateMap,
-    GridMapBuilder::PrecomputedMapType& precompMap,
+    const PrecomputedMapType& intermediateMap,
+    PrecomputedMapType& precompMap,
     int winSize)
 {
     /* Compute the maximum for each row */
@@ -466,12 +466,12 @@ void SlidingWindowMaxCol(
 }
 
 /* Precompute coarser grid maps for efficiency */
-void PrecomputeGridMaps(GridMapBuilder::LocalMapInfo& localMapInfo,
+void PrecomputeGridMaps(LocalMapInfo& localMapInfo,
                         const int nodeHeightMax)
 {
     /* Retrieve the local grid map */
     auto& precomputedMaps = localMapInfo.mPrecomputedMaps;
-    const GridMapBuilder::GridMapType& localMap = localMapInfo.mMap;
+    const GridMapType& localMap = localMapInfo.mMap;
 
     /* The local grid map must be finished */
     assert(localMapInfo.mFinished);
@@ -479,14 +479,14 @@ void PrecomputeGridMaps(GridMapBuilder::LocalMapInfo& localMapInfo,
     /* Create the temporary grid map to store the intermediate result
      * The map size is as same as the local grid map and is reused for
      * several times below */
-    GridMapBuilder::PrecomputedMapType intermediateMap =
-        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(localMap);
+    PrecomputedMapType intermediateMap =
+        PrecomputedMapType::CreateSameSizeMap(localMap);
 
     /* Compute a grid map for each node height */
     for (int nodeHeight = 0, winSize = 1;
          nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
         /* Precompute a grid map */
-        GridMapBuilder::PrecomputedMapType precompMap =
+        PrecomputedMapType precompMap =
             PrecomputeGridMap(localMap, intermediateMap, winSize);
 
         /* Append the newly created map */
@@ -498,16 +498,16 @@ void PrecomputeGridMaps(GridMapBuilder::LocalMapInfo& localMapInfo,
 }
 
 /* Precompute grid map for efficiency */
-GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
-    const GridMapBuilder::GridMapType& gridMap,
-    GridMapBuilder::PrecomputedMapType& intermediateMap,
+PrecomputedMapType PrecomputeGridMap(
+    const GridMapType& gridMap,
+    PrecomputedMapType& intermediateMap,
     int winSize)
 {
     /* Create a new grid map
      * Each pixel stores the maximum of the occupancy probability values of
      * 'winSize' * 'winSize' box of pixels beginning there */
-    GridMapBuilder::PrecomputedMapType precompMap =
-        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(gridMap);
+    PrecomputedMapType precompMap =
+        PrecomputedMapType::CreateSameSizeMap(gridMap);
 
     /* Store the maximum of the 'winSize' pixel wide row */
     SlidingWindowMaxRow(gridMap, intermediateMap, winSize);
@@ -518,17 +518,17 @@ GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
 }
 
 /* Precompute grid map for efficiency */
-GridMapBuilder::PrecomputedMapType PrecomputeGridMap(
-    const GridMapBuilder::GridMapType& gridMap,
+PrecomputedMapType PrecomputeGridMap(
+    const GridMapType& gridMap,
     int winSize)
 {
     /* Create a temporary map to store the intermediate result */
-    GridMapBuilder::PrecomputedMapType intermediateMap =
-        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(gridMap);
+    PrecomputedMapType intermediateMap =
+        PrecomputedMapType::CreateSameSizeMap(gridMap);
 
     /* Create a new grid map */
-    GridMapBuilder::PrecomputedMapType precompMap =
-        GridMapBuilder::PrecomputedMapType::CreateSameSizeMap(gridMap);
+    PrecomputedMapType precompMap =
+        PrecomputedMapType::CreateSameSizeMap(gridMap);
 
     /* Store the maximum of the 'winSize' pixel wide row */
     SlidingWindowMaxRow(gridMap, intermediateMap, winSize);
