@@ -43,6 +43,7 @@ using namespace MyLidarGraphSlam;
 
 /* Declare namespaces for convenience */
 namespace pt = boost::property_tree;
+namespace fs = std::filesystem;
 
 /* Create the greedy endpoint cost function object */
 std::shared_ptr<Mapping::CostFunction> CreateCostGreedyEndpoint(
@@ -590,10 +591,26 @@ std::shared_ptr<Mapping::LidarGraphSlam> CreateLidarGraphSlam(
     return pLidarGraphSlam;
 }
 
+/* Load Carmen log data */
+void LoadCarmenLog(const fs::path& logFilePath,
+                   std::vector<Sensor::SensorDataPtr>& logData)
+{
+    /* Open the carmen log file */
+    std::ifstream logFile { logFilePath };
+
+    if (!logFile) {
+        std::cerr << "Failed to open log file: " << logFilePath << std::endl;
+        return;
+    }
+
+    /* Load the carmen log file */
+    IO::Carmen::CarmenLogReader logReader;
+    logReader.Load(logFile, logData);
+    logFile.close();
+}
+
 int main(int argc, char** argv)
 {
-    namespace fs = std::filesystem;
-
     if (argc < 3) {
         std::cerr << "Usage: " << argv[0] << ' '
                   << "<Carmen log file name> "
@@ -611,21 +628,13 @@ int main(int argc, char** argv)
                                   logFilePath.stem() != "..";
     fs::path outputFilePath { (argc == 4 || !hasValidFileName) ? argv[3] :
                               logFilePath.stem() };
-    
-    /* Open the carmen log file */
-    std::ifstream logFile { logFilePath };
 
-    if (!logFile) {
-        std::cerr << "Failed to open log file: "
-                  << logFilePath.c_str() << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    /* Load the carmen log file */
+    /* Load Carmen log file */
     std::vector<Sensor::SensorDataPtr> logData;
-    IO::Carmen::CarmenLogReader logReader;
-    logReader.Load(logFile, logData);
-    logFile.close();
+    LoadCarmenLog(logFilePath, logData);
+
+    if (logData.empty())
+        return EXIT_FAILURE;
 
     /* Load settings from JSON file */
     pt::ptree jsonSettings;
