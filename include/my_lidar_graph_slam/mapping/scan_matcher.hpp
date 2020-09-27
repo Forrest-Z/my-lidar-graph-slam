@@ -52,25 +52,24 @@ struct ScanMatchingSummary final
     /* Constructor */
     ScanMatchingSummary(const double normalizedCost,
                         const RobotPose2D<double>& initialPose,
-                        const RobotPose2D<double>& localPose,
-                        const Eigen::Matrix3d& localCovariance) :
+                        const RobotPose2D<double>& estimatedPose,
+                        const Eigen::Matrix3d& estimatedCovariance) :
         mNormalizedCost(normalizedCost),
         mInitialPose(initialPose),
-        mLocalPose(localPose),
-        mLocalCovariance(localCovariance) { }
+        mEstimatedPose(estimatedPose),
+        mEstimatedCovariance(estimatedCovariance) { }
 
     /* Destructor */
     ~ScanMatchingSummary() = default;
 
     /* Normalized cost value */
-    const double              mNormalizedCost;
+    const double                      mNormalizedCost;
     /* Initial robot pose in a world frame */
-    const RobotPose2D<double> mInitialPose;
-    /* Estimated pose in a local frame centered at the initial pose */
-    const RobotPose2D<double> mLocalPose;
-    /* Estimated pose covariance matrix in a local frame, which should be
-     * rotated to obtain the covariance matrix in a world frame */
-    const Eigen::Matrix3d     mLocalCovariance;
+    const RobotPose2D<double>         mInitialPose;
+    /* Estimated pose in a world frame */
+    const RobotPose2D<double>         mEstimatedPose;
+    /* Estimated pose covariance matrix in a world frame */
+    const Eigen::Matrix3d             mEstimatedCovariance;
 };
 
 /* Type definitions for convenience */
