@@ -42,7 +42,7 @@ LoopCandidateVector LoopSearcherNearest::Search(
     /* Exclude the latest (unfinished) local grid map */
     for (int mapIdx = 0; mapIdx < numOfMaps - 1; ++mapIdx) {
         /* Retrieve the local grid map */
-        const auto& localMapPosition = localMapPositions[mapIdx];
+        const auto& localMapPosition = localMapPositions.at(mapIdx);
         const int nodeIdxMin = localMapPosition.mPoseGraphNodeIdxMin;
         const int nodeIdxMax = localMapPosition.mPoseGraphNodeIdxMax;
 

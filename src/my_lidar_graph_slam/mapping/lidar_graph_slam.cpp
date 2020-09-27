@@ -105,21 +105,27 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     std::unique_lock uniqueLock { this->mMutex };
 
     std::map<int, NodePosition> poseGraphNodes;
-    std::vector<LocalMapPosition> localMapPositions;
+    std::map<int, LocalMapPosition> localMapPositions;
 
     /* Set the pose graph nodes information */
-    for (const auto& node : this->mPoseGraph->Nodes())
+    for (const auto& node : this->mPoseGraph->Nodes()) {
+        NodePosition nodePosition { node.Index(), node.Pose() };
         poseGraphNodes.insert(std::make_pair(
-            node.Index(), NodePosition(node.Index(), node.Pose())));
+            node.Index(), std::move(nodePosition)));
+    }
 
     /* Set the positions of the local grid maps */
-    for (const auto& localMap : this->mGridMapBuilder->LocalMaps())
-        localMapPositions.emplace_back(
+    for (const auto& localMap : this->mGridMapBuilder->LocalMaps()) {
+        LocalMapPosition localMapPos {
+            localMap.mIdx,
             localMap.mMap.MinPos(),
             localMap.mMap.MaxPos(),
             localMap.mPoseGraphNodeIdxMin,
             localMap.mPoseGraphNodeIdxMax,
-            localMap.mFinished);
+            localMap.mFinished };
+        localMapPositions.insert(std::make_pair(
+            localMap.mIdx, std::move(localMapPos)));
+    }
 
     /* Make sure that the index of the latest local map
      * contains the latest pose graph node */

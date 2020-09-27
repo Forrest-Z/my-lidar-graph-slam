@@ -26,7 +26,7 @@ struct LoopSearchHint final
     /* Constructor */
     LoopSearchHint(
         std::map<int, NodePosition>&& poseGraphNodes,
-        std::vector<LocalMapPosition>&& localMapPositions,
+        std::map<int, LocalMapPosition>&& localMapPositions,
         const double accumTravelDist,
         const int latestNodeIdx,
         const int latestLocalMapIdx) :
@@ -40,16 +40,16 @@ struct LoopSearchHint final
     ~LoopSearchHint() = default;
 
     /* Information about the pose graph nodes (poses) */
-    const std::map<int, NodePosition>   mPoseGraphNodes;
+    const std::map<int, NodePosition>     mPoseGraphNodes;
     /* Information about the local map positions
      * Bounding box, grid map resolution, pose graph node indices */
-    const std::vector<LocalMapPosition> mLocalMapPositions;
+    const std::map<int, LocalMapPosition> mLocalMapPositions;
     /* Accumulated travel distance of the robot (current node) */
-    const double                        mAccumTravelDist;
+    const double                          mAccumTravelDist;
     /* Index of the current pose graph node */
-    const int                           mLatestNodeIdx;
+    const int                             mLatestNodeIdx;
     /* Index of the local map that contains the current pose graph node */
-    const int                           mLatestLocalMapIdx;
+    const int                             mLatestLocalMapIdx;
 };
 
 /*

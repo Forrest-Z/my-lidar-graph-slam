@@ -130,10 +130,12 @@ bool GridMapBuilder::UpdateGridMap(
             this->mLocalMaps.back().mFinished = true;
 
         /* Create a new local map */
+        const int localMapIdx = static_cast<int>(this->mLocalMaps.size());
         const Point2D<double> centerPos { robotPose.mX, robotPose.mY };
         GridMapType newLocalMap {
             this->mResolution, this->mPatchSize, 0, 0, centerPos };
-        this->mLocalMaps.emplace_back(std::move(newLocalMap), nodeIdx);
+        this->mLocalMaps.emplace_back(
+            localMapIdx, std::move(newLocalMap), nodeIdx);
 
         /* Reset the variables properly */
         this->mTravelDistLastLocalMap = 0.0;

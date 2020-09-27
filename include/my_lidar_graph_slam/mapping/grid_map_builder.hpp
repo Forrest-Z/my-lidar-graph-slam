@@ -31,11 +31,13 @@ using PrecomputedMapType = GridMap<ConstGridCell<double>>;
 struct LocalMapPosition
 {
     /* Constructor */
-    LocalMapPosition(const Point2D<double>& minPos,
+    LocalMapPosition(const int localMapIdx,
+                     const Point2D<double>& minPos,
                      const Point2D<double>& maxPos,
                      const int poseGraphNodeIdxMin,
                      const int poseGraphNodeIdxMax,
                      const bool isFinished) :
+        mIdx(localMapIdx),
         mMinPos(minPos),
         mMaxPos(maxPos),
         mPoseGraphNodeIdxMin(poseGraphNodeIdxMin),
@@ -44,16 +46,18 @@ struct LocalMapPosition
     /* Destructor */
     ~LocalMapPosition() = default;
 
+    /* Index of the local map */
+    const int             mIdx;
     /* Minimum position of the local map (in world frame) */
-    Point2D<double> mMinPos;
+    const Point2D<double> mMinPos;
     /* Maximum position of the local map (in world frame) */
-    Point2D<double> mMaxPos;
+    const Point2D<double> mMaxPos;
     /* Minimum index of the pose graph node inside this local map */
-    int             mPoseGraphNodeIdxMin;
+    const int             mPoseGraphNodeIdxMin;
     /* Maximum index of the pose graph node inside this local map */
-    int             mPoseGraphNodeIdxMax;
+    const int             mPoseGraphNodeIdxMax;
     /* Flag to determine whether the grid map is in finished state */
-    bool            mFinished;
+    const bool            mFinished;
 };
 
 /*
@@ -62,8 +66,10 @@ struct LocalMapPosition
 struct LocalMapInfo
 {
     /* Constructor */
-    LocalMapInfo(GridMapType&& gridMap,
+    LocalMapInfo(int localMapIdx,
+                 GridMapType&& gridMap,
                  int poseGraphNodeIdx) :
+        mIdx(localMapIdx),
         mMap(std::move(gridMap)),
         mPoseGraphNodeIdxMin(poseGraphNodeIdx),
         mPoseGraphNodeIdxMax(poseGraphNodeIdx),
@@ -82,6 +88,8 @@ struct LocalMapInfo
     /* Move assignment operator */
     LocalMapInfo& operator=(LocalMapInfo&& other) noexcept = default;
 
+    /* Index of the local grid map */
+    const int                         mIdx;
     /* Local grid map, which consists of the scan data
      * from the pose graph nodes within the range of
      * [mPoseGraphNodeIdxMin, mPoseGraphNodeIdxMax] */
