@@ -126,8 +126,8 @@
         },
         "UsableRangeMin": 0.01,
         "UsableRangeMax": 50.0,
-        "ProbabilityHit": 0.62,
-        "ProbabilityMiss": 0.46
+        "ProbabilityHit": 0.6,
+        "ProbabilityMiss": 0.45
     },
 
     "LidarGraphSlam": {
