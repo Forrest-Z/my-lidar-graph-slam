@@ -97,11 +97,12 @@ public:
         const RobotPose2D<double>& nodePose,
         const Sensor::ScanDataPtr<double>& scanData);
 
-    /* Append a new pose graph node and odometry edge */
+    /* Append a new pose graph node and an odometry edge
+     * from a scan matching result */
     void AppendOdometryNodeAndEdge(
-        const RobotPose2D<double>& nodePose,
-        const Eigen::Matrix3d& poseCovMat,
-        const Sensor::ScanDataPtr<double>& scanData);
+        const Sensor::ScanDataPtr<double>& scanData,
+        const RobotPose2D<double>& edgeRelativePose,
+        const Eigen::Matrix3d& edgeCovarianceMatrix);
 
     /* Append new loop closing edges */
     void AppendLoopClosingEdges(

@@ -191,11 +191,12 @@ void LidarGraphSlam::AppendNode(
     this->mPoseGraph->AppendNode(nodePose, scanData);
 }
 
-/* Append a new pose graph node and odometry edge */
+/* Append a new pose graph node and an odometry edge
+ * from a scan matching result */
 void LidarGraphSlam::AppendOdometryNodeAndEdge(
-    const RobotPose2D<double>& nodePose,
-    const Eigen::Matrix3d& poseCovMat,
-    const Sensor::ScanDataPtr<double>& scanData)
+    const Sensor::ScanDataPtr<double>& scanData,
+    const RobotPose2D<double>& edgeRelativePose,
+    const Eigen::Matrix3d& edgeCovarianceMatrix)
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
@@ -203,12 +204,18 @@ void LidarGraphSlam::AppendOdometryNodeAndEdge(
     /* Setup two robot poses */
     const RobotPose2D<double> startNodePose =
         this->mPoseGraph->LatestNode().Pose();
+    /* Compute a new node pose using the latest node pose here,
+     * since the pose of the latest node (starting node of the odometry edge)
+     * might have been modified by the loop closure,
+     * which is performed in the SLAM backend */
+    const RobotPose2D<double> newNodePose =
+        Compound(startNodePose, edgeRelativePose);
 
     /* Append the new pose graph node */
     const int startNodeIdx =
         this->mPoseGraph->LatestNode().Index();
     const int endNodeIdx =
-        this->mPoseGraph->AppendNode(nodePose, scanData);
+        this->mPoseGraph->AppendNode(newNodePose, scanData);
 
     /* Two pose graph node indices must be adjacent
      * since the edge represents the odometry constraint */
@@ -218,12 +225,13 @@ void LidarGraphSlam::AppendOdometryNodeAndEdge(
     /* Relative pose in the frame of the start node
      * Angular component must be normalized from -pi to pi */
     const RobotPose2D<double> edgeRelPose =
-        NormalizeAngle(InverseCompound(startNodePose, nodePose));
+        NormalizeAngle(edgeRelativePose);
 
     /* Covariance matrix must be rotated beforehand since the matrix
      * must represent the covariance in the node frame (not world frame) */
     const Eigen::Matrix3d robotFrameCovMat =
-        ConvertCovarianceFromWorldToRobot(startNodePose, poseCovMat);
+        ConvertCovarianceFromWorldToRobot(
+            startNodePose, edgeCovarianceMatrix);
     /* Calculate a information matrix by inverting a covariance matrix
      * obtained from the scan matching */
     const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();

@@ -97,19 +97,17 @@ bool LidarGraphSlamFrontend::ProcessScan(
         const ScanMatchingSummary matchingSummary =
             this->mScanMatcher->OptimizePose(queryInfo);
 
-        /* Compute the estimated pose in a world frame */
-        const RobotPose2D<double> estimatedPose =
-            Compound(matchingSummary.mInitialPose,
-                     matchingSummary.mLocalPose);
-        /* Compute the estimated covariance in a world frame */
-        const Eigen::Matrix3d estimatedCovariance =
-            ConvertCovarianceFromRobotToWorld(
-                matchingSummary.mInitialPose,
-                matchingSummary.mLocalCovariance);
+        /* Compute the relative pose between the latest node pose
+         * and the estimated pose, the former might have been modified by
+         * the loop closure in SLAM backend and thus the above variable
+         * holds the old value before the loop closure */
+        const RobotPose2D<double> edgeRelativePose =
+            InverseCompound(latestPose, matchingSummary.mEstimatedPose);
 
         /* Append a new pose graph node and odometry edge */
         pParent->AppendOdometryNodeAndEdge(
-            estimatedPose, estimatedCovariance, scanData);
+            scanData, edgeRelativePose,
+            matchingSummary.mEstimatedCovariance);
     }
 
     /* Integrate the scan data into the grid map and
