@@ -2,7 +2,7 @@
 /* slam_launcher.cpp */
 
 #include <cstdlib>
-#include <filesystem>
+#include <experimental/filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -43,7 +43,7 @@ using namespace MyLidarGraphSlam;
 
 /* Declare namespaces for convenience */
 namespace pt = boost::property_tree;
-namespace fs = std::filesystem;
+namespace fs = std::experimental::filesystem;
 
 /* Create the greedy endpoint cost function object */
 std::shared_ptr<Mapping::CostFunction> CreateCostGreedyEndpoint(

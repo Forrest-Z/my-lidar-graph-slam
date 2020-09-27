@@ -24,7 +24,7 @@ add_subdirectory(src)
 
 target_include_directories(
     lidar_graph_slam PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(lidar_graph_slam PUBLIC m rt pthread dl)
+target_link_libraries(lidar_graph_slam PUBLIC m rt pthread dl stdc++fs)
 target_link_libraries(lidar_graph_slam PUBLIC Eigen3::Eigen)
 target_link_libraries(lidar_graph_slam PUBLIC PNG::PNG)
 target_compile_options(lidar_graph_slam PUBLIC

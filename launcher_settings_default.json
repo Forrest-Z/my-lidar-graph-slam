@@ -164,7 +164,7 @@
     },
 
     "Launcher": {
-        "GuiEnabled": "true",
+        "GuiEnabled": "false",
         "DrawFrameInterval": 5,
         "WaitForKey": "false"
     }
