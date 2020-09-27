@@ -44,12 +44,6 @@ using namespace MyLidarGraphSlam;
 /* Declare namespaces for convenience */
 namespace pt = boost::property_tree;
 
-/* Declare types for convenience */
-using MapType = GridMap<BinaryBayesGridCell<double>>;
-using PrecomputedMapType = GridMap<ConstGridCell<double>>;
-using ScanPtrType = Sensor::ScanDataPtr<double>;
-using ScanType = ScanPtrType::element_type;
-
 /* Create the greedy endpoint cost function object */
 std::shared_ptr<Mapping::CostFunction> CreateCostGreedyEndpoint(
     const pt::ptree& jsonSettings,
@@ -628,7 +622,8 @@ int main(int argc, char** argv)
     IO::GnuplotHelper gnuplotHelper;
 
     for (const auto& sensorData : logData) {
-        ScanPtrType scanData = std::dynamic_pointer_cast<ScanType>(sensorData);
+        auto scanData = std::dynamic_pointer_cast<
+            const Sensor::ScanData<double>>(sensorData);
 
         if (scanData == nullptr)
             continue;
@@ -659,13 +654,13 @@ int main(int argc, char** argv)
     /* Retrieve a latest map that contains latest scans */
     int latestMapNodeIdxMin;
     int latestMapNodeIdxMax;
-    MapType latestMap = pLidarGraphSlam->GetLatestMap(
+    Mapping::GridMapType latestMap = pLidarGraphSlam->GetLatestMap(
         latestMapNodeIdxMin, latestMapNodeIdxMax);
 
     /* Build a global map that contains all local grid maps */
     int globalMapNodeIdxMin;
     int globalMapNodeIdxMax;
-    MapType globalMap = pLidarGraphSlam->GetGlobalMap(
+    Mapping::GridMapType globalMap = pLidarGraphSlam->GetGlobalMap(
         globalMapNodeIdxMin, globalMapNodeIdxMax);
 
     /* Retrieve all pose graph nodes and edges */
