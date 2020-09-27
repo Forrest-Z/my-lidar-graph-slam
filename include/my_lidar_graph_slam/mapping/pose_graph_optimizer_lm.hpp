@@ -4,6 +4,8 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
 #define MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
 
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
+
 #include <cmath>
 #include <limits>
 #include <vector>
@@ -14,7 +16,7 @@
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/util.hpp"
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
+#include "my_lidar_graph_slam/mapping/robust_loss_function.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -46,11 +48,13 @@ public:
     PoseGraphOptimizerLM(SolverType solverType,
                          int numOfIterationsMax,
                          double errorTolerance,
-                         double initialLambda) :
+                         double initialLambda,
+                         LossFunctionPtr lossFunction) :
         mSolverType(solverType),
         mNumOfIterationsMax(numOfIterationsMax),
         mErrorTolerance(errorTolerance),
-        mLambda(initialLambda) { }
+        mLambda(initialLambda),
+        mLossFunction(lossFunction) { }
     /* Destructor */
     ~PoseGraphOptimizerLM() = default;
 
@@ -59,6 +63,12 @@ public:
     void Optimize(
         std::vector<PoseGraph::Node>& poseGraphNodes,
         const std::vector<PoseGraph::Edge>& poseGraphEdges) override;
+
+    /* Compute error function */
+    void ComputeErrorFunction(const RobotPose2D<double>& startNodePose,
+                              const RobotPose2D<double>& endNodePose,
+                              const RobotPose2D<double>& edgeRelPose,
+                              Eigen::Vector3d& errorVec) const override;
 
 private:
     /* Perform one optimization step and return the total error */
@@ -75,12 +85,6 @@ private:
                                const RobotPose2D<double>& endNodePose,
                                Eigen::Matrix3d& startNodeErrorJacobian,
                                Eigen::Matrix3d& endNodeErrorJacobian) const;
-    
-    /* Compute error function */
-    void ComputeErrorFunction(const RobotPose2D<double>& startNodePose,
-                              const RobotPose2D<double>& endNodePose,
-                              const RobotPose2D<double>& edgeRelPose,
-                              Eigen::Vector3d& errorVec) const;
     
     /* Compute total error */
     double ComputeTotalError(
@@ -101,6 +105,8 @@ private:
      * The method is almost the same as Gauss-Newton method when small,
      * and is gradient descent method when large */
     double                              mLambda;
+    /* Robust loss function to correct (weight) information matrices */
+    LossFunctionPtr                     mLossFunction;
 
     /* Left-hand side sparse matrix of the linear system */
     Eigen::SparseMatrix<double>         mMatA;

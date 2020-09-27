@@ -107,6 +107,13 @@ void PoseGraphOptimizerLM::OptimizeStep(
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
 
+        /* Correct the information matrix using the weight function
+         * based on the robust estimation (M-estimation)
+         * to prevent outliers caused by wrong loop detections */
+        const double errorWeight = this->mLossFunction->Weight(
+            errorVec.transpose() * infoMat * errorVec);
+        const Eigen::Matrix3d weightedInfoMat = errorWeight * infoMat;
+
         /* Compute 4 non-zero block matrices denoted as 
          * J_i^T \Lambda_{ij} J_i, J_i^T \Lambda_{ij} J_j,
          * J_j^T \Lambda_{ij} J_i, and J_j^T \Lambda_{ij} J_j in the paper
@@ -116,9 +123,9 @@ void PoseGraphOptimizerLM::OptimizeStep(
         /* Compute the intermediate results, namely
          * J_i^T \Lambda_{ij} and J_j^T \Lambda_{ij} */
         const Eigen::Matrix3d trJsInfo =
-            startNodeJacobian.transpose() * infoMat;
+            startNodeJacobian.transpose() * weightedInfoMat;
         const Eigen::Matrix3d trJeInfo =
-            endNodeJacobian.transpose() * infoMat;
+            endNodeJacobian.transpose() * weightedInfoMat;
 
         /* Compute 4 non-zero block matrices */
         const Eigen::Matrix3d trJsInfoJs = trJsInfo * startNodeJacobian;
@@ -321,9 +328,13 @@ double PoseGraphOptimizerLM::ComputeTotalError(
         Eigen::Vector3d errorVec;
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
+        /* Compute the error value */
+        const double errorVal = errorVec.transpose() * infoMat * errorVec;
+        /* Apply the robust loss function */
+        const double correctedError = this->mLossFunction->Loss(errorVal);
 
         /* Compute the error value */
-        totalError += errorVec.transpose() * infoMat * errorVec;
+        totalError += correctedError;
     }
 
     return totalError;
