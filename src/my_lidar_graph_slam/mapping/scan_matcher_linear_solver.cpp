@@ -45,18 +45,19 @@ ScanMatchingSummary ScanMatcherLinearSolver::OptimizePose(
 
     /* Calculate the sensor pose from the initial robot pose */
     const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
-    RobotPose2D<double> sensorPose = Compound(initialPose, relPose);
+    const RobotPose2D<double> sensorPose = Compound(initialPose, relPose);
 
     /* Minimum cost and the pose */
     double prevCost = std::numeric_limits<double>::max();
     double cost = std::numeric_limits<double>::max();
+    RobotPose2D<double> bestPose = sensorPose;
     int numOfIterations = 0;
-    
+
     while (true) {
         /* Perform one scan matching step */
-        sensorPose = this->OptimizeStep(gridMap, scanData, sensorPose);
+        bestPose = this->OptimizeStep(gridMap, scanData, bestPose);
         /* Compute the cost value */
-        cost = this->mCostFunc->Cost(gridMap, scanData, sensorPose);
+        cost = this->mCostFunc->Cost(gridMap, scanData, bestPose);
 
         /* Stop the optimization if the number of iteration steps
          * exceeded the maximum or the cost converged */
@@ -69,17 +70,25 @@ ScanMatchingSummary ScanMatcherLinearSolver::OptimizePose(
 
     /* Compute the normalized cost value */
     const double normalizedCost = cost / scanData->NumOfScans();
+    /* Compute the estimated robot pose in a world frame */
+    const RobotPose2D<double> estimatedPose =
+        MoveBackward(bestPose, relPose);
+    /* Compute the estimated pose in a local frame
+     * centered at the initial pose */
+    const RobotPose2D<double> estimatedLocalPose =
+        InverseCompound(initialPose, estimatedPose);
     /* Calculate the pose covariance matrix */
     const Eigen::Matrix3d estimatedCovariance =
-        this->mCostFunc->ComputeCovariance(gridMap, scanData, sensorPose);
-    /* Calculate the robot pose from the updated sensor pose */
-    const RobotPose2D<double> estimatedPose =
-        MoveBackward(sensorPose, relPose);
+        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestPose);
+    /* Compute the rotated covariance matrix in a local frame */
+    const Eigen::Matrix3d estimatedLocalCovariance =
+        ConvertCovarianceFromWorldToRobot(initialPose, estimatedCovariance);
 
     /* Return the normalized cost value, the estimated robot pose,
      * and the estimated pose covariance matrix in a world frame */
     return ScanMatchingSummary {
-        normalizedCost, estimatedPose, estimatedCovariance };
+        normalizedCost, initialPose,
+        estimatedLocalPose, estimatedLocalCovariance };
 }
 
 /* Perform one optimization step */

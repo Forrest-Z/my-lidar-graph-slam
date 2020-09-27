@@ -222,9 +222,8 @@ void LidarGraphSlam::AppendOdometryNodeAndEdge(
 
     /* Covariance matrix must be rotated beforehand since the matrix
      * must represent the covariance in the node frame (not world frame) */
-    Eigen::Matrix3d robotFrameCovMat;
-    ConvertCovarianceFromWorldToRobot(
-        startNodePose, poseCovMat, robotFrameCovMat);
+    const Eigen::Matrix3d robotFrameCovMat =
+        ConvertCovarianceFromWorldToRobot(startNodePose, poseCovMat);
     /* Calculate a information matrix by inverting a covariance matrix
      * obtained from the scan matching */
     const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();
@@ -251,11 +250,10 @@ void LidarGraphSlam::AppendLoopClosingEdges(
         /* Covariance matrix represents the uncertainty of the scan matching */
         /* Covariance matrix must be rotated since loop closing edge needs
          * the covariance matrix in the local robot frame */
-        Eigen::Matrix3d robotFrameCovMat;
-        ConvertCovarianceFromWorldToRobot(
-            loopDetectionResult.mStartNodePose,
-            loopDetectionResult.mEstimatedCovMat,
-            robotFrameCovMat);
+        const Eigen::Matrix3d robotFrameCovMat =
+            ConvertCovarianceFromWorldToRobot(
+                loopDetectionResult.mStartNodePose,
+                loopDetectionResult.mEstimatedCovMat);
         /* Compute a information matrix by inverting a covariance matrix */
         const Eigen::Matrix3d informationMat =
             robotFrameCovMat.inverse();

@@ -117,9 +117,9 @@ std::pair<double, double> ToPolarCoordinate(const Point2D<T>& point)
 }
 
 /* Rotate a covariance matrix */
-inline void RotateCovariance(const double rotationAngle,
-                             const Eigen::Matrix3d& covMat,
-                             Eigen::Matrix3d& rotatedCovMat)
+inline Eigen::Matrix3d RotateCovariance(
+    const double rotationAngle,
+    const Eigen::Matrix3d& covMat)
 {
     const double cosTheta = std::cos(rotationAngle);
     const double sinTheta = std::sin(rotationAngle);
@@ -131,25 +131,23 @@ inline void RotateCovariance(const double rotationAngle,
                    0.0,       0.0,      1.0;
     
     /* Rotate a covariance matrix */
-    rotatedCovMat = rotationMat * covMat * rotationMat.transpose();
+    return rotationMat * covMat * rotationMat.transpose();
 }
 
 /* Convert a covariance matrix from world frame to robot frame */
-inline void ConvertCovarianceFromWorldToRobot(
+inline Eigen::Matrix3d ConvertCovarianceFromWorldToRobot(
     const RobotPose2D<double>& robotPose,
-    const Eigen::Matrix3d& worldCovMat,
-    Eigen::Matrix3d& robotCovMat)
+    const Eigen::Matrix3d& worldCovMat)
 {
-    RotateCovariance(-robotPose.mTheta, worldCovMat, robotCovMat);
+    return RotateCovariance(-robotPose.mTheta, worldCovMat);
 }
 
 /* Convert a covariance matrix from robot frame to world frame */
-inline void ConvertCovarianceFromRobotToWorld(
+inline Eigen::Matrix3d ConvertCovarianceFromRobotToWorld(
     const RobotPose2D<double>& robotPose,
-    const Eigen::Matrix3d& robotCovMat,
-    Eigen::Matrix3d& worldCovMat)
+    const Eigen::Matrix3d& robotCovMat)
 {
-    RotateCovariance(robotPose.mTheta, robotCovMat, worldCovMat);
+    return RotateCovariance(robotPose.mTheta, robotCovMat);
 }
 
 /* Execute sliding window maximum problem */
