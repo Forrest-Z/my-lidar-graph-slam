@@ -75,15 +75,15 @@ void LoopDetectorBranchBound::Detect(
 }
 
 /* Compute the search window step */
-void LoopClosureBranchBound::ComputeSearchStep(
-    const GridMapBuilder::LocalMapInfo& localMapInfo,
-    const ScanPtr& scanData,
+void LoopDetectorBranchBound::ComputeSearchStep(
+    const GridMapType& localMap,
+    const Sensor::ScanDataPtr<double>& scanData,
     double& stepX,
     double& stepY,
     double& stepTheta) const
 {
     /* Determine the search step */
-    const double mapResolution = localMapInfo.mMap.Resolution();
+    const double mapResolution = localMap.Resolution();
     const auto maxRangeIt = std::max_element(
         scanData->Ranges().cbegin(), scanData->Ranges().cend());
     const double maxRange = std::min(*maxRangeIt, this->mScanRangeMax);
@@ -118,7 +118,7 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
     double stepX;
     double stepY;
     double stepTheta;
-    this->ComputeSearchStep(localMapInfo, scanData, stepX, stepY, stepTheta);
+    this->ComputeSearchStep(localMap, scanData, stepX, stepY, stepTheta);
 
     /* Determine the search window */
     const int winX = static_cast<int>(

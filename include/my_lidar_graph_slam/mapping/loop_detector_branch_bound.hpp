@@ -68,8 +68,8 @@ public:
 private:
     /* Compute the search window step */
     void ComputeSearchStep(
-        const GridMapBuilder::LocalMapInfo& localMapInfo,
-        const ScanPtr& scanData,
+        const GridMapType& localMap,
+        const Sensor::ScanDataPtr<double>& scanData,
         double& stepX,
         double& stepY,
         double& stepTheta) const;
