@@ -518,6 +518,8 @@ std::shared_ptr<Mapping::LidarGraphSlamFrontend> CreateSlamFrontend(
         pScanInterpolator, pScanMatcher, initialPose,
         updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime,
         loopDetectionInterval);
+
+    return pFrontend;
 }
 
 /* Create SLAM backend */
@@ -556,6 +558,8 @@ std::shared_ptr<Mapping::LidarGraphSlamBackend> CreateSlamBackend(
     /* Create SLAM backend */
     auto pBackend = std::make_shared<Mapping::LidarGraphSlamBackend>(
         pOptimizer, pLoopSearcher, pLoopDetector);
+
+    return pBackend;
 }
 
 /* Create LiDAR Graph-Based SLAM object */
