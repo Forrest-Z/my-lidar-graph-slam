@@ -75,7 +75,7 @@ private:
         double& maxScore) const;
 
     /* Find a corresponding pose of the current robot pose
-     * from the loop-closure candidate local grid map */
+     * from a local grid map */
     bool FindCorrespondingPose(
         const GridMapType& localMap,
         const std::map<int, PrecomputedMapType>& precompMaps,
@@ -95,9 +95,9 @@ private:
     double      mRangeY;
     /* Angular size of the search window */
     double      mRangeTheta;
-    /* Maximum laser scan range considered for loop closure */
+    /* Maximum laser scan range considered for loop detection */
     double      mScanRangeMax;
-    /* Normalized matching score threshold for loop closure */
+    /* Normalized matching score threshold for loop detection */
     double      mScoreThreshold;
 };
 

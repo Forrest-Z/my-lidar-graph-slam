@@ -326,12 +326,12 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorGridSearch(
     return pLoopDetector;
 }
 
-/* Create the real-time correlative loop closure object */
+/* Create a new real-time correlative loop detector */
 std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorRealTimeCorrelative(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
-    /* Read settings for real-time correlative loop closure */
+    /* Read settings for real-time correlative loop detection */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
     const int lowResolution = config.get("LowResolutionMapWinSize", 10);
@@ -349,16 +349,16 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorRealTimeCorrelative(
     auto pCostFunc = CreateCostFunction(
         jsonSettings, costType, costConfigGroup);
 
-    /* Construct real-time correlative loop closure object */
-    auto pLoopClosure = std::make_shared<
+    /* Construct a real-time correlative loop detector */
+    auto pLoopDetector = std::make_shared<
         Mapping::LoopDetectorRealTimeCorrelative>(
         pCostFunc, lowResolution, rangeX, rangeY, rangeTheta,
         scanRangeMax, scoreThreshold);
 
-    return pLoopClosure;
+    return pLoopDetector;
 }
 
-/* Create the branch-and-bound loop closure object */
+/* Create a new branch-and-bound loop detector */
 std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorBranchBound(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)

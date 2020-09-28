@@ -91,7 +91,7 @@
         }
     },
 
-    "LoopClosureRealTimeCorrelative": {
+    "LoopDetectorRealTimeCorrelative": {
         "TravelDistThreshold": 10.0,
         "PoseGraphNodeDistMax": 10.0,
         "LowResolutionMapWinSize": 5,
@@ -101,7 +101,7 @@
         "ScanRangeMax": 20.0,
         "ScoreThreshold": 0.6,
         "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopClosureRealTimeCorrelative.CostGreedyEndpoint",
+        "CostConfigGroup": "LoopDetectorRealTimeCorrelative.CostGreedyEndpoint",
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 20.0,

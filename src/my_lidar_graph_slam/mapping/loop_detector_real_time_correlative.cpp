@@ -188,7 +188,7 @@ void LoopDetectorRealTimeCorrelative::EvaluateHighResolutionMap(
 }
 
 /* Find a corresponding pose of the current robot pose
- * from the loop-closure candidate local grid map */
+ * from a local grid map */
 bool LoopDetectorRealTimeCorrelative::FindCorrespondingPose(
     const GridMapType& localMap,
     const std::map<int, PrecomputedMapType>& precompMaps,
@@ -219,7 +219,7 @@ bool LoopDetectorRealTimeCorrelative::FindCorrespondingPose(
     const int winTheta = static_cast<int>(
         std::ceil(0.5 * this->mRangeTheta / stepTheta));
 
-    /* Perform loop closure against the low-resolution grid map */
+    /* Perform loop detection against the low-resolution grid map */
     /* Initialize the maximum score with the score threshold,
      * which is not normalized */
     const double scoreThreshold =
@@ -263,7 +263,7 @@ bool LoopDetectorRealTimeCorrelative::FindCorrespondingPose(
         }
     }
 
-    /* Loop closure fails if the score does not exceed the threshold */
+    /* Loop detection fails if the score does not exceed the threshold */
     if (scoreMax <= scoreThreshold)
         return false;
 
