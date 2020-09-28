@@ -1,32 +1,28 @@
 
-/* loop_closure_real_time_correlative.hpp */
+/* loop_detector_real_time_correlative.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_REAL_TIME_CORRELATIVE_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_REAL_TIME_CORRELATIVE_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_REAL_TIME_CORRELATIVE_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_REAL_TIME_CORRELATIVE_HPP
 
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_candidate_nearest.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-class LoopClosureRealTimeCorrelative final : public LoopClosure
+class LoopDetectorRealTimeCorrelative final : public LoopDetector
 {
 public:
     /* Constructor */
-    LoopClosureRealTimeCorrelative(const CostFuncPtr& costFunc,
-                                   double travelDistThreshold,
-                                   double nodeDistThreshold,
-                                   int lowResolution,
-                                   double rangeX,
-                                   double rangeY,
-                                   double rangeTheta,
-                                   double scanRangeMax,
-                                   double scoreThreshold) :
+    LoopDetectorRealTimeCorrelative(const CostFuncPtr& costFunc,
+                                    int lowResolution,
+                                    double rangeX,
+                                    double rangeY,
+                                    double rangeTheta,
+                                    double scanRangeMax,
+                                    double scoreThreshold) :
         mCostFunc(costFunc),
-        mLoopClosureCandidate(travelDistThreshold, nodeDistThreshold),
         mLowResolution(lowResolution),
         mRangeX(rangeX),
         mRangeY(rangeY),
@@ -35,20 +31,17 @@ public:
         mScoreThreshold(scoreThreshold) { }
 
     /* Destructor */
-    ~LoopClosureRealTimeCorrelative() = default;
+    ~LoopDetectorRealTimeCorrelative() = default;
 
     /* Find a loop and return a loop constraint */
-    bool FindLoop(std::shared_ptr<GridMapBuilder>& gridMapBuilder,
-                  const std::shared_ptr<PoseGraph>& poseGraph,
-                  RobotPose2D<double>& relPose,
-                  int& startNodeIdx,
-                  int& endNodeIdx,
-                  Eigen::Matrix3d& estimatedCovMat) override;
+    void Detect(
+        LoopDetectionQueryVector& loopDetectionQueries,
+        LoopDetectionResultVector& loopDetectionResults) override;
 
 private:
     /* Compute the search step */
     void ComputeSearchStep(
-        const GridMapBuilder::GridMapType& gridMap,
+        const GridMapType& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
         double& stepX,
         double& stepY,
@@ -56,7 +49,7 @@ private:
 
     /* Compute the grid cell indices for scan points */
     void ComputeScanIndices(
-        const GridMapBuilder::PrecomputedMapType& precompMap,
+        const PrecomputedMapType& precompMap,
         const RobotPose2D<double>& sensorPose,
         const Sensor::ScanDataPtr<double>& scanData,
         std::vector<Point2D<int>>& scanIndices) const;
@@ -84,7 +77,8 @@ private:
     /* Find a corresponding pose of the current robot pose
      * from the loop-closure candidate local grid map */
     bool FindCorrespondingPose(
-        const GridMapBuilder::LocalMapInfo& localMapInfo,
+        const GridMapType& localMap,
+        const std::map<int, PrecomputedMapType>& precompMaps,
         const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& robotPose,
         RobotPose2D<double>& correspondingPose,
@@ -92,24 +86,22 @@ private:
 
 private:
     /* Cost function */
-    CostFuncPtr                 mCostFunc;
-    /* Loop closure candidate search */
-    LoopClosureCandidateNearest mLoopClosureCandidate;
+    CostFuncPtr mCostFunc;
     /* Resolution for low resolution map (in the number of grid cells) */
-    int                         mLowResolution;
+    int         mLowResolution;
     /* Linear (horizontal) size of the searching window */
-    double                      mRangeX;
+    double      mRangeX;
     /* Linear (vertical) size of the searching window */
-    double                      mRangeY;
+    double      mRangeY;
     /* Angular size of the search window */
-    double                      mRangeTheta;
+    double      mRangeTheta;
     /* Maximum laser scan range considered for loop closure */
-    double                      mScanRangeMax;
+    double      mScanRangeMax;
     /* Normalized matching score threshold for loop closure */
-    double                      mScoreThreshold;
+    double      mScoreThreshold;
 };
 
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_CLOSURE_REAL_TIME_CORRELATIVE_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_REAL_TIME_CORRELATIVE_HPP */

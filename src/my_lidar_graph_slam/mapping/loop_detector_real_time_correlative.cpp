@@ -1,93 +1,92 @@
 
-/* loop_closure_real_time_correlative.cpp */
+/* loop_detector_real_time_correlative.cpp */
 
-#include "my_lidar_graph_slam/mapping/loop_closure_real_time_correlative.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector_real_time_correlative.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <limits>
 #include <numeric>
 
-#include "my_lidar_graph_slam/metric/metric.hpp"
-
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Find a loop and return a loop constraint */
-bool LoopClosureRealTimeCorrelative::FindLoop(
-    std::shared_ptr<GridMapBuilder>& gridMapBuilder,
-    const std::shared_ptr<PoseGraph>& poseGraph,
-    RobotPose2D<double>& relPose,
-    int& startNodeIdx,
-    int& endNodeIdx,
-    Eigen::Matrix3d& estimatedCovMat)
+void LoopDetectorRealTimeCorrelative::Detect(
+    LoopDetectionQueryVector& loopDetectionQueries,
+    LoopDetectionResultVector& loopDetectionResults)
 {
-    /* Retrieve the current robot pose and scan data */
-    const auto& currentNode = poseGraph->LatestNode();
-    const RobotPose2D<double>& currentPose = currentNode.Pose();
-    const Sensor::ScanDataPtr<double>& currentScanData = currentNode.ScanData();
-    const int currentNodeIdx = currentNode.Index();
+    /* Clear the loop detection results */
+    loopDetectionResults.clear();
 
-    /* Find a local map and a pose graph node for loop closure */
-    const auto loopClosureCandidates = this->mLoopClosureCandidate.Find(
-        gridMapBuilder, poseGraph, currentPose);
+    /* Do not perform loop detection if no query exists */
+    if (loopDetectionQueries.empty())
+        return;
 
-    /* Do not perform loop closure if candidate not found */
-    if (loopClosureCandidates.empty())
-        return false;
+    /* Perform loop detection for each query */
+    for (auto& loopDetectionQuery : loopDetectionQueries) {
+        /* Retrieve the information for each query */
+        const auto& poseGraphNodes = loopDetectionQuery.mPoseGraphNodes;
+        auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
+        const auto& localMapNode = loopDetectionQuery.mLocalMapNode;
 
-    /* Find a corresponding pose of the current pose in the
-     * loop-closure candidate local grid map */
-    const int candidateMapIdx = loopClosureCandidates.front().first;
-    const int candidateNodeIdx = loopClosureCandidates.front().second;
+        /* Make sure that the node is inside the local grid map */
+        assert(localMapNode.Index() >= localMapInfo.mPoseGraphNodeIdxMin &&
+               localMapNode.Index() <= localMapInfo.mPoseGraphNodeIdxMax);
 
-    auto& candidateMapInfo = gridMapBuilder->LocalMapAt(candidateMapIdx);
-    const auto& candidateMap = candidateMapInfo.mMap;
-    const auto& candidateNode = poseGraph->NodeAt(candidateNodeIdx);
-    const RobotPose2D<double>& candidateNodePose = candidateNode.Pose();
+        /* Make sure that the grid map is in finished state */
+        assert(localMapInfo.mFinished);
 
-    /* The local grid map used for loop closure must be finished */
-    assert(candidateMapInfo.mFinished);
+        /* Precompute a low-resolution grid map */
+        if (!localMapInfo.mPrecomputed) {
+            /* Precompute a coarser grid map */
+            PrecomputedMapType precompMap =
+                PrecomputeGridMap(localMapInfo.mMap, this->mLowResolution);
+            /* Append the newly created grid map */
+            localMapInfo.mPrecomputedMaps.emplace(0, std::move(precompMap));
+            /* Mark the current local map as precomputed */
+            localMapInfo.mPrecomputed = true;
+        }
 
-    /* Precompute a low-resolution grid map */
-    if (!candidateMapInfo.mPrecomputed) {
-        /* Precompute a grid map */
-        GridMapBuilder::PrecomputedMapType precompMap =
-            PrecomputeGridMap(candidateMap, this->mLowResolution);
-        /* Append the newly created grid map */
-        candidateMapInfo.mPrecomputedMaps.emplace(0, std::move(precompMap));
-        /* Mark the local map as precomputed */
-        candidateMapInfo.mPrecomputed = true;
+        /* The local grid map should have only one precomputed grid map */
+        assert(localMapInfo.mPrecomputedMaps.size() == 1);
+
+        /* Perform loop detection for each node */
+        for (const auto& poseGraphNode : poseGraphNodes) {
+            /* Find the corresponding position of the node
+             * inside the local grid map */
+            RobotPose2D<double> correspondingPose;
+            Eigen::Matrix3d covarianceMatrix;
+            const bool loopDetected = this->FindCorrespondingPose(
+                localMapInfo.mMap, localMapInfo.mPrecomputedMaps,
+                poseGraphNode.ScanData(), poseGraphNode.Pose(),
+                correspondingPose, covarianceMatrix);
+
+            /* Do not build a new loop closing edge if loop not detected */
+            if (!loopDetected)
+                continue;
+
+            /* Setup loop closing edge information */
+            /* Relative pose of the loop closing edge */
+            const RobotPose2D<double> relativePose =
+                InverseCompound(localMapNode.Pose(), correspondingPose);
+            /* Indices of the start and end node */
+            const int startNodeIdx = localMapNode.Index();
+            const int endNodeIdx = poseGraphNode.Index();
+
+            /* Append to the loop detection results */
+            loopDetectionResults.emplace_back(
+                relativePose, localMapNode.Pose(),
+                startNodeIdx, endNodeIdx, covarianceMatrix);
+        }
     }
 
-    /* The number of the precomputed grid maps must be 1 */
-    assert(candidateMapInfo.mPrecomputedMaps.size() == 1);
-
-    RobotPose2D<double> correspondingPose;
-    Eigen::Matrix3d covMat;
-    const bool loopFound = this->FindCorrespondingPose(
-        candidateMapInfo, currentScanData, currentPose,
-        correspondingPose, covMat);
-
-    /* Do not create loop constraint if loop closure failed */
-    if (!loopFound)
-        return false;
-
-    /* Setup pose graph edge information */
-    /* Set the relative pose */
-    relPose = InverseCompound(candidateNodePose, correspondingPose);
-    /* Set the pose graph indices */
-    startNodeIdx = candidateNodeIdx;
-    endNodeIdx = currentNodeIdx;
-    /* Set the estimated covariance matrix */
-    estimatedCovMat = covMat;
-
-    return true;
+    return;
 }
 
 /* Compute the search step */
-void LoopClosureRealTimeCorrelative::ComputeSearchStep(
-    const GridMapBuilder::GridMapType& gridMap,
+void LoopDetectorRealTimeCorrelative::ComputeSearchStep(
+    const GridMapType& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     double& stepX,
     double& stepY,
@@ -108,8 +107,8 @@ void LoopClosureRealTimeCorrelative::ComputeSearchStep(
 }
 
 /* Compute the grid cell indices for scan points */
-void LoopClosureRealTimeCorrelative::ComputeScanIndices(
-    const GridMapBuilder::PrecomputedMapType& gridMap,
+void LoopDetectorRealTimeCorrelative::ComputeScanIndices(
+    const PrecomputedMapType& gridMap,
     const RobotPose2D<double>& sensorPose,
     const Sensor::ScanDataPtr<double>& scanData,
     std::vector<Point2D<int>>& scanIndices) const
@@ -137,7 +136,7 @@ void LoopClosureRealTimeCorrelative::ComputeScanIndices(
 
 /* Compute the scan matching score based on the already projected
  * scan points (indices) and index offsets */
-double LoopClosureRealTimeCorrelative::ComputeScore(
+double LoopDetectorRealTimeCorrelative::ComputeScore(
     const GridMapBase<double>& gridMap,
     const std::vector<Point2D<int>>& scanIndices,
     const int offsetX,
@@ -157,7 +156,7 @@ double LoopClosureRealTimeCorrelative::ComputeScore(
 }
 
 /* Evaluate the matching score using high-resolution grid map */
-void LoopClosureRealTimeCorrelative::EvaluateHighResolutionMap(
+void LoopDetectorRealTimeCorrelative::EvaluateHighResolutionMap(
     const GridMapBase<double>& gridMap,
     const std::vector<Point2D<int>>& scanIndices,
     const int offsetX,
@@ -190,19 +189,17 @@ void LoopClosureRealTimeCorrelative::EvaluateHighResolutionMap(
 
 /* Find a corresponding pose of the current robot pose
  * from the loop-closure candidate local grid map */
-bool LoopClosureRealTimeCorrelative::FindCorrespondingPose(
-    const GridMapBuilder::LocalMapInfo& localMapInfo,
+bool LoopDetectorRealTimeCorrelative::FindCorrespondingPose(
+    const GridMapType& localMap,
+    const std::map<int, PrecomputedMapType>& precompMaps,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& robotPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
-    /* Retrieve the local grid map */
-    const GridMapBuilder::GridMapType& localMap = localMapInfo.mMap;
     /* Retrieve the precomputed low-resolution grid map */
-    assert(localMapInfo.mPrecomputedMaps.size() == 1);
-    const GridMapBuilder::PrecomputedMapType& precompMap =
-        localMapInfo.mPrecomputedMaps.at(0);
+    assert(precompMaps.size() == 1);
+    const PrecomputedMapType& precompMap = precompMaps.at(0);
 
     /* Find the best pose from the search window */
     const RobotPose2D<double> sensorPose =
@@ -266,11 +263,6 @@ bool LoopClosureRealTimeCorrelative::FindCorrespondingPose(
         }
     }
 
-    /* Update metrics */
-    Metric::MetricManager* const pMetric = Metric::MetricManager::Instance();
-    auto& histMetrics = pMetric->HistogramMetrics();
-    histMetrics("LoopClosureMaxScore")->Observe(scoreMax);
-
     /* Loop closure fails if the score does not exceed the threshold */
     if (scoreMax <= scoreThreshold)
         return false;
@@ -291,9 +283,6 @@ bool LoopClosureRealTimeCorrelative::FindCorrespondingPose(
     /* Return the result */
     correspondingPose = bestPose;
     estimatedCovMat = covMat;
-
-    /* Update metrics */
-    histMetrics("LoopClosureMaxScoreSuccess")->Observe(scoreMax);
 
     return true;
 }
