@@ -195,9 +195,6 @@ void PoseGraphOptimizerLM::OptimizeStep(
             cgSolver.compute(matA);
             /* Solve the linear system for increment */
             vecDelta = cgSolver.solve(-vecB);
-
-            std::cerr << "Iterations: " << cgSolver.iterations() << ", "
-                      << "Estimated error: " << cgSolver.error() << std::endl;
             break;
         }
 
