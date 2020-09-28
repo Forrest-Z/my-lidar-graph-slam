@@ -86,23 +86,23 @@ private:
 
 private:
     /* Matching score function */
-    ScoreFuncPtr                mScoreFunc;
+    ScoreFuncPtr mScoreFunc;
     /* Cost function */
-    CostFuncPtr                 mCostFunc;
+    CostFuncPtr  mCostFunc;
     /* Maximum height of the tree used in branch-and-bound */
-    int                         mNodeHeightMax;
+    int          mNodeHeightMax;
     /* Linear (horizontal) size of the search window */
-    double                      mRangeX;
+    double       mRangeX;
     /* Linear (vertical) size of the search window */
-    double                      mRangeY;
+    double       mRangeY;
     /* Angular size of the search window */
-    double                      mRangeTheta;
+    double       mRangeTheta;
     /* Maximum laser scan range considered for loop detector */
-    double                      mScanRangeMax;
+    double       mScanRangeMax;
     /* Normalized matching score threshold for loop detector */
-    double                      mScoreThreshold;
+    double       mScoreThreshold;
     /* Match rate threshold for loop detector */
-    double                      mMatchRateThreshold;
+    double       mMatchRateThreshold;
 };
 
 } /* namespace Mapping */
