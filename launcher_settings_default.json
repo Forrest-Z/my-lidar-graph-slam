@@ -1,16 +1,17 @@
 {
     "CostGreedyEndpoint": {
         "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0,
+        "UsableRangeMax": 20.0,
         "HitAndMissedDist": 0.075,
         "OccupancyThreshold": 0.1,
         "KernelSize": 1,
+        "StandardDeviation": 0.05,
         "ScalingFactor": 1.0
     },
 
     "CostSquareError": {
         "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0
+        "UsableRangeMax": 20.0
     },
 
     "ScorePixelAccurate": {
@@ -31,7 +32,7 @@
         "NumOfIterationsMax": 100,
         "ConvergenceThreshold": 1e-3,
         "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0,
+        "UsableRangeMax": 20.0,
         "TranslationRegularizer": 1e-3,
         "RotationRegularizer": 1e-3,
         "CostType": "SquareError",
@@ -46,6 +47,10 @@
         "ScanRangeMax": 20.0,
         "CostType": "GreedyEndpoint",
         "CostConfigGroup": "CostGreedyEndpoint"
+    },
+
+    "ScanAccumulator": {
+        "NumOfAccumulatedScans": 3
     },
 
     "ScanInterpolator": {
@@ -73,26 +78,49 @@
         "CostConfigGroup": "LoopDetectorGridSearch.CostGreedyEndpoint",
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
-            "UsableRangeMax": 50.0,
+            "UsableRangeMax": 20.0,
             "HitAndMissedDist": 0.075,
             "OccupancyThreshold": 0.1,
             "KernelSize": 1,
+            "StandardDeviation": 0.05,
             "ScalingFactor": 1.0
         },
         "CostSquareError": {
             "UsableRangeMin": 0.01,
-            "UsableRangeMax": 50.0
+            "UsableRangeMax": 20.0
+        }
+    },
+
+    "LoopClosureRealTimeCorrelative": {
+        "TravelDistThreshold": 10.0,
+        "PoseGraphNodeDistMax": 10.0,
+        "LowResolutionMapWinSize": 5,
+        "SearchRangeX": 5.0,
+        "SearchRangeY": 5.0,
+        "SearchRangeTheta": 1.0,
+        "ScanRangeMax": 20.0,
+        "ScoreThreshold": 0.6,
+        "CostType": "GreedyEndpoint",
+        "CostConfigGroup": "LoopClosureRealTimeCorrelative.CostGreedyEndpoint",
+        "CostGreedyEndpoint": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 20.0,
+            "HitAndMissedDist": 0.075,
+            "OccupancyThreshold": 0.1,
+            "KernelSize": 1,
+            "StandardDeviation": 0.05,
+            "ScalingFactor": 1.0
         }
     },
 
     "LoopDetectorBranchBound": {
         "NodeHeightMax": 6,
-        "SearchRangeX": 5.0,
-        "SearchRangeY": 5.0,
+        "SearchRangeX": 2.0,
+        "SearchRangeY": 2.0,
         "SearchRangeTheta": 1.0,
         "ScanRangeMax": 20.0,
-        "ScoreThreshold": 0.5,
-        "MatchRateThreshold": 0.5,
+        "ScoreThreshold": 0.6,
+        "MatchRateThreshold": 0.9,
         "ScoreType": "PixelAccurate",
         "ScoreConfigGroup": "ScorePixelAccurate",
         "CostType": "GreedyEndpoint",
@@ -103,6 +131,7 @@
             "HitAndMissedDist": 0.075,
             "OccupancyThreshold": 0.1,
             "KernelSize": 1,
+            "StandardDeviation": 0.05,
             "ScalingFactor": 1.0
         },
         "CostSquareError": {
@@ -111,10 +140,16 @@
         }
     },
 
-    "PoseGraphOptimizerSpChol": {
+    "PoseGraphOptimizerLM": {
+        "SolverType": "ConjugateGradient",
         "NumOfIterationsMax": 10,
-        "ErrorTolerance": 1e-3,
-        "InitialLambda": 1e-4
+        "ErrorTolerance": 1e-4,
+        "InitialLambda": 1e-4,
+        "LossFunctionType": "Huber",
+        "LossFunctionConfigGroup": "PoseGraphOptimizerLM.LossHuber",
+        "LossHuber": {
+            "Scale": 0.01
+        }
     },
 
     "GridMapBuilder": {
@@ -125,12 +160,14 @@
             "TravelDistThresholdForLocalMap": 20.0
         },
         "UsableRangeMin": 0.01,
-        "UsableRangeMax": 50.0,
+        "UsableRangeMax": 20.0,
         "ProbabilityHit": 0.6,
         "ProbabilityMiss": 0.45
     },
 
     "Frontend": {
+        "UseScanAccumulator": "false",
+        "ScanAccumulatorConfigGroup": "ScanAccumulator",
         "UseScanInterpolator": "true",
         "ScanInterpolatorConfigGroup": "ScanInterpolator",
         "LocalSlam": {
@@ -149,8 +186,8 @@
     },
 
     "Backend": {
-        "PoseGraphOptimizerType": "SpChol",
-        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerSpChol",
+        "PoseGraphOptimizerType": "LM",
+        "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerLM",
         "LoopSearcherType": "Nearest",
         "LoopSearcherConfigGroup": "LoopSearcherNearest",
         "LoopDetectorType": "BranchBound",

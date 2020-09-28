@@ -23,6 +23,13 @@ public:
     virtual void Optimize(
         std::vector<PoseGraph::Node>& poseGraphNodes,
         const std::vector<PoseGraph::Edge>& poseGraphEdges) = 0;
+
+    /* Compute error function */
+    virtual void ComputeErrorFunction(
+        const RobotPose2D<double>& startNodePose,
+        const RobotPose2D<double>& endNodePose,
+        const RobotPose2D<double>& edgeRelPose,
+        Eigen::Vector3d& errorVec) const = 0;
 };
 
 } /* namespace Mapping */

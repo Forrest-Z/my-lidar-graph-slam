@@ -22,7 +22,8 @@ public:
                        double hitAndMissedDist,
                        double occupancyThreshold,
                        int kernelSize,
-                       double scalingFactor);
+                       double scalingFactor,
+                       double standardDeviation);
     
     /* Destructor */
     ~CostGreedyEndpoint() = default;
@@ -45,8 +46,7 @@ public:
         const RobotPose2D<double>& sensorPose) override;
 
 private:
-    /* Lookup table for squared distance between grid cells */
-
+    /* TODO: Lookup table for squared distance between grid cells */
     /* Minimum laser scan range considered for calculation */
     double mUsableRangeMin;
     /* Maximum laser scan range considered for calculation */
@@ -57,6 +57,10 @@ private:
     double mOccupancyThreshold;
     /* Size of searching window (in the number of grid cells) */
     int    mKernelSize;
+    /* Standard deviation of the Gaussian distribution of the error */
+    double mStandardDeviation;
+    /* Variance of the Gaussian distribution of the error */
+    double mVariance;
     /* Scaling factor for cost value */
     double mScalingFactor;
 };

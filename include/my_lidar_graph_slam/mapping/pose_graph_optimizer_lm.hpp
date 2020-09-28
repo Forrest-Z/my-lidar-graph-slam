@@ -1,8 +1,10 @@
 
-/* pose_graph_optimizer_spchol.hpp */
+/* pose_graph_optimizer_lm.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_SPCHOL_HPP
-#define MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_SPCHOL_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
+#define MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP
+
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
 
 #include <cmath>
 #include <limits>
@@ -10,17 +12,18 @@
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
+#include <Eigen/IterativeLinearSolvers>
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/util.hpp"
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer.hpp"
+#include "my_lidar_graph_slam/mapping/robust_loss_function.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
- * PoseGraphOptimizerSpChol class optimizes the pose graph using the
- * combination of Sparse Cholesky Factorization and Levenberg-Marquardt method
+ * PoseGraphOptimizerLM class optimizes the pose graph using the
+ * combination of linear solver and Levenberg-Marquardt method
  * which is also called Sparse Pose Adjustment (SPA) as proposed in the
  * following paper:
  * K. Konolige, G. Grisetti, R. Kuemmerle, W. Burgard, B. Limketkai, and
@@ -28,24 +31,44 @@ namespace Mapping {
  * Proceedings of the IEEE/RSJ International Conference on Intelligent Robots
  * and Systems (IROS), 2010.
  */
-class PoseGraphOptimizerSpChol final : public PoseGraphOptimizer
+class PoseGraphOptimizerLM final : public PoseGraphOptimizer
 {
 public:
+    /*
+     * SolverType enum specifies the linear solver used in this class
+     */
+    enum class SolverType
+    {
+        SparseCholesky,
+        ConjugateGradient,
+    };
+
+public:
     /* Constructor */
-    PoseGraphOptimizerSpChol(int numOfIterationsMax,
-                             double errorTolerance,
-                             double initialLambda) :
+    PoseGraphOptimizerLM(SolverType solverType,
+                         int numOfIterationsMax,
+                         double errorTolerance,
+                         double initialLambda,
+                         LossFunctionPtr lossFunction) :
+        mSolverType(solverType),
         mNumOfIterationsMax(numOfIterationsMax),
         mErrorTolerance(errorTolerance),
-        mLambda(initialLambda) { }
+        mLambda(initialLambda),
+        mLossFunction(lossFunction) { }
     /* Destructor */
-    ~PoseGraphOptimizerSpChol() = default;
+    ~PoseGraphOptimizerLM() = default;
 
     /* Optimize a pose graph using the combination of
-     * Sparse Cholesky Factorization and Levenberg-Marquardt method */
+     * linear solver and Levenberg-Marquardt method */
     void Optimize(
         std::vector<PoseGraph::Node>& poseGraphNodes,
         const std::vector<PoseGraph::Edge>& poseGraphEdges) override;
+
+    /* Compute error function */
+    void ComputeErrorFunction(const RobotPose2D<double>& startNodePose,
+                              const RobotPose2D<double>& endNodePose,
+                              const RobotPose2D<double>& edgeRelPose,
+                              Eigen::Vector3d& errorVec) const override;
 
 private:
     /* Perform one optimization step and return the total error */
@@ -63,18 +86,17 @@ private:
                                Eigen::Matrix3d& startNodeErrorJacobian,
                                Eigen::Matrix3d& endNodeErrorJacobian) const;
     
-    /* Compute error function */
-    void ComputeErrorFunction(const RobotPose2D<double>& startNodePose,
-                              const RobotPose2D<double>& endNodePose,
-                              const RobotPose2D<double>& edgeRelPose,
-                              Eigen::Vector3d& errorVec) const;
-    
     /* Compute total error */
     double ComputeTotalError(
         const std::vector<PoseGraph::Node>& poseGraphNodes,
         const std::vector<PoseGraph::Edge>& poseGraphEdges) const;
 
+    /* Dump the pose graph error */
+    void DumpError(const std::shared_ptr<PoseGraph>& poseGraph) const;
+
 private:
+    /* Linear solver type */
+    SolverType                          mSolverType;
     /* Maximum number of the optimization iterations */
     int                                 mNumOfIterationsMax;
     /* Error tolerance to check the convergence */
@@ -83,6 +105,8 @@ private:
      * The method is almost the same as Gauss-Newton method when small,
      * and is gradient descent method when large */
     double                              mLambda;
+    /* Robust loss function to correct (weight) information matrices */
+    LossFunctionPtr                     mLossFunction;
 
     /* Left-hand side sparse matrix of the linear system */
     Eigen::SparseMatrix<double>         mMatA;
@@ -97,4 +121,4 @@ private:
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_SPCHOL_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_POSE_GRAPH_OPTIMIZER_LM_HPP */

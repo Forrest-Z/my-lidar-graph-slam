@@ -4,12 +4,16 @@
 #ifndef MY_LIDAR_GRAPH_SLAM_UTIL_HPP
 #define MY_LIDAR_GRAPH_SLAM_UTIL_HPP
 
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <deque>
 #include <functional>
 #include <iostream>
+#include <iterator>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -31,6 +35,28 @@ inline void Assert(bool condition, const char* message)
                   << "Line: " << __LINE__ << ')' << std::endl;
         std::abort();
     }
+}
+
+/* Join elements in a container with a delimiter */
+template <class C, class V = typename C::value_type>
+std::string Join(const C& elements, const char* delimiter)
+{
+    std::ostringstream strStream;
+    auto beginIt = std::begin(elements);
+    auto endIt = std::end(elements);
+
+    /* Print the elements if the container is not empty */
+    if (beginIt != endIt) {
+        std::copy(beginIt, std::prev(endIt),
+                  std::ostream_iterator<V>(strStream, delimiter));
+        beginIt = std::prev(endIt);
+    }
+
+    /* Print the last remaining element if the container is not empty */
+    if (beginIt != endIt)
+        strStream << *beginIt;
+
+    return strStream.str();
 }
 
 /* Convert strongly typed enum to integers */
@@ -67,6 +93,24 @@ inline std::uint8_t UInt32ToG(std::uint32_t rgb)
 inline std::uint8_t UInt32ToB(std::uint32_t rgb)
 {
     return static_cast<std::uint8_t>((rgb & 0x000000FF));
+}
+
+/* Convert nanoseconds to milliseconds */
+inline double ToMilliSeconds(std::int_least64_t nanoSec)
+{
+    const auto nanoSeconds = std::chrono::nanoseconds(nanoSec);
+    const auto milliSeconds = std::chrono::duration_cast<
+        std::chrono::milliseconds>(nanoSeconds);
+    return milliSeconds.count();
+}
+
+/* Convert nanoseconds to microseconds */
+inline double ToMicroSeconds(std::int_least64_t nanoSec)
+{
+    const auto nanoSeconds = std::chrono::nanoseconds(nanoSec);
+    const auto microSeconds = std::chrono::duration_cast<
+        std::chrono::microseconds>(nanoSeconds);
+    return microSeconds.count();
 }
 
 /* Check if the number is power of 2 */

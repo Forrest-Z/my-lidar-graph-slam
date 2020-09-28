@@ -10,6 +10,7 @@
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/mapping/lidar_graph_slam.hpp"
+#include "my_lidar_graph_slam/mapping/scan_accumulator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
@@ -22,6 +23,7 @@ class LidarGraphSlamFrontend
 public:
     /* Constructor */
     LidarGraphSlamFrontend(
+        const ScanAccumulatorPtr& scanAccumulator,
         const ScanInterpolatorPtr& scanInterpolator,
         const ScanMatcherPtr& scanMatcher,
         const RobotPose2D<double>& initialPose,
@@ -52,6 +54,8 @@ public:
 private:
     /* The total number of the processed input data */
     int                   mProcessCount;
+    /* Scan accumulator */
+    ScanAccumulatorPtr    mScanAccumulator;
     /* Scan interpolator */
     ScanInterpolatorPtr   mScanInterpolator;
     /* Scan matcher */

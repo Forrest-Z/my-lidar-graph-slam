@@ -41,8 +41,8 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
         PrecomputeGridMap(gridMap, this->mLowResolution);
 
     /* Find the best pose from the search window */
-    const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
-    const RobotPose2D<double> sensorPose = Compound(initialPose, relPose);
+    const RobotPose2D<double> sensorPose =
+        Compound(initialPose, scanData->RelativeSensorPose());
 
     /* Determine the search step */
     double stepX;
@@ -76,7 +76,7 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
         this->ComputeScanIndices(
             precompMap, currentSensorPose, scanData, scanIndices);
 
-        /* 'winX' and 'winY' are in the number of grid cells */
+        /* 'winX' and 'winY' are represented in the number of grid cells */
         /* For given 't', the projected scan points 'scanIndices' are
          * related by pure translation for the 'x' and 'y' search directions */
         for (int x = -winX; x <= winX; x += this->mLowResolution) {
@@ -112,7 +112,7 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     const double normalizedCost = costVal / scanData->NumOfScans();
     /* Compute the estimated robot pose in a world frame */
     const RobotPose2D<double> estimatedPose =
-        MoveBackward(bestSensorPose, relPose);
+        MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
     /* Compute the pose covariance matrix */
     const Eigen::Matrix3d estimatedCovariance =
         this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
@@ -130,18 +130,18 @@ void ScanMatcherRealTimeCorrelative::ComputeSearchStep(
     const Sensor::ScanDataPtr<double>& scanData,
     double& stepX,
     double& stepY,
-    double& stepTheta)
+    double& stepTheta) const
 {
     /* Determine the search step */
     const double mapResolution = gridMap.Resolution();
     const auto maxRangeIt = std::max_element(
         scanData->Ranges().cbegin(), scanData->Ranges().cend());
     const double maxRange = std::min(*maxRangeIt, this->mScanRangeMax);
-    const double cosTheta = mapResolution / maxRange;
+    const double theta = mapResolution / maxRange;
 
     stepX = mapResolution;
     stepY = mapResolution;
-    stepTheta = std::acos(1.0 - 0.5 * cosTheta * cosTheta);
+    stepTheta = std::acos(1.0 - 0.5 * theta * theta);
 
     return;
 }
@@ -154,7 +154,6 @@ void ScanMatcherRealTimeCorrelative::ComputeScanIndices(
     std::vector<Point2D<int>>& scanIndices) const
 {
     /* Compute the grid cell indices for scan points */
-    scanIndices.reserve(scanData->NumOfScans());
     scanIndices.clear();
 
     const std::size_t numOfScans = scanData->NumOfScans();
@@ -165,9 +164,9 @@ void ScanMatcherRealTimeCorrelative::ComputeScanIndices(
         if (range >= this->mScanRangeMax)
             continue;
 
-        const Point2D<double> hitPoint =
+        Point2D<double> hitPoint =
             scanData->HitPoint(sensorPose, i);
-        const Point2D<int> hitIdx =
+        Point2D<int> hitIdx =
             precompMap.WorldCoordinateToGridCellIndex(hitPoint);
         scanIndices.push_back(std::move(hitIdx));
     }
@@ -209,8 +208,8 @@ void ScanMatcherRealTimeCorrelative::EvaluateHighResolutionMap(
     double& maxScore) const
 {
     /* Search inside the relatively small area */
-    for (int x = offsetX; x <= offsetX + this->mLowResolution; ++x) {
-        for (int y = offsetY; y <= offsetY + this->mLowResolution; ++y) {
+    for (int x = offsetX; x < offsetX + this->mLowResolution; ++x) {
+        for (int y = offsetY; y < offsetY + this->mLowResolution; ++y) {
             /* Evaluate matching score */
             const double score =
                 this->ComputeScore(gridMap, scanIndices, x, y);

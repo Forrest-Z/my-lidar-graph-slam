@@ -6,3 +6,4 @@ target_sources(lidar_graph_slam PRIVATE
 
 add_subdirectory(io)
 add_subdirectory(mapping)
+add_subdirectory(metric)

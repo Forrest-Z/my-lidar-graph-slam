@@ -26,10 +26,13 @@
 #include "my_lidar_graph_slam/mapping/loop_detector_branch_bound.hpp"
 #include "my_lidar_graph_slam/mapping/loop_detector_empty.hpp"
 #include "my_lidar_graph_slam/mapping/loop_detector_grid_search.hpp"
+#include "my_lidar_graph_slam/mapping/loop_closure_real_time_correlative.hpp"
 #include "my_lidar_graph_slam/mapping/loop_searcher.hpp"
 #include "my_lidar_graph_slam/mapping/loop_searcher_nearest.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
+#include "my_lidar_graph_slam/mapping/robust_loss_function.hpp"
+#include "my_lidar_graph_slam/mapping/scan_accumulator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
@@ -58,12 +61,13 @@ std::shared_ptr<Mapping::CostFunction> CreateCostGreedyEndpoint(
     const double hitAndMissedDist = config.get("HitAndMissedDist", 0.075);
     const double occupancyThreshold = config.get("OccupancyThreshold", 0.1);
     const int kernelSize = config.get("KernelSize", 1);
+    const double standardDeviation = config.get("StandardDeviation", 0.05);
     const double scalingFactor = config.get("ScalingFactor", 1.0);
 
     /* Create greedy endpoint cost function */
     auto pCostFunc = std::make_shared<Mapping::CostGreedyEndpoint>(
         usableRangeMin, usableRangeMax, hitAndMissedDist,
-        occupancyThreshold, kernelSize, scalingFactor);
+        occupancyThreshold, kernelSize, standardDeviation, scalingFactor);
 
     return pCostFunc;
 }
@@ -322,8 +326,43 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorGridSearch(
     return pLoopDetector;
 }
 
-/* Create a branch-and-bound loop detector object */
-std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorBranchBound(
+/* Create the real-time correlative loop closure object */
+std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureRealTimeCorrelative(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for real-time correlative loop closure */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
+    const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
+    const int lowResolution = config.get("LowResolutionMapWinSize", 10);
+    const double rangeX = config.get("SearchRangeX", 2.0);
+    const double rangeY = config.get("SearchRangeY", 2.0);
+    const double rangeTheta = config.get("SearchRangeTheta", 1.0);
+    const double scanRangeMax = config.get("ScanRangeMax", 20.0);
+    const double scoreThreshold = config.get("ScoreThreshold", 0.8);
+
+    /* Construct cost function */
+    const std::string costType =
+        config.get("CostType", "GreedyEndpoint");
+    const std::string costConfigGroup =
+        config.get("CostConfigGroup", "CostGreedyEndpoint");
+    auto pCostFunc = CreateCostFunction(
+        jsonSettings, costType, costConfigGroup);
+
+    /* Construct real-time correlative loop closure object */
+    auto pLoopClosure = std::make_shared<
+        Mapping::LoopClosureRealTimeCorrelative>(
+        pCostFunc, travelDistThreshold, nodeDistMax,
+        lowResolution, rangeX, rangeY, rangeTheta,
+        scanRangeMax, scoreThreshold);
+
+    return pLoopClosure;
+}
+
+/* Create the branch-and-bound loop closure object */
+std::shared_ptr<Mapping::LoopDetector> CreateLoopClosureBranchBound(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -371,6 +410,8 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetector(
 {
     if (loopDetectorType == "GridSearch")
         return CreateLoopDetectorGridSearch(jsonSettings, configGroup);
+    else if (loopDetectorType == "RealTimeCorrelative")
+        return CreateLoopClosureRealTimeCorrelative(jsonSettings, configGroup);
     else if (loopDetectorType == "BranchBound")
         return CreateLoopDetectorBranchBound(jsonSettings, configGroup);
     else if (loopDetectorType == "Empty")
@@ -388,22 +429,157 @@ std::shared_ptr<Mapping::PoseGraph> CreatePoseGraph(
     return pPoseGraph;
 }
 
-/* Create sparse Cholesky pose graph optimizer object */
-std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerSpChol(
+/* Create squared loss function object (Gaussian) */
+std::shared_ptr<Mapping::LossFunction> CreateLossSquared(
+    const pt::ptree& /* jsonSettings */,
+    const std::string& /* configGroup */)
+{
+    /* Construct squared loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossSquared>();
+    return pLossFunction;
+}
+
+/* Create Huber loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossHuber(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
-    /* Read settings for sparse Cholesky pose graph optimizer */
+    /* Read settings for Huber loss function */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.345 * 1.345);
+
+    /* Construct Huber loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossHuber>(scale);
+    return pLossFunction;
+}
+
+/* Create Cauchy loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossCauchy(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Cauchy loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1e-2);
+
+    /* Construct Cauchy loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossCauchy>(scale);
+    return pLossFunction;
+}
+
+/* Create Fair loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossFair(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Fair loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.3998 * 1.3998);
+
+    /* Construct Fair loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossFair>(scale);
+    return pLossFunction;
+}
+
+/* Create Geman-McClure loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossGemanMcClure(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Geman-McClure loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.0);
+
+    /* Construct Geman-McClure loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossGemanMcClure>(scale);
+    return pLossFunction;
+}
+
+/* Create Welsch loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossWelsch(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Welsch loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 2.9846 * 2.9846);
+
+    /* Construct Welsch loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossWelsch>(scale);
+    return pLossFunction;
+}
+
+/* Create DCS (Dynamic Covariance Scaling) loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossDCS(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for DCS loss function */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const double scale = config.get("Scale", 1.0);
+
+    /* Construct DCS loss function object */
+    auto pLossFunction = std::make_shared<Mapping::LossDCS>(scale);
+    return pLossFunction;
+}
+
+/* Create loss function object */
+std::shared_ptr<Mapping::LossFunction> CreateLossFunction(
+    const pt::ptree& jsonSettings,
+    const std::string& lossFunctionType,
+    const std::string& configGroup)
+{
+    if (lossFunctionType == "Squared")
+        return CreateLossSquared(jsonSettings, configGroup);
+    else if (lossFunctionType == "Huber")
+        return CreateLossHuber(jsonSettings, configGroup);
+    else if (lossFunctionType == "Cauchy")
+        return CreateLossCauchy(jsonSettings, configGroup);
+    else if (lossFunctionType == "Fair")
+        return CreateLossFair(jsonSettings, configGroup);
+    else if (lossFunctionType == "GemanMcClure")
+        return CreateLossGemanMcClure(jsonSettings, configGroup);
+    else if (lossFunctionType == "Welsch")
+        return CreateLossWelsch(jsonSettings, configGroup);
+    else if (lossFunctionType == "DCS")
+        return CreateLossDCS(jsonSettings, configGroup);
+
+    return nullptr;
+}
+
+/* Create Levenberg-Marquardt method based pose graph optimizer object */
+std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizerLM(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for Levenberg-Marquardt based pose graph optimizer */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    /* Convert linear solver type string to enum */
+    using SolverType = Mapping::PoseGraphOptimizerLM::SolverType;
+    const std::string solverTypeStr =
+        config.get("SolverType", "SparseCholesky");
+    const SolverType solverType =
+        solverTypeStr == "SparseCholesky" ? SolverType::SparseCholesky :
+        solverTypeStr == "ConjugateGradient" ? SolverType::ConjugateGradient :
+        SolverType::SparseCholesky;
 
     const int numOfIterationsMax = config.get("NumOfIterationsMax", 10);
     const double errorTolerance = config.get("ErrorTolerance", 1e-3);
     const double initialLambda = config.get("InitialLambda", 1e-4);
 
+    const std::string lossFuncType =
+        config.get("LossFunctionType", "Huber");
+    const std::string lossFuncConfigGroup =
+        config.get("LossFunctionConfigGroup", "LossHuber");
+    auto pLossFunction = CreateLossFunction(
+        jsonSettings, lossFuncType, lossFuncConfigGroup);
+
     /* Construct pose graph optimizer object */
-    auto pOptimizer = std::make_shared<Mapping::PoseGraphOptimizerSpChol>(
-        numOfIterationsMax, errorTolerance, initialLambda);
-    
+    auto pOptimizer = std::make_shared<Mapping::PoseGraphOptimizerLM>(
+        solverType, numOfIterationsMax, errorTolerance, initialLambda,
+        pLossFunction);
+
     return pOptimizer;
 }
 
@@ -413,10 +589,28 @@ std::shared_ptr<Mapping::PoseGraphOptimizer> CreatePoseGraphOptimizer(
     const std::string& optimizerType,
     const std::string& configGroup)
 {
-    if (optimizerType == "SpChol")
-        return CreatePoseGraphOptimizerSpChol(jsonSettings, configGroup);
+    if (optimizerType == "LM")
+        return CreatePoseGraphOptimizerLM(jsonSettings, configGroup);
     
     return nullptr;
+}
+
+/* Create scan accumulator object */
+std::shared_ptr<Mapping::ScanAccumulator> CreateScanAccumulator(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Read settings for scan accumulator */
+    const pt::ptree& config = jsonSettings.get_child(configGroup);
+
+    const std::size_t numOfAccumulatedScans =
+        config.get<std::size_t>("NumOfAccumulatedScans", 3);
+
+    /* Construct scan accumulator object */
+    auto pScanAccumulator = std::make_shared<Mapping::ScanAccumulator>(
+        numOfAccumulatedScans);
+
+    return pScanAccumulator;
 }
 
 /* Create scan interpolator object */
@@ -474,14 +668,24 @@ std::shared_ptr<Mapping::LidarGraphSlamFrontend> CreateSlamFrontend(
     /* Load settings for SLAM frontend */
     const auto& config = jsonSettings.get_child(configGroup);
 
+    /* Create scan accumulator if necessary */
+    const bool useScanAccumulator =
+        config.get("UseScanAccumulator", false);
+    const std::string scanAccumulatorConfigGroup =
+        config.get("ScanAccumulatorConfigGroup", "ScanAccumulator");
+
+    auto pScanAccumulator = useScanAccumulator ?
+        CreateScanAccumulator(jsonSettings, scanAccumulatorConfigGroup) :
+        nullptr;
+
     /* Create scan interpolator if necessary */
-    const bool useInterpolator =
+    const bool useScanInterpolator =
         config.get("UseScanInterpolator", true);
-    const std::string interpolatorConfigGroup =
+    const std::string scanInterpolatorConfigGroup =
         config.get("ScanInterpolatorConfigGroup", "ScanInterpolator");
 
-    auto pScanInterpolator = useInterpolator ?
-        CreateScanInterpolator(jsonSettings, interpolatorConfigGroup) :
+    auto pScanInterpolator = useScanInterpolator ?
+        CreateScanInterpolator(jsonSettings, scanInterpolatorConfigGroup) :
         nullptr;
 
     /* Create the scan matcher for local SLAM */
@@ -515,7 +719,7 @@ std::shared_ptr<Mapping::LidarGraphSlamFrontend> CreateSlamFrontend(
 
     /* Create SLAM frontend */
     auto pFrontend = std::make_shared<Mapping::LidarGraphSlamFrontend>(
-        pScanInterpolator, pScanMatcher, initialPose,
+        pScanAccumulator, pScanInterpolator, pScanMatcher, initialPose,
         updateThresholdTravelDist, updateThresholdAngle, updateThresholdTime,
         loopDetectionInterval);
 
@@ -532,10 +736,10 @@ std::shared_ptr<Mapping::LidarGraphSlamBackend> CreateSlamBackend(
 
     /* Create pose graph optimizer */
     const std::string optimizerType =
-        config.get("PoseGraphOptimizerType", "SpChol");
+        config.get("PoseGraphOptimizerType", "LM");
     const std::string optimizerConfigGroup =
         config.get("PoseGraphOptimizerConfigGroup",
-                   "PoseGraphOptimizerSpChol");
+                   "PoseGraphOptimizerLM");
     auto pOptimizer = CreatePoseGraphOptimizer(
         jsonSettings, optimizerType, optimizerConfigGroup);
 

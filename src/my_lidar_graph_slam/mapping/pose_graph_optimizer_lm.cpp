@@ -1,14 +1,16 @@
 
-/* pose_graph_optimizer_spchol.cpp */
+/* pose_graph_optimizer_lm.cpp */
 
-#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_spchol.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_optimizer_lm.hpp"
+
+#include "my_lidar_graph_slam/metric/metric.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Optimize a pose graph using the combination of
- * Sparse Cholesky Factorization and Levenberg-Marquardt method */
-void PoseGraphOptimizerSpChol::Optimize(
+ * linear solver and Levenberg-Marquardt method */
+void PoseGraphOptimizerLM::Optimize(
     std::vector<PoseGraph::Node>& poseGraphNodes,
     const std::vector<PoseGraph::Edge>& poseGraphEdges)
 {
@@ -63,7 +65,7 @@ void PoseGraphOptimizerSpChol::Optimize(
 }
 
 /* Perform one optimization step and return the total error */
-void PoseGraphOptimizerSpChol::OptimizeStep(
+void PoseGraphOptimizerLM::OptimizeStep(
     std::vector<PoseGraph::Node>& poseGraphNodes,
     const std::vector<PoseGraph::Edge>& poseGraphEdges,
     Eigen::SparseMatrix<double>& matA,
@@ -105,6 +107,13 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
 
+        /* Correct the information matrix using the weight function
+         * based on the robust estimation (M-estimation)
+         * to prevent outliers caused by wrong loop detections */
+        const double errorWeight = this->mLossFunction->Weight(
+            errorVec.transpose() * infoMat * errorVec);
+        const Eigen::Matrix3d weightedInfoMat = errorWeight * infoMat;
+
         /* Compute 4 non-zero block matrices denoted as 
          * J_i^T \Lambda_{ij} J_i, J_i^T \Lambda_{ij} J_j,
          * J_j^T \Lambda_{ij} J_i, and J_j^T \Lambda_{ij} J_j in the paper
@@ -114,9 +123,9 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
         /* Compute the intermediate results, namely
          * J_i^T \Lambda_{ij} and J_j^T \Lambda_{ij} */
         const Eigen::Matrix3d trJsInfo =
-            startNodeJacobian.transpose() * infoMat;
+            startNodeJacobian.transpose() * weightedInfoMat;
         const Eigen::Matrix3d trJeInfo =
-            endNodeJacobian.transpose() * infoMat;
+            endNodeJacobian.transpose() * weightedInfoMat;
 
         /* Compute 4 non-zero block matrices */
         const Eigen::Matrix3d trJsInfoJs = trJsInfo * startNodeJacobian;
@@ -165,13 +174,39 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
     /* Create a sparse matrix H */
     matA.setFromTriplets(matATriplets.cbegin(), matATriplets.cend());
 
-    /* Solve the linear system using sparse Cholesky factorization
-     * and obtain the node pose increments */
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> spCholSolver;
-    /* Compute a sparse Cholesky decomposition of matrix H */
-    spCholSolver.compute(matA);
-    /* Solve the linear system for increment */
-    vecDelta = spCholSolver.solve(-vecB);
+    /* Solve the linear system */
+    switch (this->mSolverType) {
+        case SolverType::SparseCholesky: {
+            /* Solve the linear system using sparse Cholesky factorization
+             * and obtain the node pose increments */
+            Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> spCholSolver;
+            /* Compute a sparse Cholesky decomposition of matrix H */
+            spCholSolver.compute(matA);
+            /* Solve the linear system for increment */
+            vecDelta = spCholSolver.solve(-vecB);
+            break;
+        }
+
+        case SolverType::ConjugateGradient: {
+            /* Solve the linear system using conjugate gradient method
+             * and obtain the node pose increments */
+            Eigen::ConjugateGradient<Eigen::SparseMatrix<double>> cgSolver;
+            /* Initialize a conjugate gradient linear solver with matrix A */
+            cgSolver.compute(matA);
+            /* Solve the linear system for increment */
+            vecDelta = cgSolver.solve(-vecB);
+
+            std::cerr << "Iterations: " << cgSolver.iterations() << ", "
+                      << "Estimated error: " << cgSolver.error() << std::endl;
+            break;
+        }
+
+        default: {
+            /* Unknown solver type and program is aborted */
+            assert(false && "Unknown linear solver type for optimization");
+            break;
+        }
+    }
 
     /* Update the poses stored in pose graph */
     for (int i = 0; i < numOfNodes; ++i) {
@@ -189,7 +224,7 @@ void PoseGraphOptimizerSpChol::OptimizeStep(
 
 /* Compute Jacobian matrices of the error function with respect to the
  * starting pose and ending pose of the pose graph edge */
-void PoseGraphOptimizerSpChol::ComputeErrorJacobians(
+void PoseGraphOptimizerLM::ComputeErrorJacobians(
     const RobotPose2D<double>& startNodePose,
     const RobotPose2D<double>& endNodePose,
     Eigen::Matrix3d& startNodeErrorJacobian,
@@ -248,7 +283,7 @@ void PoseGraphOptimizerSpChol::ComputeErrorJacobians(
 }
 
 /* Compute error function */
-void PoseGraphOptimizerSpChol::ComputeErrorFunction(
+void PoseGraphOptimizerLM::ComputeErrorFunction(
     const RobotPose2D<double>& startNodePose,
     const RobotPose2D<double>& endNodePose,
     const RobotPose2D<double>& edgeRelPose,
@@ -267,7 +302,7 @@ void PoseGraphOptimizerSpChol::ComputeErrorFunction(
 }
 
 /* Compute total error */
-double PoseGraphOptimizerSpChol::ComputeTotalError(
+double PoseGraphOptimizerLM::ComputeTotalError(
     const std::vector<PoseGraph::Node>& poseGraphNodes,
     const std::vector<PoseGraph::Edge>& poseGraphEdges) const
 {
@@ -289,16 +324,63 @@ double PoseGraphOptimizerSpChol::ComputeTotalError(
         const RobotPose2D<double>& endNodePose =
             poseGraphNodes.at(endNodeIdx).Pose();
 
-        /* Compute error function */
+        /* Compute the residual */
+        Eigen::Vector3d errorVec;
+        this->ComputeErrorFunction(startNodePose, endNodePose,
+                                   edgeRelPose, errorVec);
+        /* Compute the error value */
+        const double errorVal = errorVec.transpose() * infoMat * errorVec;
+        /* Apply the robust loss function */
+        const double correctedError = this->mLossFunction->Loss(errorVal);
+
+        /* Compute the error value */
+        totalError += correctedError;
+    }
+
+    return totalError;
+}
+
+/* Dump the pose graph error */
+void PoseGraphOptimizerLM::DumpError(
+    const std::shared_ptr<PoseGraph>& poseGraph) const
+{
+    auto* const pMetric = Metric::MetricManager::Instance();
+    auto* const pErrorHistogram = pMetric->HistogramMetrics()("PoseGraphError");
+
+    /* Reset the histogram for storing pose graph edge residuals */
+    pErrorHistogram->Reset();
+
+    /* Compute error function for each edge */
+    for (const auto& edge : poseGraph->Edges()) {
+        /* Retrieve the relative pose \bar{z}_{ij} from the edge */
+        const RobotPose2D<double>& edgeRelPose = edge.RelativePose();
+        /* Retrieve the information matrix \Lambda_{ij} of the edge */
+        const Eigen::Matrix3d& infoMat = edge.InformationMatrix();
+
+        /* Retrieve the poses of the start node and the end node */
+        const int startNodeIdx = edge.StartNodeIndex();
+        const int endNodeIdx = edge.EndNodeIndex();
+
+        const RobotPose2D<double>& startNodePose =
+            poseGraph->NodeAt(startNodeIdx).Pose();
+        const RobotPose2D<double>& endNodePose =
+            poseGraph->NodeAt(endNodeIdx).Pose();
+
+        /* Compute the residual */
         Eigen::Vector3d errorVec;
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
 
-        /* Compute Mahalanobis distance */
-        totalError += errorVec.transpose() * infoMat * errorVec;
+        /* Compute the error value */
+        const double errorVal = errorVec.transpose() * infoMat * errorVec;
+        /* Add the error value to the error histogram */
+        pErrorHistogram->Observe(errorVal);
     }
 
-    return totalError;
+    /* Dump the error histogram */
+    pErrorHistogram->Dump(std::cerr);
+
+    return;
 }
 
 } /* namespace Mapping */

@@ -13,13 +13,16 @@ CostGreedyEndpoint::CostGreedyEndpoint(
     double hitAndMissedDist,
     double occupancyThreshold,
     int kernelSize,
-    double scalingFactor) :
+    double scalingFactor,
+    double standardDeviation) :
     CostFunction(),
     mUsableRangeMin(usableRangeMin),
     mUsableRangeMax(usableRangeMax),
     mHitAndMissedDist(hitAndMissedDist),
     mOccupancyThreshold(occupancyThreshold),
     mKernelSize(kernelSize),
+    mStandardDeviation(standardDeviation),
+    mVariance(standardDeviation * standardDeviation),
     mScalingFactor(scalingFactor)
 {
 }
@@ -98,7 +101,7 @@ double CostGreedyEndpoint::Cost(
         /* Add to the cost value, which is proportional to the negative
          * log-likelihood of the observation probability and represents the
          * degree of the mismatch between the laser scan and the grid map */
-        costValue += minSquaredDist;
+        costValue -= std::exp(-0.5 * minSquaredDist / this->mVariance);
     }
 
     /* Apply the scaling factor to the cost value */
@@ -113,10 +116,11 @@ Eigen::Vector3d CostGreedyEndpoint::ComputeGradient(
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& sensorPose)
 {
-    /* Compute a gradient of the cost function with respect to sensor pose */
-    const double diffLinear = 0.01;
-    const double diffAngular = 0.01;
+    /* Compute the step */
+    const double diffLinear = gridMap.Resolution();
+    const double diffAngular = 1e-2;
 
+    /* Compute a gradient of the cost function with respect to sensor pose */
     const RobotPose2D<double> deltaX { diffLinear, 0.0, 0.0 };
     const RobotPose2D<double> deltaY { 0.0, diffLinear, 0.0 };
     const RobotPose2D<double> deltaTheta { 0.0, 0.0, diffAngular };
