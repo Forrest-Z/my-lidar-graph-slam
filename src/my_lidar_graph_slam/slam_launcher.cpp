@@ -26,7 +26,7 @@
 #include "my_lidar_graph_slam/mapping/loop_detector_branch_bound.hpp"
 #include "my_lidar_graph_slam/mapping/loop_detector_empty.hpp"
 #include "my_lidar_graph_slam/mapping/loop_detector_grid_search.hpp"
-#include "my_lidar_graph_slam/mapping/loop_closure_real_time_correlative.hpp"
+#include "my_lidar_graph_slam/mapping/loop_detector_real_time_correlative.hpp"
 #include "my_lidar_graph_slam/mapping/loop_searcher.hpp"
 #include "my_lidar_graph_slam/mapping/loop_searcher_nearest.hpp"
 #include "my_lidar_graph_slam/mapping/pose_graph.hpp"
@@ -327,15 +327,13 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorGridSearch(
 }
 
 /* Create the real-time correlative loop closure object */
-std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureRealTimeCorrelative(
+std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorRealTimeCorrelative(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
     /* Read settings for real-time correlative loop closure */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
-    const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
-    const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
     const int lowResolution = config.get("LowResolutionMapWinSize", 10);
     const double rangeX = config.get("SearchRangeX", 2.0);
     const double rangeY = config.get("SearchRangeY", 2.0);
@@ -353,16 +351,15 @@ std::shared_ptr<Mapping::LoopClosure> CreateLoopClosureRealTimeCorrelative(
 
     /* Construct real-time correlative loop closure object */
     auto pLoopClosure = std::make_shared<
-        Mapping::LoopClosureRealTimeCorrelative>(
-        pCostFunc, travelDistThreshold, nodeDistMax,
-        lowResolution, rangeX, rangeY, rangeTheta,
+        Mapping::LoopDetectorRealTimeCorrelative>(
+        pCostFunc, lowResolution, rangeX, rangeY, rangeTheta,
         scanRangeMax, scoreThreshold);
 
     return pLoopClosure;
 }
 
 /* Create the branch-and-bound loop closure object */
-std::shared_ptr<Mapping::LoopDetector> CreateLoopClosureBranchBound(
+std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorBranchBound(
     const pt::ptree& jsonSettings,
     const std::string& configGroup)
 {
@@ -411,7 +408,7 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetector(
     if (loopDetectorType == "GridSearch")
         return CreateLoopDetectorGridSearch(jsonSettings, configGroup);
     else if (loopDetectorType == "RealTimeCorrelative")
-        return CreateLoopClosureRealTimeCorrelative(jsonSettings, configGroup);
+        return CreateLoopDetectorRealTimeCorrelative(jsonSettings, configGroup);
     else if (loopDetectorType == "BranchBound")
         return CreateLoopDetectorBranchBound(jsonSettings, configGroup);
     else if (loopDetectorType == "Empty")
