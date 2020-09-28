@@ -378,7 +378,7 @@ void PoseGraphOptimizerLM::DumpError(
     }
 
     /* Dump the error histogram */
-    pErrorHistogram->Dump(std::cerr);
+    pErrorHistogram->Dump(std::cerr, true);
 
     return;
 }
