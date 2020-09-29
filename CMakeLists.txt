@@ -15,6 +15,8 @@ find_package(Boost 1.65.1 REQUIRED system timer)
 # Find Eigen package
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
+set(CMAKE_DEBUG_POSTFIX "d")
+
 add_library(lidar_graph_slam)
 
 add_subdirectory(include)
@@ -33,7 +35,11 @@ target_compile_options(lidar_graph_slam PUBLIC
     $<$<CONFIG:Release>:-O3>
     $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Debug>>:-O0 -ggdb>)
 target_compile_features(lidar_graph_slam PUBLIC cxx_std_17)
+set_target_properties(lidar_graph_slam PROPERTIES
+    DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
 
 add_executable(slam_launch
     ${PROJECT_SOURCE_DIR}/src/my_lidar_graph_slam/slam_launcher.cpp)
 target_link_libraries(slam_launch lidar_graph_slam)
+set_target_properties(slam_launch PROPERTIES
+    DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
