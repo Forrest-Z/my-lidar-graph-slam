@@ -50,10 +50,12 @@ struct ScanMatchingQuery final
 struct ScanMatchingSummary final
 {
     /* Constructor */
-    ScanMatchingSummary(const double normalizedCost,
+    ScanMatchingSummary(const bool poseFound,
+                        const double normalizedCost,
                         const RobotPose2D<double>& initialPose,
                         const RobotPose2D<double>& estimatedPose,
                         const Eigen::Matrix3d& estimatedCovariance) :
+        mPoseFound(poseFound),
         mNormalizedCost(normalizedCost),
         mInitialPose(initialPose),
         mEstimatedPose(estimatedPose),
@@ -62,14 +64,16 @@ struct ScanMatchingSummary final
     /* Destructor */
     ~ScanMatchingSummary() = default;
 
+    /* Flag to indicate whether the appropriate pose is found */
+    const bool                mPoseFound;
     /* Normalized cost value */
-    const double                      mNormalizedCost;
+    const double              mNormalizedCost;
     /* Initial robot pose in a world frame */
-    const RobotPose2D<double>         mInitialPose;
+    const RobotPose2D<double> mInitialPose;
     /* Estimated pose in a world frame */
-    const RobotPose2D<double>         mEstimatedPose;
+    const RobotPose2D<double> mEstimatedPose;
     /* Estimated pose covariance matrix in a world frame */
-    const Eigen::Matrix3d             mEstimatedCovariance;
+    const Eigen::Matrix3d     mEstimatedCovariance;
 };
 
 /* Type definitions for convenience */
