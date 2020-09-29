@@ -6,8 +6,8 @@
 
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
 
-#include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
+#include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -16,12 +16,13 @@ class ScanMatcherRealTimeCorrelative final : public ScanMatcher
 {
 public:
     /* Constructor */
-    ScanMatcherRealTimeCorrelative(const CostFuncPtr& costFunc,
-                                   int lowResolution,
-                                   double rangeX,
-                                   double rangeY,
-                                   double rangeTheta,
-                                   double scanRangeMax);
+    ScanMatcherRealTimeCorrelative(
+        const CostFuncPtr& costFunc,
+        const int lowResolution,
+        const double rangeX,
+        const double rangeY,
+        const double rangeTheta,
+        const double scanRangeMax);
 
     /* Destructor */
     ~ScanMatcherRealTimeCorrelative() = default;
@@ -39,7 +40,8 @@ public:
         const double normalizedScoreThreshold) const;
 
     /* Precompute a coarser grid map for scan matching */
-    PrecomputedMapType ComputeCoarserMap(const GridMapType& gridMap) const;
+    PrecomputedMapType ComputeCoarserMap(
+        const GridMapType& gridMap) const;
 
 private:
     /* Compute the search step */

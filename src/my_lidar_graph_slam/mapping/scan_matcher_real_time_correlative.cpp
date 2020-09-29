@@ -13,11 +13,11 @@ namespace Mapping {
 /* Constructor */
 ScanMatcherRealTimeCorrelative::ScanMatcherRealTimeCorrelative(
     const CostFuncPtr& costFunc,
-    int lowResolution,
-    double rangeX,
-    double rangeY,
-    double rangeTheta,
-    double scanRangeMax) :
+    const int lowResolution,
+    const double rangeX,
+    const double rangeY,
+    const double rangeTheta,
+    const double scanRangeMax) :
     mCostFunc(costFunc),
     mLowResolution(lowResolution),
     mRangeX(rangeX),
@@ -123,12 +123,13 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
         sensorPose.mX + bestWinX * stepX,
         sensorPose.mY + bestWinY * stepY,
         sensorPose.mTheta + bestWinTheta * stepTheta };
+
     /* Evaluate the cost value */
     const double costVal = this->mCostFunc->Cost(
         gridMap, scanData, bestSensorPose);
-
     /* Compute the normalized cost value */
     const double normalizedCost = costVal / scanData->NumOfScans();
+
     /* Compute the estimated robot pose in a world frame */
     const RobotPose2D<double> estimatedPose =
         MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
