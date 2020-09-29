@@ -133,8 +133,8 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
      * and not the latest map, which is built from the latest several scans */
     const int latestNodeIdx =
         this->mPoseGraph->LatestNode().Index();
-    const int latestLocalMapIdx = static_cast<int>(
-        this->mGridMapBuilder->LocalMaps().size());
+    const int latestLocalMapIdx =
+        this->mGridMapBuilder->LocalMaps().back().mIdx;
     const auto& latestLocalMap =
         this->mGridMapBuilder->LocalMaps().back();
 
