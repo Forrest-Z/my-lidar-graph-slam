@@ -60,7 +60,8 @@
 
     "LoopSearcherNearest": {
         "TravelDistThreshold": 10.0,
-        "PoseGraphNodeDistMax": 5.0
+        "PoseGraphNodeDistMax": 5.0,
+        "NumOfCandidateNodes": 2
     },
 
     "LoopDetectorGridSearch": {

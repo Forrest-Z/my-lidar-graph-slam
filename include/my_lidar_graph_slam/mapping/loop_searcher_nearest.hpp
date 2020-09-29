@@ -13,11 +13,13 @@ class LoopSearcherNearest final : public LoopSearcher
 {
 public:
     /* Constructor */
-    LoopSearcherNearest(double travelDistThreshold,
-                        double nodeDistThreshold) :
+    LoopSearcherNearest(const double travelDistThreshold,
+                        const double nodeDistThreshold,
+                        const int numOfCandidateNodes) :
         LoopSearcher(),
         mTravelDistThreshold(travelDistThreshold),
-        mNodeDistThreshold(nodeDistThreshold) { }
+        mNodeDistThreshold(nodeDistThreshold),
+        mNumOfCandidateNodes(numOfCandidateNodes) { }
 
     /* Destructor */
     ~LoopSearcherNearest() = default;
@@ -31,10 +33,13 @@ private:
      * Pose graph node that can be traversed from the current node
      * with the travel distance less than this threshold is not considered
      * for loop search */
-    double mTravelDistThreshold;
+    const double mTravelDistThreshold;
     /* Maximum distance between the current robot pose and
      * the pose of the node which is considered for loop search */
-    double mNodeDistThreshold;
+    const double mNodeDistThreshold;
+    /* Number of the selected pose graph nodes around the node which are
+     * matched against the closest grid map */
+    const int    mNumOfCandidateNodes;
 };
 
 } /* namespace Mapping */

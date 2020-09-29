@@ -254,10 +254,11 @@ std::shared_ptr<Mapping::LoopSearcherNearest> CreateLoopSearcherNearest(
 
     const double travelDistThreshold = config.get("TravelDistThreshold", 10.0);
     const double nodeDistMax = config.get("PoseGraphNodeDistMax", 2.0);
+    const int numOfCandidateNodes = config.get("NumOfCandidateNodes", 1);
 
     /* Construct loop searcher */
     auto pLoopSearcher = std::make_shared<Mapping::LoopSearcherNearest>(
-        travelDistThreshold, nodeDistMax);
+        travelDistThreshold, nodeDistMax, numOfCandidateNodes);
 
     return pLoopSearcher;
 }
