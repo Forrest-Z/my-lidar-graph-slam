@@ -9,6 +9,7 @@
 
 #include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
+#include "my_lidar_graph_slam/mapping/scan_matcher_branch_bound.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/loop_detector.hpp"
 
@@ -18,44 +19,10 @@ namespace Mapping {
 class LoopDetectorBranchBound final : public LoopDetector
 {
 public:
-    /*
-     * Node struct holds the necessary information for Branch-and-Bound method
-     */
-    struct Node
-    {
-        /* Constructor */
-        Node(int x, int y, int theta, int height) :
-            mX(x), mY(y), mTheta(theta), mHeight(height) { }
-
-        /* Check if the node is a leaf node */
-        inline bool IsLeafNode() const { return this->mHeight == 0; }
-
-        int mX;
-        int mY;
-        int mTheta;
-        int mHeight;
-    };
-
-public:
     /* Constructor */
-    LoopDetectorBranchBound(const ScoreFuncPtr& scoreFunc,
-                            const CostFuncPtr& costFunc,
-                            int nodeHeightMax,
-                            double rangeX,
-                            double rangeY,
-                            double rangeTheta,
-                            double scanRangeMax,
-                            double scoreThreshold,
-                            double matchRateThreshold) :
-        mScoreFunc(scoreFunc),
-        mCostFunc(costFunc),
-        mNodeHeightMax(nodeHeightMax),
-        mRangeX(rangeX),
-        mRangeY(rangeY),
-        mRangeTheta(rangeTheta),
-        mScanRangeMax(scanRangeMax),
-        mScoreThreshold(scoreThreshold),
-        mMatchRateThreshold(matchRateThreshold) { }
+    LoopDetectorBranchBound(
+        const std::shared_ptr<ScanMatcherBranchBound>& scanMatcher,
+        const double scoreThreshold);
 
     /* Destructor */
     ~LoopDetectorBranchBound() = default;
@@ -66,14 +33,6 @@ public:
         LoopDetectionResultVector& loopDetectionResults) override;
 
 private:
-    /* Compute the search window step */
-    void ComputeSearchStep(
-        const GridMapType& localMap,
-        const Sensor::ScanDataPtr<double>& scanData,
-        double& stepX,
-        double& stepY,
-        double& stepTheta) const;
-
     /* Find a corresponding pose of the current robot pose
      * from the local grid map */
     bool FindCorrespondingPose(
@@ -85,24 +44,10 @@ private:
         Eigen::Matrix3d& estimatedCovMat) const;
 
 private:
-    /* Matching score function */
-    ScoreFuncPtr mScoreFunc;
-    /* Cost function */
-    CostFuncPtr  mCostFunc;
-    /* Maximum height of the tree used in branch-and-bound */
-    int          mNodeHeightMax;
-    /* Linear (horizontal) size of the search window */
-    double       mRangeX;
-    /* Linear (vertical) size of the search window */
-    double       mRangeY;
-    /* Angular size of the search window */
-    double       mRangeTheta;
-    /* Maximum laser scan range considered for loop detector */
-    double       mScanRangeMax;
+    /* Branch-and-bound based scan matcher */
+    std::shared_ptr<ScanMatcherBranchBound> mScanMatcher;
     /* Normalized matching score threshold for loop detector */
-    double       mScoreThreshold;
-    /* Match rate threshold for loop detector */
-    double       mMatchRateThreshold;
+    const double                            mScoreThreshold;
 };
 
 } /* namespace Mapping */

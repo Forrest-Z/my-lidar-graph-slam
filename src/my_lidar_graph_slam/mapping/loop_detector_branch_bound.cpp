@@ -11,6 +11,17 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/* Constructor */
+LoopDetectorBranchBound::LoopDetectorBranchBound(
+    const std::shared_ptr<ScanMatcherBranchBound>& scanMatcher,
+    const double scoreThreshold) :
+    mScanMatcher(scanMatcher),
+    mScoreThreshold(scoreThreshold)
+{
+    assert(scoreThreshold > 0.0);
+    assert(scoreThreshold <= 1.0);
+}
+
 /* Find a loop and return a loop constraint */
 void LoopDetectorBranchBound::Detect(
     LoopDetectionQueryVector& loopDetectionQueries,
@@ -38,8 +49,15 @@ void LoopDetectorBranchBound::Detect(
         assert(localMapInfo.mFinished);
 
         /* Precompute the coarser local grid maps for efficiency */
-        if (!localMapInfo.mPrecomputed)
-            PrecomputeGridMaps(localMapInfo, this->mNodeHeightMax);
+        if (!localMapInfo.mPrecomputed) {
+            /* Precompute multiple coarser grid maps */
+            std::map<int, PrecomputedMapType> precompMaps =
+                this->mScanMatcher->ComputeCoarserMaps(localMapInfo.mMap);
+            /* Set the newly created grid map pyramid */
+            localMapInfo.mPrecomputedMaps = std::move(precompMaps);
+            /* Mark the current local map as precomputed */
+            localMapInfo.mPrecomputed = true;
+        }
 
         /* Perform loop detection for each node */
         for (const auto& poseGraphNode : poseGraphNodes) {
@@ -74,28 +92,6 @@ void LoopDetectorBranchBound::Detect(
     return;
 }
 
-/* Compute the search window step */
-void LoopDetectorBranchBound::ComputeSearchStep(
-    const GridMapType& localMap,
-    const Sensor::ScanDataPtr<double>& scanData,
-    double& stepX,
-    double& stepY,
-    double& stepTheta) const
-{
-    /* Determine the search step */
-    const double mapResolution = localMap.Resolution();
-    const auto maxRangeIt = std::max_element(
-        scanData->Ranges().cbegin(), scanData->Ranges().cend());
-    const double maxRange = std::min(*maxRangeIt, this->mScanRangeMax);
-    const double theta = mapResolution / maxRange;
-
-    stepX = mapResolution;
-    stepY = mapResolution;
-    stepTheta = std::acos(1.0 - 0.5 * theta * theta);
-
-    return;
-}
-
 /* Find a corresponding pose of the current robot pose
  * from the local grid map */
 bool LoopDetectorBranchBound::FindCorrespondingPose(
@@ -106,104 +102,17 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
-    /* Find the best pose from the search window
-     * that maximizes the matching score value */
-    const RobotPose2D<double> sensorPose =
-        Compound(robotPose, scanData->RelativeSensorPose());
-    RobotPose2D<double> bestSensorPose = sensorPose;
-    double scoreMax = this->mScoreThreshold;
-    bool solutionFound = false;
-
-    /* Determine the search window step */
-    double stepX;
-    double stepY;
-    double stepTheta;
-    this->ComputeSearchStep(localMap, scanData, stepX, stepY, stepTheta);
-
-    /* Determine the search window */
-    const int winX = static_cast<int>(
-        std::ceil(0.5 * this->mRangeX / stepX));
-    const int winY = static_cast<int>(
-        std::ceil(0.5 * this->mRangeY / stepY));
-    const int winTheta = static_cast<int>(
-        std::ceil(0.5 * this->mRangeTheta / stepTheta));
-
-    std::stack<Node> nodeStack;
-
-    /* Initialize a stack with nodes covering the entire search window */
-    const int winSizeMax = 1 << this->mNodeHeightMax;
-
-    for (int x = -winX; x <= winX; x += winSizeMax)
-        for (int y = -winY; y <= winY; y += winSizeMax)
-            for (int t = -winTheta; t <= winTheta; ++t)
-                nodeStack.emplace(x, y, t, this->mNodeHeightMax);
-
-    /* Find the best solution that maximizes the score value
-     * using Branch-and-Bound method */
-    while (!nodeStack.empty()) {
-        /* Retrieve the node */
-        const Node& currentNode = nodeStack.top();
-        /* Compute the corresponding node pose */
-        const RobotPose2D<double> nodePose {
-            sensorPose.mX + currentNode.mX * stepX,
-            sensorPose.mY + currentNode.mY * stepY,
-            sensorPose.mTheta + currentNode.mTheta * stepTheta };
-        /* Calculate node score */
-        ScoreFunction::Summary resultSummary;
-        this->mScoreFunc->Score(precompMaps.at(currentNode.mHeight), scanData,
-                                nodePose, resultSummary);
-
-        /* Ignore the node if the score falls below the threshold */
-        if (resultSummary.mNormalizedScore <= scoreMax ||
-            resultSummary.mMatchRate < this->mMatchRateThreshold) {
-            /* Pop the current node from the stack */
-            nodeStack.pop();
-            continue;
-        }
-
-        /* If the current node is a leaf node, update the solution */
-        if (currentNode.IsLeafNode()) {
-            /* Pop the current node from the stack */
-            nodeStack.pop();
-
-            /* Update the solution */
-            bestSensorPose = nodePose;
-            scoreMax = resultSummary.mNormalizedScore;
-            solutionFound = true;
-        } else {
-            /* Otherwise, split the current node into four new nodes */
-            const int x = currentNode.mX;
-            const int y = currentNode.mY;
-            const int theta = currentNode.mTheta;
-            const int height = currentNode.mHeight - 1;
-            const int winSize = 1 << height;
-
-            /* Pop the current node from the stack */
-            nodeStack.pop();
-
-            /* Push the new nodes to the stack */
-            nodeStack.emplace(x, y, theta, height);
-            nodeStack.emplace(x + winSize, y, theta, height);
-            nodeStack.emplace(x, y + winSize, theta, height);
-            nodeStack.emplace(x + winSize, y + winSize, theta, height);
-        }
-    }
+    /* Just call the scan matcher to find a corresponding pose */
+    const auto matchingSummary = this->mScanMatcher->OptimizePose(
+        localMap, precompMaps, scanData, robotPose, this->mScoreThreshold);
 
     /* Loop detection fails if the solution is not found */
-    if (!solutionFound)
+    if (!matchingSummary.mPoseFound)
         return false;
 
-    /* Estimate the covariance matrix */
-    const Eigen::Matrix3d covMat =
-        this->mCostFunc->ComputeCovariance(localMap, scanData, bestSensorPose);
-
-    /* Compute the robot pose from the sensor pose */
-    const RobotPose2D<double> bestPose =
-        MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
-
-    /* Return the result */
-    correspondingPose = bestPose;
-    estimatedCovMat = covMat;
+    /* Return the result pose and the covariance in a world frame */
+    correspondingPose = matchingSummary.mEstimatedPose;
+    estimatedCovMat = matchingSummary.mEstimatedCovariance;
 
     return true;
 }
