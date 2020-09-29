@@ -1,6 +1,7 @@
 
 /* lidar_graph_slam.cpp */
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -328,6 +329,41 @@ void LidarGraphSlam::AfterLoopClosure(
         const auto& newNode = poseGraphNodes.at(i);
         /* Update the node pose */
         oldNode.Pose() = newNode.Pose();
+    }
+
+    /* Retrieve the pose and index of the last node which is updated by the
+     * pose graph optimization */
+    const int optimizedLastNodeIdx = poseGraphNodes.back().Index();
+    RobotPose2D<double> nodePose = poseGraphNodes.back().Pose();
+
+    /* Retrieve the odometry edge which has the above node as a starting node
+     * Nodes after the ending node of this edge is not optimized */
+    const auto odomEdgeIt = std::find_if(
+        this->mPoseGraph->Edges().crbegin(),
+        this->mPoseGraph->Edges().crend(),
+        [optimizedLastNodeIdx](const PoseGraph::Edge& edge) {
+            return edge.StartNodeIndex() == optimizedLastNodeIdx; });
+    /* This odometry edge must be found */
+    assert(odomEdgeIt != this->mPoseGraph->Edges().rend());
+    /* Assume that the pose graph edges after the below index represent
+     * the odometry edges that are not considered in the last loop closure */
+    const std::size_t odomEdgeIdx = std::distance(
+        this->mPoseGraph->Edges().begin(), odomEdgeIt.base()) - 1;
+
+    /* Update remaining pose graph nodes after the ending node of the above
+     * odometry edge, which are added after the beginning of this loop closure
+     * using the relative poses from the odometry edges */
+    for (std::size_t edgeIdx = odomEdgeIdx;
+         edgeIdx < this->mPoseGraph->Edges().size(); ++edgeIdx) {
+        /* Retrieve the odometry edge */
+        const auto& odomEdge = this->mPoseGraph->EdgeAt(edgeIdx);
+        /* Make sure that we are handling the odometry edge */
+        assert(odomEdge.IsOdometricConstraint());
+        /* Compute the new node pose */
+        nodePose = Compound(nodePose, odomEdge.RelativePose());
+        /* Update the node pose */
+        auto& odomNode = this->mPoseGraph->NodeAt(odomEdge.EndNodeIndex());
+        odomNode.Pose() = nodePose;
     }
 
     /* Rebuild the grid maps */
