@@ -80,7 +80,7 @@ ScanMatchingSummary ScanMatcherLinearSolver::OptimizePose(
     /* Return the normalized cost value, the estimated robot pose,
      * and the estimated pose covariance matrix in a world frame */
     return ScanMatchingSummary {
-        normalizedCost, initialPose,
+        true, normalizedCost, initialPose,
         estimatedPose, estimatedCovariance };
 }
 
