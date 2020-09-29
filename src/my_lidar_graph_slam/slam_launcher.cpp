@@ -335,26 +335,26 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorRealTimeCorrelative(
     /* Read settings for real-time correlative loop detection */
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
-    const int lowResolution = config.get("LowResolutionMapWinSize", 10);
-    const double rangeX = config.get("SearchRangeX", 2.0);
-    const double rangeY = config.get("SearchRangeY", 2.0);
-    const double rangeTheta = config.get("SearchRangeTheta", 1.0);
-    const double scanRangeMax = config.get("ScanRangeMax", 20.0);
-    const double scoreThreshold = config.get("ScoreThreshold", 0.8);
+    const double scoreThreshold = config.get<double>("ScoreThreshold");
 
-    /* Construct cost function */
-    const std::string costType =
-        config.get("CostType", "GreedyEndpoint");
-    const std::string costConfigGroup =
-        config.get("CostConfigGroup", "CostGreedyEndpoint");
-    auto pCostFunc = CreateCostFunction(
-        jsonSettings, costType, costConfigGroup);
+    /* Construct a new real-time correlative scan matcher */
+    const std::string scanMatcherType =
+        config.get<std::string>("ScanMatcherType");
+    const std::string scanMatcherConfigGroup =
+        config.get<std::string>("ScanMatcherConfigGroup");
+
+    /* Make sure that the real-time correlative scan matcher is used */
+    assert(scanMatcherType == "RealTimeCorrelative");
+
+    auto pScanMatcher = std::dynamic_pointer_cast<
+        Mapping::ScanMatcherRealTimeCorrelative>(
+            CreateScanMatcher(jsonSettings, scanMatcherType,
+                              scanMatcherConfigGroup));
 
     /* Construct a real-time correlative loop detector */
     auto pLoopDetector = std::make_shared<
         Mapping::LoopDetectorRealTimeCorrelative>(
-        pCostFunc, lowResolution, rangeX, rangeY, rangeTheta,
-        scanRangeMax, scoreThreshold);
+            pScanMatcher, scoreThreshold);
 
     return pLoopDetector;
 }
