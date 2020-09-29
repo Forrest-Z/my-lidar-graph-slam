@@ -468,35 +468,47 @@ void SlidingWindowMaxCol(
 }
 
 /* Precompute coarser grid maps for efficiency */
-void PrecomputeGridMaps(LocalMapInfo& localMapInfo,
-                        const int nodeHeightMax)
+void PrecomputeGridMaps(
+    LocalMapInfo& localMapInfo,
+    const int nodeHeightMax)
 {
-    /* Retrieve the local grid map */
-    auto& precomputedMaps = localMapInfo.mPrecomputedMaps;
-    const GridMapType& localMap = localMapInfo.mMap;
-
     /* The local grid map must be finished */
     assert(localMapInfo.mFinished);
 
+    /* Precompute coarser grid maps */
+    PrecomputeGridMaps(localMapInfo.mMap,
+                       localMapInfo.mPrecomputedMaps,
+                       nodeHeightMax);
+
+    /* Mark the local map as precomputed */
+    localMapInfo.mPrecomputed = true;
+}
+
+/* Precompute coarser grid maps for efficiency */
+void PrecomputeGridMaps(
+    const GridMapType& gridMap,
+    std::map<int, PrecomputedMapType>& precomputedMaps,
+    const int nodeHeightMax)
+{
     /* Create the temporary grid map to store the intermediate result
      * The map size is as same as the local grid map and is reused for
      * several times below */
     PrecomputedMapType intermediateMap =
-        PrecomputedMapType::CreateSameSizeMap(localMap);
+        PrecomputedMapType::CreateSameSizeMap(gridMap);
+
+    /* Clear the precomputed coarser grid maps */
+    precomputedMaps.clear();
 
     /* Compute a grid map for each node height */
     for (int nodeHeight = 0, winSize = 1;
          nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
         /* Precompute a grid map */
         PrecomputedMapType precompMap =
-            PrecomputeGridMap(localMap, intermediateMap, winSize);
+            PrecomputeGridMap(gridMap, intermediateMap, winSize);
 
         /* Append the newly created map */
         precomputedMaps.emplace(nodeHeight, std::move(precompMap));
     }
-
-    /* Mark the local map as precomputed */
-    localMapInfo.mPrecomputed = true;
 }
 
 /* Precompute grid map for efficiency */
