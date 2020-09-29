@@ -19,6 +19,7 @@ target_sources(lidar_graph_slam PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/robust_loss_function.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/scan_accumulator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/scan_interpolator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/scan_matcher_branch_bound.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/scan_matcher_hill_climbing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/scan_matcher_linear_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/scan_matcher_real_time_correlative.cpp
