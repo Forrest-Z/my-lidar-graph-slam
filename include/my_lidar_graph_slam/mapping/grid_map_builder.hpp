@@ -246,11 +246,6 @@ void SlidingWindowMaxCol(
 
 /* Precompute coarser grid maps for efficiency */
 void PrecomputeGridMaps(
-    LocalMapInfo& localMapInfo,
-    const int nodeHeightMax);
-
-/* Precompute coarser grid maps for efficiency */
-void PrecomputeGridMaps(
     const GridMapType& gridMap,
     std::map<int, PrecomputedMapType>& precompMaps,
     const int nodeHeightMax);
