@@ -119,17 +119,24 @@
     },
 
     "LoopDetectorBranchBound": {
-        "NodeHeightMax": 6,
-        "SearchRangeX": 2.0,
-        "SearchRangeY": 2.0,
-        "SearchRangeTheta": 1.0,
-        "ScanRangeMax": 20.0,
         "ScoreThreshold": 0.6,
-        "MatchRateThreshold": 0.9,
-        "ScoreType": "PixelAccurate",
-        "ScoreConfigGroup": "ScorePixelAccurate",
-        "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopDetectorBranchBound.CostGreedyEndpoint",
+        "ScanMatcherType": "BranchBound",
+        "ScanMatcherConfigGroup": "LoopDetectorBranchBound.ScanMatcher",
+        "ScanMatcher": {
+            "ScoreType": "PixelAccurate",
+            "ScoreConfigGroup": "LoopDetectorBranchBound.ScorePixelAccurate",
+            "CostType": "GreedyEndpoint",
+            "CostConfigGroup": "LoopDetectorBranchBound.CostGreedyEndpoint",
+            "NodeHeightMax": 6,
+            "SearchRangeX": 2.0,
+            "SearchRangeY": 2.0,
+            "SearchRangeTheta": 1.0,
+            "ScanRangeMax": 20.0
+        },
+        "ScorePixelAccurate": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 20.0
+        },
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 20.0,
@@ -195,8 +202,8 @@
         "PoseGraphOptimizerConfigGroup": "PoseGraphOptimizerLM",
         "LoopSearcherType": "Nearest",
         "LoopSearcherConfigGroup": "LoopSearcherNearest",
-        "LoopDetectorType": "RealTimeCorrelative",
-        "LoopDetectorConfigGroup": "LoopDetectorRealTimeCorrelative"
+        "LoopDetectorType": "BranchBound",
+        "LoopDetectorConfigGroup": "LoopDetectorBranchBound"
     },
 
     "LidarGraphSlam": {

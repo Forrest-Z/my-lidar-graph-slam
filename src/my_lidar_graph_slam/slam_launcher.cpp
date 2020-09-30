@@ -35,6 +35,7 @@
 #include "my_lidar_graph_slam/mapping/scan_accumulator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_interpolator.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher.hpp"
+#include "my_lidar_graph_slam/mapping/scan_matcher_branch_bound.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_hill_climbing.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_linear_solver.hpp"
 #include "my_lidar_graph_slam/mapping/scan_matcher_real_time_correlative.hpp"
@@ -132,6 +133,51 @@ std::shared_ptr<Mapping::ScoreFunction> CreateScoreFunction(
         return CreateScorePixelAccurate(jsonSettings, configGroup);
     
     return nullptr;
+}
+
+/* Create a new branch-and-bound based scan matcher */
+std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcherBranchBound(
+    const pt::ptree& jsonSettings,
+    const std::string& configGroup)
+{
+    /* Load settings for a branch-and-bound based scan matcher */
+    const auto& config = jsonSettings.get_child(configGroup);
+
+    const int nodeHeightMax = config.get<int>("NodeHeightMax");
+    const double rangeX = config.get<double>("SearchRangeX");
+    const double rangeY = config.get<double>("SearchRangeY");
+    const double rangeTheta = config.get<double>("SearchRangeTheta");
+    const double scanRangeMax = config.get<double>("ScanRangeMax");
+
+    /* Read settings for a new pixel-accurate score function evaluator */
+    const std::string scoreType =
+        config.get<std::string>("ScoreType");
+    const std::string scoreConfigGroup =
+        config.get<std::string>("ScoreConfigGroup");
+
+    /* Make sure that the pixel-accurate score is used */
+    assert(scoreType == "PixelAccurate");
+
+    /* Construct a new pixel-accurate score function evaluator */
+    auto pScoreFunc = std::dynamic_pointer_cast<Mapping::ScorePixelAccurate>(
+        CreateScoreFunction(jsonSettings, scoreType, scoreConfigGroup));
+
+    /* Read settings for a new cost function evaluator */
+    const std::string costType =
+        config.get<std::string>("CostType");
+    const std::string costConfigGroup =
+        config.get<std::string>("CostConfigGroup");
+
+    /* Construct a new cost function evaluator */
+    auto pCostFunc = CreateCostFunction(
+        jsonSettings, costType, costConfigGroup);
+
+    /* Construct a new branch-and-bound based scan matcher */
+    auto pScanMatcher = std::make_shared<Mapping::ScanMatcherBranchBound>(
+        pScoreFunc, pCostFunc,
+        nodeHeightMax, rangeX, rangeY, rangeTheta, scanRangeMax);
+
+    return pScanMatcher;
 }
 
 /* Create the greedy endpoint scan matcher object */
@@ -234,13 +280,15 @@ std::shared_ptr<Mapping::ScanMatcher> CreateScanMatcher(
     const std::string& scanMatcherType,
     const std::string& configGroup)
 {
-    if (scanMatcherType == "HillClimbing")
+    if (scanMatcherType == "BranchBound")
+        return CreateScanMatcherBranchBound(jsonSettings, configGroup);
+    else if (scanMatcherType == "HillClimbing")
         return CreateScanMatcherHillClimbing(jsonSettings, configGroup);
     else if (scanMatcherType == "LinearSolver")
         return CreateScanMatcherLinearSolver(jsonSettings, configGroup);
     else if (scanMatcherType == "RealTimeCorrelative")
         return CreateScanMatcherRealTimeCorrelative(jsonSettings, configGroup);
-    
+
     return nullptr;
 }
 
@@ -365,37 +413,28 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorBranchBound(
     const std::string& configGroup)
 {
     /* Read settings for a branch-and-bound loop detector */
-    const pt::ptree& config = jsonSettings.get_child(configGroup);
+    const auto& config = jsonSettings.get_child(configGroup);
 
-    const int nodeHeightMax = config.get("NodeHeightMax", 6);
-    const double rangeX = config.get("SearchRangeX", 2.0);
-    const double rangeY = config.get("SearchRangeY", 2.0);
-    const double rangeTheta = config.get("SearchRangeTheta", 1.0);
-    const double scanRangeMax = config.get("ScanRangeMax", 20.0);
     const double scoreThreshold = config.get("ScoreThreshold", 0.8);
-    const double matchRateThreshold = config.get("MatchRateThreshold", 0.8);
 
-    /* Construct score function */
-    const std::string scoreType =
-        config.get("ScoreType", "PixelAccurate");
-    const std::string scoreConfigGroup =
-        config.get("ScoreConfigGroup", "ScorePixelAccurate");
-    auto pScoreFunc = CreateScoreFunction(
-        jsonSettings, scoreType, scoreConfigGroup);
+    /* Read settings for a new branch-and-bound based scan matcher */
+    const std::string scanMatcherType =
+        config.get<std::string>("ScanMatcherType");
+    const std::string scanMatcherConfigGroup =
+        config.get<std::string>("ScanMatcherConfigGroup");
 
-    /* Construct cost function */
-    const std::string costType =
-        config.get("CostType", "GreedyEndpoint");
-    const std::string costConfigGroup =
-        config.get("CostConfigGroup", "CostGreedyEndpoint");
-    auto pCostFunc = CreateCostFunction(
-        jsonSettings, costType, costConfigGroup);
+    /* Make sure that the branch-and-bound based scan matcher is used */
+    assert(scanMatcherType == "BranchBound");
+
+    /* Construct a new branch-and-bound based scan matcher */
+    auto pScanMatcher = std::dynamic_pointer_cast<
+        Mapping::ScanMatcherBranchBound>(
+            CreateScanMatcher(jsonSettings, scanMatcherType,
+                              scanMatcherConfigGroup));
 
     /* Construct a branch-and-bound loop detector object */
     auto pLoopDetector = std::make_shared<Mapping::LoopDetectorBranchBound>(
-        pScoreFunc, pCostFunc,
-        nodeHeightMax, rangeX, rangeY, rangeTheta, scanRangeMax,
-        scoreThreshold, matchRateThreshold);
+        pScanMatcher, scoreThreshold);
 
     return pLoopDetector;
 }
