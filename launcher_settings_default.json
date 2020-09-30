@@ -65,18 +65,25 @@
     },
 
     "LoopDetectorGridSearch": {
-        "SearchRangeX": 2.0,
-        "SearchRangeY": 2.0,
-        "SearchRangeTheta": 0.5,
-        "SearchStepX": 0.05,
-        "SearchStepY": 0.05,
-        "SearchStepTheta": 0.005,
         "ScoreThreshold": 0.5,
-        "MatchRateThreshold": 0.8,
-        "ScoreType": "PixelAccurate",
-        "ScoreConfigGroup": "ScorePixelAccurate",
-        "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopDetectorGridSearch.CostGreedyEndpoint",
+        "ScanMatcherType": "GridSearch",
+        "ScanMatcherConfigGroup": "LoopDetectorGridSearch.ScanMatcher",
+        "ScanMatcher": {
+            "ScoreType": "PixelAccurate",
+            "ScoreConfigGroup": "LoopDetectorGridSearch.ScorePixelAccurate",
+            "CostType": "GreedyEndpoint",
+            "CostConfigGroup": "LoopDetectorGridSearch.CostGreedyEndpoint",
+            "SearchRangeX": 2.0,
+            "SearchRangeY": 2.0,
+            "SearchRangeTheta": 0.5,
+            "SearchStepX": 0.05,
+            "SearchStepY": 0.05,
+            "SearchStepTheta": 0.005
+        },
+        "ScorePixelAccurate": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 20.0
+        },
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 20.0,
