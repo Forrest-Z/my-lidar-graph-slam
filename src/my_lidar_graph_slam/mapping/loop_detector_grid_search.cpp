@@ -11,6 +11,17 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
+/* Constructor */
+LoopDetectorGridSearch::LoopDetectorGridSearch(
+    const std::shared_ptr<ScanMatcherGridSearch>& scanMatcher,
+    const double scoreThreshold) :
+    mScanMatcher(scanMatcher),
+    mScoreThreshold(scoreThreshold)
+{
+    assert(scoreThreshold > 0.0);
+    assert(scoreThreshold <= 1.0);
+}
+
 /* Find a loop and return a loop constraint */
 void LoopDetectorGridSearch::Detect(
     LoopDetectionQueryVector& loopDetectionQueries,
@@ -79,56 +90,17 @@ bool LoopDetectorGridSearch::FindCorrespondingPose(
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
-    /* Find the best pose from the search window
-     * that maximizes the matching score value */
-    const RobotPose2D<double> sensorPose =
-        Compound(robotPose, scanData->RelativeSensorPose());
-    RobotPose2D<double> bestSensorPose = sensorPose;
-    double scoreMax = std::numeric_limits<double>::min();
-
-    const double rx = this->mRangeX / 2.0;
-    const double ry = this->mRangeY / 2.0;
-    const double rt = this->mRangeTheta / 2.0;
-    const double sx = this->mStepX;
-    const double sy = this->mStepY;
-    const double st = this->mStepTheta;
-
-    /* Perform the grid search */
-    for (double dy = -ry; dy <= ry; dy += sy) {
-        for (double dx = -rx; dx <= rx; dx += sx) {
-            for (double dt = -rt; dt <= rt; dt += st) {
-                /* Calculate the cost value */
-                const RobotPose2D<double> pose { sensorPose.mX + dx,
-                                                 sensorPose.mY + dy,
-                                                 sensorPose.mTheta + dt };
-                ScoreFunction::Summary scoreSummary;
-                this->mScoreFunc->Score(gridMap, scanData, pose, scoreSummary);
-
-                /* Update the best pose and minimum cost value */
-                if (scoreSummary.mMatchRate > this->mMatchRateThreshold &&
-                    scoreSummary.mNormalizedScore > scoreMax) {
-                    scoreMax = scoreSummary.mNormalizedScore;
-                    bestSensorPose = pose;
-                }
-            }
-        }
-    }
+    /* Just call the exhaustive grid search scan matcher */
+    const auto matchingSummary = this->mScanMatcher->OptimizePose(
+        gridMap, scanData, robotPose, this->mScoreThreshold);
 
     /* Loop detection fails if the matching score falls below the threshold */
-    if (scoreMax < this->mScoreThreshold)
+    if (!matchingSummary.mPoseFound)
         return false;
 
-    /* Estimate the covariance matrix */
-    const Eigen::Matrix3d covMat =
-        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
-
-    /* Calculate the robot pose from the sensor pose */
-    const RobotPose2D<double> bestPose =
-        MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
-
     /* Return the result */
-    correspondingPose = bestPose;
-    estimatedCovMat = covMat;
+    correspondingPose = matchingSummary.mEstimatedPose;
+    estimatedCovMat = matchingSummary.mEstimatedCovariance;
 
     return true;
 }
