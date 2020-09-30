@@ -547,6 +547,7 @@ GridMap<T>::GridMap(double mapResolution,
 /* Copy constructor */
 template <typename T>
 GridMap<T>::GridMap(const GridMap<T>& other) :
+    GridMapBase<typename T::ValueType>(other),
     mResolution(0.0),
     mPatchSize(0),
     mNumOfPatchesX(0),

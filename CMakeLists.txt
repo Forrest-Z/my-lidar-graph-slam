@@ -31,7 +31,7 @@ target_link_libraries(lidar_graph_slam PUBLIC Eigen3::Eigen)
 target_link_libraries(lidar_graph_slam PUBLIC PNG::PNG)
 target_link_libraries(lidar_graph_slam PUBLIC ${Boost_LIBRARIES})
 target_compile_options(lidar_graph_slam PUBLIC
-    $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall -Wextra>
+    $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall -Wextra -Wno-psabi>
     $<$<CONFIG:Release>:-O3>
     $<$<AND:$<CXX_COMPILER_ID:GNU>,$<CONFIG:Debug>>:-O0 -ggdb>)
 target_compile_features(lidar_graph_slam PUBLIC cxx_std_17)
