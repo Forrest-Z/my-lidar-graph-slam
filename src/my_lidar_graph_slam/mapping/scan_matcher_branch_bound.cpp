@@ -77,7 +77,6 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
 
     /* Setup the best pose */
     RobotPose2D<double> bestSensorPose = sensorPose;
-    bool poseFound = false;
 
     /* Initialize a stack with nodes covering the entire search window */
     std::stack<Node> nodeStack;
@@ -120,7 +119,6 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
             /* Update the solution */
             bestSensorPose = nodePose;
             scoreMax = resultSummary.mScore;
-            poseFound = true;
         } else {
             /* Otherwise, split the current node into four new nodes */
             const int x = currentNode.mX;
@@ -139,6 +137,10 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
             nodeStack.emplace(x + winSize, y + winSize, theta, height);
         }
     }
+
+    /* The appropriate pose is found if the maximum score is larger than
+     * (not larger than or equal to) the score threshold */
+    const bool poseFound = scoreMax > scoreThreshold;
 
     /* Evaluate the cost value */
     const double costVal = this->mCostFunc->Cost(
