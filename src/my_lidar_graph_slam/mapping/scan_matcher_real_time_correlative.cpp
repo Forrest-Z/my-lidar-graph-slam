@@ -13,11 +13,11 @@ namespace Mapping {
 /* Constructor */
 ScanMatcherRealTimeCorrelative::ScanMatcherRealTimeCorrelative(
     const CostFuncPtr& costFunc,
-    int lowResolution,
-    double rangeX,
-    double rangeY,
-    double rangeTheta,
-    double scanRangeMax) :
+    const int lowResolution,
+    const double rangeX,
+    const double rangeY,
+    const double rangeTheta,
+    const double scanRangeMax) :
     mCostFunc(costFunc),
     mLowResolution(lowResolution),
     mRangeX(rangeX),
@@ -37,9 +37,23 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
 
     /* Precompute the grid map */
-    const PrecomputedMapType precompMap =
-        PrecomputeGridMap(gridMap, this->mLowResolution);
+    const PrecomputedMapType precompMap = this->ComputeCoarserMap(gridMap);
 
+    /* Optimize the robot pose by scan matching
+     * Pass the minimum possible value as a score threshold to
+     * search the entire window */
+    return this->OptimizePose(gridMap, precompMap, scanData, initialPose,
+                              std::numeric_limits<double>::min());
+}
+
+/* Optimize the robot pose by scan matching */
+ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
+    const GridMapType& gridMap,
+    const PrecomputedMapType& precompMap,
+    const Sensor::ScanDataPtr<double>& scanData,
+    const RobotPose2D<double>& initialPose,
+    const double normalizedScoreThreshold) const
+{
     /* Find the best pose from the search window */
     const RobotPose2D<double> sensorPose =
         Compound(initialPose, scanData->RelativeSensorPose());
@@ -60,7 +74,9 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
         std::ceil(0.5 * this->mRangeTheta / stepTheta));
 
     /* Perform scan matching against the low resolution grid map */
-    double scoreMax = std::numeric_limits<double>::min();
+    const double scoreThreshold =
+        normalizedScoreThreshold * scanData->NumOfScans();
+    double scoreMax = scoreThreshold;
     int bestWinX = -winX;
     int bestWinY = -winY;
     int bestWinTheta = -winTheta;
@@ -99,17 +115,21 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
         }
     }
 
+    /* The appropriate solution is found if the maximum score is
+     * larger than (not larger than or equal to) the score threshold */
+    const bool poseFound = scoreMax > scoreThreshold;
     /* Compute the best sensor pose */
     const RobotPose2D<double> bestSensorPose {
         sensorPose.mX + bestWinX * stepX,
         sensorPose.mY + bestWinY * stepY,
         sensorPose.mTheta + bestWinTheta * stepTheta };
+
     /* Evaluate the cost value */
     const double costVal = this->mCostFunc->Cost(
         gridMap, scanData, bestSensorPose);
-
     /* Compute the normalized cost value */
     const double normalizedCost = costVal / scanData->NumOfScans();
+
     /* Compute the estimated robot pose in a world frame */
     const RobotPose2D<double> estimatedPose =
         MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
@@ -120,8 +140,16 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     /* Return the normalized cost value, the estimated robot pose,
      * and the estimated pose covariance matrix in a world frame */
     return ScanMatchingSummary {
-        normalizedCost, initialPose,
+        poseFound, normalizedCost, initialPose,
         estimatedPose, estimatedCovariance };
+}
+
+/* Precompute a coarser grid map for scan matching */
+PrecomputedMapType ScanMatcherRealTimeCorrelative::ComputeCoarserMap(
+    const GridMapType& gridMap) const
+{
+    /* Create a coarser grid map with the specified resolution */
+    return PrecomputeGridMap(gridMap, this->mLowResolution);
 }
 
 /* Compute the search step */

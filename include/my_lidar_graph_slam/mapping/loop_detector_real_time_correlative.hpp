@@ -1,31 +1,29 @@
 
-/* loop_detector_branch_bound.hpp */
+/* loop_detector_real_time_correlative.hpp */
 
-#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_BRANCH_BOUND_HPP
-#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_BRANCH_BOUND_HPP
+#ifndef MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_REAL_TIME_CORRELATIVE_HPP
+#define MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_REAL_TIME_CORRELATIVE_HPP
 
-#include <map>
-#include <stack>
+#include <memory>
 
-#include "my_lidar_graph_slam/util.hpp"
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
-#include "my_lidar_graph_slam/mapping/scan_matcher_branch_bound.hpp"
+#include "my_lidar_graph_slam/mapping/scan_matcher_real_time_correlative.hpp"
 #include "my_lidar_graph_slam/mapping/score_function.hpp"
 #include "my_lidar_graph_slam/mapping/loop_detector.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-class LoopDetectorBranchBound final : public LoopDetector
+class LoopDetectorRealTimeCorrelative final : public LoopDetector
 {
 public:
     /* Constructor */
-    LoopDetectorBranchBound(
-        const std::shared_ptr<ScanMatcherBranchBound>& scanMatcher,
+    LoopDetectorRealTimeCorrelative(
+        const std::shared_ptr<ScanMatcherRealTimeCorrelative>& scanMatcher,
         const double scoreThreshold);
 
     /* Destructor */
-    ~LoopDetectorBranchBound() = default;
+    ~LoopDetectorRealTimeCorrelative() = default;
 
     /* Find a loop and return a loop constraint */
     void Detect(
@@ -34,7 +32,7 @@ public:
 
 private:
     /* Find a corresponding pose of the current robot pose
-     * from the local grid map */
+     * from a local grid map */
     bool FindCorrespondingPose(
         const GridMapType& localMap,
         const std::map<int, PrecomputedMapType>& precompMaps,
@@ -44,13 +42,13 @@ private:
         Eigen::Matrix3d& estimatedCovMat) const;
 
 private:
-    /* Branch-and-bound based scan matcher */
-    std::shared_ptr<ScanMatcherBranchBound> mScanMatcher;
-    /* Normalized matching score threshold for loop detector */
-    const double                            mScoreThreshold;
+    /* Real-time correlative scan matcher */
+    std::shared_ptr<ScanMatcherRealTimeCorrelative> mScanMatcher;
+    /* Normalized matching score threshold for loop detection */
+    const double                                    mScoreThreshold;
 };
 
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
 
-#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_BRANCH_BOUND_HPP */
+#endif /* MY_LIDAR_GRAPH_SLAM_MAPPING_LOOP_DETECTOR_REAL_TIME_CORRELATIVE_HPP */

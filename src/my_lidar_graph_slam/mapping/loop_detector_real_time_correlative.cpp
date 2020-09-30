@@ -1,19 +1,19 @@
 
-/* loop_detector_branch_bound.cpp */
+/* loop_detector_real_time_correlative.cpp */
 
+#include "my_lidar_graph_slam/mapping/loop_detector_real_time_correlative.hpp"
+
+#include <algorithm>
 #include <cassert>
-#include <deque>
 #include <limits>
-
-#include "my_lidar_graph_slam/io/map_saver.hpp"
-#include "my_lidar_graph_slam/mapping/loop_detector_branch_bound.hpp"
+#include <numeric>
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Constructor */
-LoopDetectorBranchBound::LoopDetectorBranchBound(
-    const std::shared_ptr<ScanMatcherBranchBound>& scanMatcher,
+LoopDetectorRealTimeCorrelative::LoopDetectorRealTimeCorrelative(
+    const std::shared_ptr<ScanMatcherRealTimeCorrelative>& scanMatcher,
     const double scoreThreshold) :
     mScanMatcher(scanMatcher),
     mScoreThreshold(scoreThreshold)
@@ -23,7 +23,7 @@ LoopDetectorBranchBound::LoopDetectorBranchBound(
 }
 
 /* Find a loop and return a loop constraint */
-void LoopDetectorBranchBound::Detect(
+void LoopDetectorRealTimeCorrelative::Detect(
     LoopDetectionQueryVector& loopDetectionQueries,
     LoopDetectionResultVector& loopDetectionResults)
 {
@@ -36,7 +36,7 @@ void LoopDetectorBranchBound::Detect(
 
     /* Perform loop detection for each query */
     for (auto& loopDetectionQuery : loopDetectionQueries) {
-        /* Retrieve the information about each query */
+        /* Retrieve the information for each query */
         const auto& poseGraphNodes = loopDetectionQuery.mPoseGraphNodes;
         auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
         const auto& localMapNode = loopDetectionQuery.mLocalMapNode;
@@ -48,16 +48,19 @@ void LoopDetectorBranchBound::Detect(
         /* Make sure that the grid map is in finished state */
         assert(localMapInfo.mFinished);
 
-        /* Precompute the coarser local grid maps for efficiency */
+        /* Precompute a low-resolution grid map */
         if (!localMapInfo.mPrecomputed) {
-            /* Precompute multiple coarser grid maps */
-            std::map<int, PrecomputedMapType> precompMaps =
-                this->mScanMatcher->ComputeCoarserMaps(localMapInfo.mMap);
-            /* Set the newly created grid map pyramid */
-            localMapInfo.mPrecomputedMaps = std::move(precompMaps);
+            /* Precompute a coarser grid map */
+            PrecomputedMapType precompMap =
+                this->mScanMatcher->ComputeCoarserMap(localMapInfo.mMap);
+            /* Append the newly created grid map */
+            localMapInfo.mPrecomputedMaps.emplace(0, std::move(precompMap));
             /* Mark the current local map as precomputed */
             localMapInfo.mPrecomputed = true;
         }
+
+        /* The local grid map should have only one precomputed grid map */
+        assert(localMapInfo.mPrecomputedMaps.size() == 1);
 
         /* Perform loop detection for each node */
         for (const auto& poseGraphNode : poseGraphNodes) {
@@ -75,7 +78,7 @@ void LoopDetectorBranchBound::Detect(
                 continue;
 
             /* Setup loop closing edge information */
-            /* Relative pose of the edge */
+            /* Relative pose of the loop closing edge */
             const RobotPose2D<double> relativePose =
                 InverseCompound(localMapNode.Pose(), correspondingPose);
             /* Indices of the start and end node */
@@ -93,8 +96,8 @@ void LoopDetectorBranchBound::Detect(
 }
 
 /* Find a corresponding pose of the current robot pose
- * from the local grid map */
-bool LoopDetectorBranchBound::FindCorrespondingPose(
+ * from a local grid map */
+bool LoopDetectorRealTimeCorrelative::FindCorrespondingPose(
     const GridMapType& localMap,
     const std::map<int, PrecomputedMapType>& precompMaps,
     const Sensor::ScanDataPtr<double>& scanData,
@@ -102,11 +105,15 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
+    /* Retrieve the precomputed low-resolution grid map */
+    assert(precompMaps.size() == 1);
+    const PrecomputedMapType& precompMap = precompMaps.at(0);
+
     /* Just call the scan matcher to find a corresponding pose */
     const auto matchingSummary = this->mScanMatcher->OptimizePose(
-        localMap, precompMaps, scanData, robotPose, this->mScoreThreshold);
+        localMap, precompMap, scanData, robotPose, this->mScoreThreshold);
 
-    /* Loop detection fails if the solution is not found */
+    /* Loop detection fails if the score does not exceed the threshold */
     if (!matchingSummary.mPoseFound)
         return false;
 
@@ -117,5 +124,5 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
     return true;
 }
 
-} /* Mapping */
+} /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */

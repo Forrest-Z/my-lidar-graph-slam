@@ -106,6 +106,8 @@ bool LidarGraphSlamFrontend::ProcessScan(
          * the latest scans and obtain the result */
         const ScanMatchingSummary matchingSummary =
             this->mScanMatcher->OptimizePose(queryInfo);
+        /* Make sure that the solution is found */
+        assert(matchingSummary.mPoseFound);
 
         /* Compute the relative pose between the latest node pose
          * and the estimated pose, the former might have been modified by

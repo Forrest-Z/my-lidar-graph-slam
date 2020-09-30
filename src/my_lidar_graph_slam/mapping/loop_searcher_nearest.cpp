@@ -2,6 +2,7 @@
 /* loop_searcher_nearest.cpp */
 
 #include <cassert>
+#include <numeric>
 
 #include "my_lidar_graph_slam/mapping/loop_searcher_nearest.hpp"
 
@@ -86,9 +87,20 @@ Done:
         candidateNodeIdx < 0 || candidateNodeIdx >= numOfNodes)
         return loopCandidates;
 
-    /* Set the closest pose graph node index and its corresponding
-     * local grid map index */
-    std::vector<int> nodeIndices { latestNodeIdx };
+    /* Set the pose graph nodes around the closest pose graph node */
+    const auto& latestLocalMap =
+        searchHint.mLocalMapPositions.at(searchHint.mLatestLocalMapIdx);
+    const int nodeIdxMin = std::max(
+        latestLocalMap.mPoseGraphNodeIdxMin,
+        latestNodeIdx - this->mNumOfCandidateNodes);
+    const int nodeIdxMax = std::min(
+        latestLocalMap.mPoseGraphNodeIdxMax,
+        latestNodeIdx + this->mNumOfCandidateNodes);
+
+    std::vector<int> nodeIndices;
+    nodeIndices.resize(nodeIdxMax - nodeIdxMin + 1);
+    std::iota(std::begin(nodeIndices), std::end(nodeIndices), nodeIdxMin);
+
     loopCandidates.emplace_back(
         std::move(nodeIndices), candidateMapIdx, candidateNodeIdx);
 

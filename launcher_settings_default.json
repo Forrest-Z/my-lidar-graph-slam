@@ -60,22 +60,30 @@
 
     "LoopSearcherNearest": {
         "TravelDistThreshold": 10.0,
-        "PoseGraphNodeDistMax": 5.0
+        "PoseGraphNodeDistMax": 5.0,
+        "NumOfCandidateNodes": 2
     },
 
     "LoopDetectorGridSearch": {
-        "SearchRangeX": 2.0,
-        "SearchRangeY": 2.0,
-        "SearchRangeTheta": 0.5,
-        "SearchStepX": 0.05,
-        "SearchStepY": 0.05,
-        "SearchStepTheta": 0.005,
         "ScoreThreshold": 0.5,
-        "MatchRateThreshold": 0.8,
-        "ScoreType": "PixelAccurate",
-        "ScoreConfigGroup": "ScorePixelAccurate",
-        "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopDetectorGridSearch.CostGreedyEndpoint",
+        "ScanMatcherType": "GridSearch",
+        "ScanMatcherConfigGroup": "LoopDetectorGridSearch.ScanMatcher",
+        "ScanMatcher": {
+            "ScoreType": "PixelAccurate",
+            "ScoreConfigGroup": "LoopDetectorGridSearch.ScorePixelAccurate",
+            "CostType": "GreedyEndpoint",
+            "CostConfigGroup": "LoopDetectorGridSearch.CostGreedyEndpoint",
+            "SearchRangeX": 2.0,
+            "SearchRangeY": 2.0,
+            "SearchRangeTheta": 0.5,
+            "SearchStepX": 0.05,
+            "SearchStepY": 0.05,
+            "SearchStepTheta": 0.005
+        },
+        "ScorePixelAccurate": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 20.0
+        },
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 20.0,
@@ -91,17 +99,21 @@
         }
     },
 
-    "LoopClosureRealTimeCorrelative": {
-        "TravelDistThreshold": 10.0,
-        "PoseGraphNodeDistMax": 10.0,
-        "LowResolutionMapWinSize": 5,
-        "SearchRangeX": 5.0,
-        "SearchRangeY": 5.0,
-        "SearchRangeTheta": 1.0,
-        "ScanRangeMax": 20.0,
+    "LoopDetectorRealTimeCorrelative": {
         "ScoreThreshold": 0.6,
-        "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopClosureRealTimeCorrelative.CostGreedyEndpoint",
+        "ScanMatcherType": "RealTimeCorrelative",
+        "ScanMatcherConfigGroup":
+            "LoopDetectorRealTimeCorrelative.ScanMatcher",
+        "ScanMatcher": {
+            "LowResolutionMapWinSize": 5,
+            "SearchRangeX": 5.0,
+            "SearchRangeY": 5.0,
+            "SearchRangeTheta": 1.0,
+            "ScanRangeMax": 20.0,
+            "CostType": "GreedyEndpoint",
+            "CostConfigGroup":
+                "LoopDetectorRealTimeCorrelative.CostGreedyEndpoint"
+        },
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 20.0,
@@ -114,17 +126,24 @@
     },
 
     "LoopDetectorBranchBound": {
-        "NodeHeightMax": 6,
-        "SearchRangeX": 2.0,
-        "SearchRangeY": 2.0,
-        "SearchRangeTheta": 1.0,
-        "ScanRangeMax": 20.0,
         "ScoreThreshold": 0.6,
-        "MatchRateThreshold": 0.9,
-        "ScoreType": "PixelAccurate",
-        "ScoreConfigGroup": "ScorePixelAccurate",
-        "CostType": "GreedyEndpoint",
-        "CostConfigGroup": "LoopDetectorBranchBound.CostGreedyEndpoint",
+        "ScanMatcherType": "BranchBound",
+        "ScanMatcherConfigGroup": "LoopDetectorBranchBound.ScanMatcher",
+        "ScanMatcher": {
+            "ScoreType": "PixelAccurate",
+            "ScoreConfigGroup": "LoopDetectorBranchBound.ScorePixelAccurate",
+            "CostType": "GreedyEndpoint",
+            "CostConfigGroup": "LoopDetectorBranchBound.CostGreedyEndpoint",
+            "NodeHeightMax": 6,
+            "SearchRangeX": 2.0,
+            "SearchRangeY": 2.0,
+            "SearchRangeTheta": 1.0,
+            "ScanRangeMax": 20.0
+        },
+        "ScorePixelAccurate": {
+            "UsableRangeMin": 0.01,
+            "UsableRangeMax": 20.0
+        },
         "CostGreedyEndpoint": {
             "UsableRangeMin": 0.01,
             "UsableRangeMax": 20.0,
