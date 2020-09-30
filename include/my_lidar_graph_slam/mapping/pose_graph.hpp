@@ -16,6 +16,107 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
+ * LocalMapNode struct represents a pose graph node for a local grid map
+ */
+struct LocalMapNode final
+{
+    /* Constructor */
+    LocalMapNode(const int localMapId,
+                 const RobotPose2D<double>& globalPose) :
+        mLocalMapId(localMapId),
+        mGlobalPose(globalPose) { }
+
+    /* Destructor */
+    ~LocalMapNode() = default;
+
+    /* Local grid map Id */
+    const int           mLocalMapId;
+    /* Node pose in a world frame */
+    RobotPose2D<double> mGlobalPose;
+};
+
+/*
+ * ScanNode struct represents a pose graph node for a scan data
+ * ScanNode belongs to a local grid map, inside of which the scan data
+ * is acquired, and has a pose in a coordinate frame centered at the
+ * origin of this local grid map
+ */
+struct ScanNode final
+{
+    /* Constructor */
+    ScanNode(const int nodeId,
+             const int localMapId,
+             const RobotPose2D<double>& localPose,
+             const Sensor::ScanDataPtr<double>& scanData,
+             const RobotPose2D<double>& globalPose) :
+        mNodeId(nodeId),
+        mLocalMapId(localMapId),
+        mLocalPose(localPose),
+        mScanData(scanData),
+        mGlobalPose(globalPose) { }
+
+    /* Destructor */
+    ~ScanNode() = default;
+
+    /* Node Id */
+    const int                         mNodeId;
+    /* Local grid map Id */
+    const int                         mLocalMapId;
+    /* Node pose in a local frame */
+    const RobotPose2D<double>         mLocalPose;
+    /* Scan data */
+    const Sensor::ScanDataPtr<double> mScanData;
+    /* Node pose in a world frame */
+    RobotPose2D<double>               mGlobalPose;
+};
+
+/*
+ * PoseGraphEdge class represents pose graph edges (constraints)
+ * connecting a local grid map node and a scan data node
+ */
+struct PoseGraphEdge final
+{
+    /* Constructor */
+    PoseGraphEdge(const int localMapNodeId,
+                  const int scanNodeId,
+                  const bool isIntraLocalMap,
+                  const RobotPose2D<double>& relativePose,
+                  const Eigen::Matrix3d& informationMat) :
+        mLocalMapNodeId(localMapNodeId),
+        mScanNodeId(scanNodeId),
+        mIsIntraLocalMap(isIntraLocalMap),
+        mRelativePose(relativePose),
+        mInformationMat(informationMat) { }
+
+    /* Destructor */
+    ~PoseGraphEdge() = default;
+
+    /* Return if this edge represents an intra-local grid map constraint,
+     * that is, the scan data with an Id `mScanNodeId` is acquired at its
+     * associated local grid map with an Id `mLocalMapNodeId` */
+    inline bool IsIntraLocalMap() const { return this->mIsIntraLocalMap; }
+
+    /* Return if this edge represents an inter-local grid map constraint,
+     * that is, the scan data with an Id `mScanNodeId` is not acquired at
+     * its associated local grid map with an Id `mLocalMapNodeId` and
+     * the scan data `mScanNodeId` does not belong to the
+     * local grid map `mLocalMapNodeId` */
+    inline bool IsInterLocalMap() const { return !this->IsIntraLocalMap(); }
+
+    /* Local grid map node Id */
+    const int                 mLocalMapNodeId;
+    /* Scan data node Id */
+    const int                 mScanNodeId;
+    /* Flag to represent whether this edge represents an intra-local grid map
+     * constraint or an inter-local grid map constraint */
+    const bool                mIsIntraLocalMap;
+    /* Relative pose between two pose graph nodes */
+    const RobotPose2D<double> mRelativePose;
+    /* Information matrix (inverse of the covariance matrix) */
+    const Eigen::Matrix3d     mInformationMat;
+};
+
+/*
  * NodePosition struct represents the pose and index of
  * the pose graph nodes, which is intended for the use in
  * rendering the current pose graph or searching the loop closure
@@ -72,113 +173,6 @@ struct EdgeConnection final
  */
 class PoseGraph
 {
-public:
-    /*
-     * Node class represents the pose graph nodes same as NodePosition struct
-     * but with the associated scan data to build grid maps
-     * Poses are the variables in the graph optimization problem
-     */
-    class Node final
-    {
-    public:
-        /* Constructor */
-        Node(int nodeIdx,
-             const RobotPose2D<double>& pose,
-             const Sensor::ScanDataPtr<double>& scanData) :
-            mIdx(nodeIdx), mPose(pose), mScanData(scanData) { }
-        
-        /* Destructor */
-        ~Node() = default;
-
-        /* Copy constructor */
-        Node(const Node&) = default;
-        /* Copy assignment operator */
-        Node& operator=(const Node&) = default;
-        /* Move constructor */
-        Node(Node&&) = default;
-        /* Move assignment operator */
-        Node& operator=(Node&&) = default;
-
-        /* Get the index of the node */
-        inline int Index() const { return this->mIdx; }
-
-        /* Get the robot pose */
-        inline RobotPose2D<double>& Pose() { return this->mPose; }
-        inline const RobotPose2D<double>& Pose() const { return this->mPose; }
-
-        /* Get the corresponding scan data */
-        inline const Sensor::ScanDataPtr<double>& ScanData() const
-        { return this->mScanData; }
-
-    private:
-        /* Index of the node */
-        int                         mIdx;
-        /* Robot pose */
-        RobotPose2D<double>         mPose;
-        /* Corresponding scan data */
-        Sensor::ScanDataPtr<double> mScanData;
-    };
-
-    /*
-     * Edge class represents pose graph edges (constraints)
-     * connecting two adjacent pose graph nodes
-     * Relative poses are the constants in the optimization problem
-     */
-    class Edge final
-    {
-    public:
-        /* Constructor */
-        Edge(int startNodeIdx,
-             int endNodeIdx,
-             const RobotPose2D<double>& relativePose,
-             const Eigen::Matrix3d& informationMat) :
-            mStartNodeIdx(startNodeIdx),
-            mEndNodeIdx(endNodeIdx),
-            mRelativePose(relativePose),
-            mInformationMat(informationMat) { }
-
-        /* Destructor */
-        ~Edge() = default;
-
-        /* Copy constructor */
-        Edge(const Edge&) = default;
-        /* Copy assignment operator */
-        Edge& operator=(const Edge&) = default;
-        /* Move constructor */
-        Edge(Edge&&) = default;
-        /* Move assignment operator */
-        Edge& operator=(Edge&&) = default;
-
-        /* Get the index of the start node */
-        inline int StartNodeIndex() const { return this->mStartNodeIdx; }
-        /* Get the index of the end node */
-        inline int EndNodeIndex() const { return this->mEndNodeIdx; }
-
-        /* Get the relative pose between two pose graph nodes */
-        inline const RobotPose2D<double>& RelativePose() const
-        { return this->mRelativePose; }
-        /* Get the information matrix (inverse of the covariance matrix) */
-        inline const Eigen::Matrix3d& InformationMatrix() const
-        { return this->mInformationMat; }
-
-        /* Check if the edge represents odometric constraint */
-        inline bool IsOdometricConstraint() const
-        { return this->mEndNodeIdx == this->mStartNodeIdx + 1; }
-        /* Check if the edge represents loop closing constraint */
-        inline bool IsLoopClosingConstraint() const
-        { return !this->IsOdometricConstraint(); }
-
-    private:
-        /* Index of the start node */
-        int                 mStartNodeIdx;
-        /* Index of the end node */
-        int                 mEndNodeIdx;
-        /* Relative pose between two pose graph nodes */
-        RobotPose2D<double> mRelativePose;
-        /* Information matrix (inverse of the covariance matrix) */
-        Eigen::Matrix3d     mInformationMat;
-    };
-
 public:
     /* Constructor */
     PoseGraph() = default;
