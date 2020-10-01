@@ -353,19 +353,25 @@ public:
 
     /* Get the map of the scan nodes */
     inline const std::map<NodeId, ScanNode>& ScanNodes() const
-    { return this->mScanNodes; }
+    { return this->mScanNodes.Nodes(); }
+
+    /* Check if the pose graph contains a scan node with the specified Id */
+    inline bool ContainsScanNode(const NodeId nodeId) const
+    { return this->mScanNodes.Contains(nodeId); }
 
     /* Get the scan node of the specified Id */
     inline ScanNode& ScanNodeAt(const NodeId nodeId)
-    { return this->mScanNodes.at(nodeId); }
+    { return this->mScanNodes.At(nodeId); }
     /* Get the scan node of the specified Id */
     inline const ScanNode& ScanNodeAt(const NodeId nodeId) const
-    { return this->mScanNodes.at(nodeId); }
+    { return this->mScanNodes.At(nodeId); }
 
     /* Get the latest scan node */
-    ScanNode& LatestScanNode();
+    inline ScanNode& LatestScanNode()
+    { return this->mScanNodes.LatestNode(); }
     /* Get the latest scan node */
-    const ScanNode& LatestScanNode() const;
+    inline const ScanNode& LatestScanNode() const
+    { return this->mScanNodes.LatestNode(); }
 
     /* Get the vector of the pose graph edges */
     inline const std::vector<PoseGraphEdge>& Edges() const
@@ -382,7 +388,7 @@ private:
     /* Map of the local map nodes */
     std::map<LocalMapId, LocalMapNode> mLocalMapNodes;
     /* Vector of the scan nodes */
-    std::map<NodeId, ScanNode>         mScanNodes;
+    ScanNodeMap                        mScanNodes;
     /* Vector of the pose graph edges */
     std::vector<PoseGraphEdge>         mEdges;
 };
