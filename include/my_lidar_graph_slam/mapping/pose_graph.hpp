@@ -145,14 +145,16 @@ enum class ConstraintType
 struct PoseGraphEdge final
 {
     /* Constructor */
-    PoseGraphEdge(const int localMapNodeId,
-                  const int scanNodeId,
-                  const bool isIntraLocalMap,
+    PoseGraphEdge(const LocalMapId localMapNodeId,
+                  const NodeId scanNodeId,
+                  const EdgeType edgeType,
+                  const ConstraintType constraintType,
                   const RobotPose2D<double>& relativePose,
                   const Eigen::Matrix3d& informationMat) :
         mLocalMapNodeId(localMapNodeId),
         mScanNodeId(scanNodeId),
-        mIsIntraLocalMap(isIntraLocalMap),
+        mEdgeType(edgeType),
+        mConstraintType(constraintType),
         mRelativePose(relativePose),
         mInformationMat(informationMat) { }
 
@@ -162,22 +164,35 @@ struct PoseGraphEdge final
     /* Return if this edge represents an intra-local grid map constraint,
      * that is, the scan data with an Id `mScanNodeId` is acquired at its
      * associated local grid map with an Id `mLocalMapNodeId` */
-    inline bool IsIntraLocalMap() const { return this->mIsIntraLocalMap; }
+    inline bool IsIntraLocalMap() const
+    { return this->mEdgeType == EdgeType::IntraLocalMap; }
 
     /* Return if this edge represents an inter-local grid map constraint,
      * that is, the scan data with an Id `mScanNodeId` is not acquired at
      * its associated local grid map with an Id `mLocalMapNodeId` and
      * the scan data `mScanNodeId` does not belong to the
      * local grid map `mLocalMapNodeId` */
-    inline bool IsInterLocalMap() const { return !this->IsIntraLocalMap(); }
+    inline bool IsInterLocalMap() const
+    { return this->mEdgeType == EdgeType::InterLocalMap; }
+
+    /* Return if this edge represents an odometry constraint */
+    inline bool IsOdometryConstraint() const
+    { return this->mConstraintType == ConstraintType::Odometry; }
+
+    /* Return if this edge represents a loop closing constraint */
+    inline bool IsLoopClosingConstraint() const
+    { return this->mConstraintType == ConstraintType::Loop; }
 
     /* Local grid map node Id */
-    const int                 mLocalMapNodeId;
+    const LocalMapId          mLocalMapNodeId;
     /* Scan data node Id */
-    const int                 mScanNodeId;
-    /* Flag to represent whether this edge represents an intra-local grid map
-     * constraint or an inter-local grid map constraint */
-    const bool                mIsIntraLocalMap;
+    const NodeId              mScanNodeId;
+    /* Enumerator to represent whether this edge represents an intra-local
+     * grid map constraint or an inter-local grid map constraint */
+    const EdgeType            mEdgeType;
+    /* Enumerator to represent whether this edge represents an odometry
+     * constraint or a loop closing constraint */
+    const ConstraintType      mConstraintType;
     /* Relative pose between two pose graph nodes */
     const RobotPose2D<double> mRelativePose;
     /* Information matrix (inverse of the covariance matrix) */
