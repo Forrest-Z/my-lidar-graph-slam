@@ -62,18 +62,18 @@ struct LocalMapPosition
 };
 
 /*
- * LocalMapInfo struct keeps necessary information for a local grid map
+ * LocalMap struct keeps necessary information for a local grid map
  * A single local grid map consists of the sequence of scan data
  * within the range from `mScanNodeIdMin` to `mScanNodeIdMax` and has
  * an associated local map Id `mId`, from which the local map pose in a
  * world coordinate is obtained using the pose graph
  */
-struct LocalMapInfo final
+struct LocalMap final
 {
     /* Constructor */
-    LocalMapInfo(const LocalMapId localMapId,
-                 GridMapType&& gridMap,
-                 const NodeId scanNodeId) :
+    LocalMap(const LocalMapId localMapId,
+             GridMapType&& gridMap,
+             const NodeId scanNodeId) :
         mId(localMapId),
         mMap(std::move(gridMap)),
         mScanNodeIdMin(scanNodeId),
@@ -82,16 +82,16 @@ struct LocalMapInfo final
         mPrecomputed(false) { }
 
     /* Destructor */
-    ~LocalMapInfo() = default;
+    ~LocalMap() = default;
 
     /* Copy constructor */
-    LocalMapInfo(const LocalMapInfo&) = default;
+    LocalMap(const LocalMap&) = default;
     /* Copy assignment operator */
-    LocalMapInfo& operator=(const LocalMapInfo&) = default;
+    LocalMap& operator=(const LocalMap&) = default;
     /* Move constructor */
-    LocalMapInfo(LocalMapInfo&&) noexcept = default;
+    LocalMap(LocalMap&&) noexcept = default;
     /* Move assignment operator */
-    LocalMapInfo& operator=(LocalMapInfo&&) noexcept = default;
+    LocalMap& operator=(LocalMap&&) noexcept = default;
 
     /* Local map Id */
     const LocalMapId            mId;
