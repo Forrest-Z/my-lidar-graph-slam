@@ -25,38 +25,39 @@ using ConstMapType = GridMap<ConstGridCell<double>>;
 
 /*
  * LocalMapPosition struct stores information about the local map bounding box,
- * indices of the pose graph nodes that reside in this local map, which are
- * necessary for the loop detection candidate search
+ * Ids of the scan nodes that reside in this local map, which are necessary
+ * for the loop detection candidate search
  */
 struct LocalMapPosition
 {
     /* Constructor */
-    LocalMapPosition(const int localMapIdx,
-                     const Point2D<double>& minPos,
-                     const Point2D<double>& maxPos,
-                     const int poseGraphNodeIdxMin,
-                     const int poseGraphNodeIdxMax,
+    LocalMapPosition(const LocalMapId localMapId,
+                     const Point2D<double>& minGlobalPos,
+                     const Point2D<double>& maxGlobalPos,
+                     const NodeId scanNodeIdMin,
+                     const NodeId scanNodeIdMax,
                      const bool isFinished) :
-        mIdx(localMapIdx),
-        mMinPos(minPos),
-        mMaxPos(maxPos),
-        mPoseGraphNodeIdxMin(poseGraphNodeIdxMin),
-        mPoseGraphNodeIdxMax(poseGraphNodeIdxMax),
+        mId(localMapId),
+        mMinGlobalPos(minGlobalPos),
+        mMaxGlobalPos(maxGlobalPos),
+        mScanNodeIdMin(scanNodeIdMin),
+        mScanNodeIdMax(scanNodeIdMax),
         mFinished(isFinished) { }
+
     /* Destructor */
     ~LocalMapPosition() = default;
 
-    /* Index of the local map */
-    const int             mIdx;
-    /* Minimum position of the local map (in world frame) */
-    const Point2D<double> mMinPos;
-    /* Maximum position of the local map (in world frame) */
-    const Point2D<double> mMaxPos;
-    /* Minimum index of the pose graph node inside this local map */
-    const int             mPoseGraphNodeIdxMin;
-    /* Maximum index of the pose graph node inside this local map */
-    const int             mPoseGraphNodeIdxMax;
-    /* Flag to determine whether the grid map is in finished state */
+    /* Local map Id */
+    const LocalMapId      mId;
+    /* Minimum position of the local map (in a world frame) */
+    const Point2D<double> mMinGlobalPos;
+    /* Maximum position of the local map (in a world frame) */
+    const Point2D<double> mMaxGlobalPos;
+    /* Minimum scan node Id inside this local map */
+    const NodeId          mScanNodeIdMin;
+    /* Maximum scan node Id inside this local map */
+    const NodeId          mScanNodeIdMax;
+    /* Flag to represent whether this local map is finished */
     const bool            mFinished;
 };
 
