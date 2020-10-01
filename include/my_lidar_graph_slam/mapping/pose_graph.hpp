@@ -45,7 +45,7 @@ struct LocalMapId final
 struct LocalMapNode final
 {
     /* Constructor */
-    LocalMapNode(const int localMapId,
+    LocalMapNode(const LocalMapId localMapId,
                  const RobotPose2D<double>& globalPose) :
         mLocalMapId(localMapId),
         mGlobalPose(globalPose) { }
@@ -54,7 +54,7 @@ struct LocalMapNode final
     ~LocalMapNode() = default;
 
     /* Local grid map Id */
-    const int           mLocalMapId;
+    const LocalMapId    mLocalMapId;
     /* Node pose in a world frame */
     RobotPose2D<double> mGlobalPose;
 };
