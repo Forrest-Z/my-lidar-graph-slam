@@ -62,18 +62,22 @@ struct LocalMapPosition
 };
 
 /*
- * LocalMapInfo struct binds grid maps and pose graphs
+ * LocalMapInfo struct keeps necessary information for a local grid map
+ * A single local grid map consists of the sequence of scan data
+ * within the range from `mScanNodeIdMin` to `mScanNodeIdMax` and has
+ * an associated local map Id `mId`, from which the local map pose in a
+ * world coordinate is obtained using the pose graph
  */
-struct LocalMapInfo
+struct LocalMapInfo final
 {
     /* Constructor */
-    LocalMapInfo(int localMapIdx,
+    LocalMapInfo(const LocalMapId localMapId,
                  GridMapType&& gridMap,
-                 int poseGraphNodeIdx) :
-        mIdx(localMapIdx),
+                 const NodeId scanNodeId) :
+        mId(localMapId),
         mMap(std::move(gridMap)),
-        mPoseGraphNodeIdxMin(poseGraphNodeIdx),
-        mPoseGraphNodeIdxMax(poseGraphNodeIdx),
+        mScanNodeIdMin(scanNodeId),
+        mScanNodeIdMax(scanNodeId),
         mFinished(false),
         mPrecomputed(false) { }
 
@@ -81,32 +85,31 @@ struct LocalMapInfo
     ~LocalMapInfo() = default;
 
     /* Copy constructor */
-    LocalMapInfo(const LocalMapInfo& other) = default;
+    LocalMapInfo(const LocalMapInfo&) = default;
     /* Copy assignment operator */
-    LocalMapInfo& operator=(const LocalMapInfo& other) = default;
+    LocalMapInfo& operator=(const LocalMapInfo&) = default;
     /* Move constructor */
-    LocalMapInfo(LocalMapInfo&& other) noexcept = default;
+    LocalMapInfo(LocalMapInfo&&) noexcept = default;
     /* Move assignment operator */
-    LocalMapInfo& operator=(LocalMapInfo&& other) noexcept = default;
+    LocalMapInfo& operator=(LocalMapInfo&&) noexcept = default;
 
-    /* Index of the local grid map */
-    const int                         mIdx;
-    /* Local grid map, which consists of the scan data
-     * from the pose graph nodes within the range of
-     * [mPoseGraphNodeIdxMin, mPoseGraphNodeIdxMax] */
-    GridMapType                       mMap;
-    /* Minimum index of the pose graph node */
-    int                               mPoseGraphNodeIdxMin;
-    /* Maximum index of the pose graph node */
-    int                               mPoseGraphNodeIdxMax;
-    /* Flags to determine whether the grid maps are finished and
-     * will not be changed (no more new scan data will be added) */
-    bool                              mFinished;
-    /* Flags to determine whether the grid maps for the loop detection are
-     * already precomputed */
-    bool                              mPrecomputed;
-    /* List of precomputed grid maps for loop detection */
-    std::map<int, PrecomputedMapType> mPrecomputedMaps;
+    /* Local map Id */
+    const LocalMapId            mId;
+    /* Local grid map consisting of the sequence of the scan data
+     * from `mScanNodeIdMin` to `mScanNodeIdMax` */
+    GridMapType                 mMap;
+    /* Minimum scan node Id */
+    NodeId                      mScanNodeIdMin;
+    /* Maximum scan node Id */
+    NodeId                      mScanNodeIdMax;
+    /* Flags to represent whether this local map is finished and will not
+     * be changed (no more scan data is added) */
+    bool                        mFinished;
+    /* Flags to represent whether the coarser grid maps for a loop detection
+     * are precomputed */
+    bool                        mPrecomputed;
+    /* Map of precomputed grid maps for a loop detection */
+    std::map<int, ConstMapType> mPrecomputedMaps;
 };
 
 class GridMapBuilder
