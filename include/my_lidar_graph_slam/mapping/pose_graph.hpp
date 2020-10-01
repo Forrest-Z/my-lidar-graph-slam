@@ -7,7 +7,9 @@
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
+#include <map>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <Eigen/Core>
@@ -263,46 +265,74 @@ public:
     /* Destructor */
     ~PoseGraph() = default;
 
-    /* Append new node (new node index is returned) */
-    int AppendNode(const RobotPose2D<double>& pose,
-                   const Sensor::ScanDataPtr<double>& scanData);
-    
-    /* Append new edge */
-    void AppendEdge(int startNodeIdx,
-                    int endNodeIdx,
+    /* Append a new local map node and return a new node Id */
+    void AppendLocalMapNode(const LocalMapId localMapId,
+                            const RobotPose2D<double>& globalPose);
+
+    /* Append a new scan node and return a new node Id */
+    NodeId AppendScanNode(const LocalMapId localMapId,
+                          const RobotPose2D<double>& localPose,
+                          const Sensor::ScanDataPtr<double>& scanData,
+                          const RobotPose2D<double>& globalPose);
+
+    /* Append a new pose graph edge (constraint) */
+    void AppendEdge(const LocalMapId localMapNodeId,
+                    const NodeId scanNodeId,
+                    const EdgeType edgeType,
+                    const ConstraintType constraintType,
                     const RobotPose2D<double>& relativePose,
                     const Eigen::Matrix3d& informationMat);
-    
-    /* Retrieve the list of the pose graph nodes */
-    inline const std::vector<Node>& Nodes() const { return this->mNodes; }
-    
-    /* Retrieve the node of the specified index */
-    inline Node& NodeAt(int nodeIdx)
-    { return this->mNodes.at(nodeIdx); }
-    /* Retrieve the node of the specified index */
-    inline const Node& NodeAt(int nodeIdx) const
-    { return this->mNodes.at(nodeIdx); }
-    
-    /* Retrieve the latest node */
-    inline Node& LatestNode() { return this->mNodes.back(); }
-    /* Retrieve the latest node */
-    inline const Node& LatestNode() const { return this->mNodes.back(); }
 
-    /* Retrieve the list of the pose graph edges */
-    inline const std::vector<Edge>& Edges() const { return this->mEdges; }
+    /* Get the map of the local map nodes */
+    inline const std::map<LocalMapId, LocalMapNode>& LocalMapNodes() const
+    { return this->mLocalMapNodes; }
 
-    /* Retrieve the edge of the specified index */
-    inline Edge& EdgeAt(int edgeIdx)
+    /* Get the local map node of the specified Id */
+    inline LocalMapNode& LocalMapNodeAt(const LocalMapId nodeId)
+    { return this->mLocalMapNodes.at(nodeId); }
+    /* Get the local map node of the specified Id */
+    inline const LocalMapNode& LocalMapNodeAt(const LocalMapId nodeId) const
+    { return this->mLocalMapNodes.at(nodeId); }
+
+    /* Get the latest local map node */
+    LocalMapNode& LatestLocalMapNode();
+    /* Get the latest local map node */
+    const LocalMapNode& LatestLocalMapNode() const;
+
+    /* Get the map of the scan nodes */
+    inline const std::map<NodeId, ScanNode>& ScanNodes() const
+    { return this->mScanNodes; }
+
+    /* Get the scan node of the specified Id */
+    inline ScanNode& ScanNodeAt(const NodeId nodeId)
+    { return this->mScanNodes.at(nodeId); }
+    /* Get the scan node of the specified Id */
+    inline const ScanNode& ScanNodeAt(const NodeId nodeId) const
+    { return this->mScanNodes.at(nodeId); }
+
+    /* Get the latest scan node */
+    ScanNode& LatestScanNode();
+    /* Get the latest scan node */
+    const ScanNode& LatestScanNode() const;
+
+    /* Get the vector of the pose graph edges */
+    inline const std::vector<PoseGraphEdge>& Edges() const
+    { return this->mEdges; }
+
+    /* Get the pose graph edge of the specified index */
+    inline PoseGraphEdge& EdgeAt(const std::size_t edgeIdx)
     { return this->mEdges.at(edgeIdx); }
-    /* Retrieve the edge of the specified index */
-    inline const Edge& EdgeAt(int edgeIdx) const
+    /* Get the pose graph edge of the specified index */
+    inline const PoseGraphEdge& EdgeAt(const std::size_t edgeIdx) const
     { return this->mEdges.at(edgeIdx); }
 
 private:
-    /* List of the pose graph nodes */
-    std::vector<Node> mNodes;
-    /* List of the pose graph edges */
-    std::vector<Edge> mEdges;
+    /* Map of the local map nodes */
+    std::map<LocalMapId, LocalMapNode> mLocalMapNodes;
+    /* Vector of the scan nodes */
+    std::map<NodeId, ScanNode>         mScanNodes;
+    /* Vector of the pose graph edges */
+    std::vector<PoseGraphEdge>         mEdges;
 };
 
 } /* namespace Mapping */
