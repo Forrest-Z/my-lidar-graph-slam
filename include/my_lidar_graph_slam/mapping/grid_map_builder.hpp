@@ -24,19 +24,19 @@ using GridMapType = GridMap<BinaryBayesGridCell<double>>;
 using ConstMapType = GridMap<ConstGridCell<double>>;
 
 /*
- * LocalMapPosition struct stores information about the local map bounding box,
+ * LocalMapData struct stores information about the local map bounding box,
  * Ids of the scan nodes that reside in this local map, which are necessary
  * for the loop detection candidate search
  */
-struct LocalMapPosition
+struct LocalMapData final
 {
     /* Constructor */
-    LocalMapPosition(const LocalMapId localMapId,
-                     const Point2D<double>& minGlobalPos,
-                     const Point2D<double>& maxGlobalPos,
-                     const NodeId scanNodeIdMin,
-                     const NodeId scanNodeIdMax,
-                     const bool isFinished) :
+    LocalMapData(const LocalMapId localMapId,
+                 const Point2D<double>& minGlobalPos,
+                 const Point2D<double>& maxGlobalPos,
+                 const NodeId scanNodeIdMin,
+                 const NodeId scanNodeIdMax,
+                 const bool isFinished) :
         mId(localMapId),
         mMinGlobalPos(minGlobalPos),
         mMaxGlobalPos(maxGlobalPos),
@@ -45,7 +45,7 @@ struct LocalMapPosition
         mFinished(isFinished) { }
 
     /* Destructor */
-    ~LocalMapPosition() = default;
+    ~LocalMapData() = default;
 
     /* Local map Id */
     const LocalMapId      mId;
