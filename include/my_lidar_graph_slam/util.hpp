@@ -23,19 +23,29 @@
 #include "my_lidar_graph_slam/point.hpp"
 #include "my_lidar_graph_slam/pose.hpp"
 
-namespace MyLidarGraphSlam {
+/* Assert macro with a custom message (nullptr is allowed) */
+#define XAssert(predicate, message) \
+    (!(predicate) && AssertHandler(#predicate, __FILE__, __LINE__, message))
+/* Assert macro with no custom message */
+#define Assert(predicate) \
+    XAssert(predicate, nullptr)
 
 /* Assert function that is enabled in Release mode */
-inline void Assert(bool condition, const char* message)
+inline bool AssertHandler(const char* predicateExpression,
+                          const char* fileName,
+                          const int lineNumber,
+                          const char* message)
 {
-    if (!condition) {
-        std::cerr << "Assertion failed: " << message << " ("
-                  << "Function: " << __func__ << ", "
-                  << "File: " << __FILE__ << ", "
-                  << "Line: " << __LINE__ << ')' << std::endl;
-        std::abort();
-    }
+    const char* customMessage = message != nullptr ? message : "";
+    std::cerr << "Assertion failed: " << predicateExpression << '\n'
+              << "File: " << fileName << ", "
+              << "Line: " << lineNumber << ", "
+              << "Message: " << customMessage << '\n';
+    std::abort();
+    return true;
 }
+
+namespace MyLidarGraphSlam {
 
 /* Join elements in a container with a delimiter */
 template <class C, class V = typename C::value_type>
