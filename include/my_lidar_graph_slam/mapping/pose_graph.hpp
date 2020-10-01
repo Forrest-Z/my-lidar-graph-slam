@@ -92,8 +92,8 @@ struct NodeId final
 struct ScanNode final
 {
     /* Constructor */
-    ScanNode(const int nodeId,
-             const int localMapId,
+    ScanNode(const NodeId nodeId,
+             const LocalMapId localMapId,
              const RobotPose2D<double>& localPose,
              const Sensor::ScanDataPtr<double>& scanData,
              const RobotPose2D<double>& globalPose) :
@@ -107,9 +107,9 @@ struct ScanNode final
     ~ScanNode() = default;
 
     /* Node Id */
-    const int                         mNodeId;
+    const NodeId                      mNodeId;
     /* Local grid map Id */
-    const int                         mLocalMapId;
+    const LocalMapId                  mLocalMapId;
     /* Node pose in a local frame */
     const RobotPose2D<double>         mLocalPose;
     /* Scan data */
