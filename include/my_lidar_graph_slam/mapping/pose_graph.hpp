@@ -119,6 +119,26 @@ struct ScanNode final
 };
 
 /*
+ * EdgeType enum represents whether a pose graph edge is an intra-local
+ * grid map constraint or an inter-local grid map constraint
+ */
+enum class EdgeType
+{
+    IntraLocalMap,
+    InterLocalMap,
+};
+
+/*
+ * ConstraintType enum represents whether a pose graph edge is an odometry
+ * constraint or a loop closing constraint
+ */
+enum class ConstraintType
+{
+    Odometry,
+    Loop,
+};
+
+/*
  * PoseGraphEdge class represents pose graph edges (constraints)
  * connecting a local grid map node and a scan data node
  */
