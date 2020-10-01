@@ -121,6 +121,58 @@ struct ScanNode final
 };
 
 /*
+ * ScanNodeMap class provides several helper methods to manipulate
+ * local grid maps
+ */
+class ScanNodeMap final
+{
+public:
+    /* Constructor */
+    ScanNodeMap() = default;
+    /* Destructor */
+    ~ScanNodeMap() = default;
+
+    /* Get the minimum scan node Id */
+    NodeId NodeIdMin() const;
+    /* Get the maximum scan node Id */
+    NodeId NodeIdMax() const;
+
+    /* Get the map of the scan nodes */
+    inline const std::map<NodeId, ScanNode>& Nodes() const
+    { return this->mNodes; }
+
+    /* Check if the scan node with the specified Id exists */
+    inline bool Contains(const NodeId nodeId) const
+    { return this->mNodes.find(nodeId) != this->mNodes.end(); }
+
+    /* Get the scan node of the specified Id */
+    inline ScanNode& At(const NodeId nodeId)
+    { return this->mNodes.at(nodeId); }
+    /* Get the scan node of the specified Id */
+    inline const ScanNode& At(const NodeId nodeId) const
+    { return this->mNodes.at(nodeId); }
+
+    /* Get the latest scan node with the largest node Id */
+    ScanNode& LatestNode();
+    /* Get the latest scan node with the largest node Id */
+    const ScanNode& LatestNode() const;
+
+    /* Append a new scan node */
+    NodeId Append(const LocalMapId localMapId,
+                  const RobotPose2D<double>& localPose,
+                  const Sensor::ScanDataPtr<double>& scanData,
+                  const RobotPose2D<double>& globalPose);
+
+private:
+    /* Return an Id for a new scan node */
+    int NewId() const;
+
+private:
+    /* Map of the scan nodes */
+    std::map<NodeId, ScanNode> mNodes;
+};
+
+/*
  * EdgeType enum represents whether a pose graph edge is an intra-local
  * grid map constraint or an inter-local grid map constraint
  */
