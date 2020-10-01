@@ -60,6 +60,30 @@ struct LocalMapNode final
 };
 
 /*
+ * PoseGraphNodeId struct represents an Id value for a pose graph node
+ */
+struct NodeId final
+{
+    /* Constructor */
+    explicit NodeId(const int nodeId) : mId(nodeId) { }
+
+    /* Equality operator */
+    inline bool operator==(const NodeId& other) const
+    { return this->mId == other.mId; }
+
+    /* Inequality operator */
+    inline bool operator!=(const NodeId& other) const
+    { return !operator==(other); }
+
+    /* Less-than comparison operator (for std::map) */
+    inline bool operator<(const NodeId& other) const
+    { return this->mId < other.mId; }
+
+    /* Pose graph node Id */
+    const int mId;
+};
+
+/*
  * ScanNode struct represents a pose graph node for a scan data
  * ScanNode belongs to a local grid map, inside of which the scan data
  * is acquired, and has a pose in a coordinate frame centered at the
