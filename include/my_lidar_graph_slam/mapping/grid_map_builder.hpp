@@ -21,7 +21,7 @@ namespace Mapping {
 
 /* Type definitions */
 using GridMapType = GridMap<BinaryBayesGridCell<double>>;
-using PrecomputedMapType = GridMap<ConstGridCell<double>>;
+using ConstMapType = GridMap<ConstGridCell<double>>;
 
 /*
  * LocalMapPosition struct stores information about the local map bounding box,
