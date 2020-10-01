@@ -16,6 +16,30 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
+ * LocalMapId struct represents an Id value for a local grid map
+ */
+struct LocalMapId final
+{
+    /* Constructor */
+    explicit LocalMapId(const int localMapId) : mId(localMapId) { }
+
+    /* Equality operator */
+    inline bool operator==(const LocalMapId& other) const
+    { return this->mId == other.mId; }
+
+    /* Inequality operator */
+    inline bool operator!=(const LocalMapId& other) const
+    { return !operator==(other); }
+
+    /* Less-than comparison operator (for std::map) */
+    inline bool operator<(const LocalMapId& other) const
+    { return this->mId < other.mId; }
+
+    /* Local grid map Id */
+    const int mId;
+};
+
+/*
  * LocalMapNode struct represents a pose graph node for a local grid map
  */
 struct LocalMapNode final
