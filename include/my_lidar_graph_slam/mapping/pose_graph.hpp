@@ -28,7 +28,6 @@ struct LocalMapId final
     /* Equality operator */
     inline bool operator==(const LocalMapId& other) const
     { return this->mId == other.mId; }
-
     /* Inequality operator */
     inline bool operator!=(const LocalMapId& other) const
     { return !operator==(other); }
@@ -36,6 +35,15 @@ struct LocalMapId final
     /* Less-than comparison operator (for std::map) */
     inline bool operator<(const LocalMapId& other) const
     { return this->mId < other.mId; }
+    /* Greater-than comparison operator */
+    inline bool operator>(const LocalMapId& other) const
+    { return this->mId > other.mId; }
+    /* Less-than or equal to comparison operator */
+    inline bool operator<=(const LocalMapId& other) const
+    { return this->mId <= other.mId; }
+    /* Greater-than or equal to comparison operator */
+    inline bool operator>=(const LocalMapId& other) const
+    { return this->mId >= other.mId; }
 
     /* Local grid map Id */
     const int mId;
@@ -118,7 +126,6 @@ struct NodeId final
     /* Equality operator */
     inline bool operator==(const NodeId& other) const
     { return this->mId == other.mId; }
-
     /* Inequality operator */
     inline bool operator!=(const NodeId& other) const
     { return !operator==(other); }
@@ -126,6 +133,15 @@ struct NodeId final
     /* Less-than comparison operator (for std::map) */
     inline bool operator<(const NodeId& other) const
     { return this->mId < other.mId; }
+    /* Greater-than comparison operator */
+    inline bool operator>(const NodeId& other) const
+    { return this->mId > other.mId; }
+    /* Less-than or equal to comparison operator */
+    inline bool operator<=(const NodeId& other) const
+    { return this->mId <= other.mId; }
+    /* Greater-than or equal to comparison operator */
+    inline bool operator>=(const NodeId& other) const
+    { return this->mId >= other.mId; }
 
     /* Pose graph node Id */
     const int mId;
