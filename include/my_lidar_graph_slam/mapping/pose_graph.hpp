@@ -363,7 +363,7 @@ public:
     /* Destructor */
     ~PoseGraph() = default;
 
-    /* Append a new local map node and return a new node Id */
+    /* Append a new local map node */
     void AppendLocalMapNode(const LocalMapId localMapId,
                             const RobotPose2D<double>& globalPose);
 
@@ -383,19 +383,21 @@ public:
 
     /* Get the map of the local map nodes */
     inline const std::map<LocalMapId, LocalMapNode>& LocalMapNodes() const
-    { return this->mLocalMapNodes; }
+    { return this->mLocalMapNodes.Nodes(); }
 
     /* Get the local map node of the specified Id */
     inline LocalMapNode& LocalMapNodeAt(const LocalMapId nodeId)
-    { return this->mLocalMapNodes.at(nodeId); }
+    { return this->mLocalMapNodes.At(nodeId); }
     /* Get the local map node of the specified Id */
     inline const LocalMapNode& LocalMapNodeAt(const LocalMapId nodeId) const
-    { return this->mLocalMapNodes.at(nodeId); }
+    { return this->mLocalMapNodes.At(nodeId); }
 
     /* Get the latest local map node */
-    LocalMapNode& LatestLocalMapNode();
+    inline LocalMapNode& LatestLocalMapNode()
+    { return this->mLocalMapNodes.LatestNode(); }
     /* Get the latest local map node */
-    const LocalMapNode& LatestLocalMapNode() const;
+    inline const LocalMapNode& LatestLocalMapNode() const
+    { return this->mLocalMapNodes.LatestNode(); }
 
     /* Get the map of the scan nodes */
     inline const std::map<NodeId, ScanNode>& ScanNodes() const
@@ -432,11 +434,11 @@ public:
 
 private:
     /* Map of the local map nodes */
-    std::map<LocalMapId, LocalMapNode> mLocalMapNodes;
+    LocalMapNodeMap            mLocalMapNodes;
     /* Vector of the scan nodes */
-    ScanNodeMap                        mScanNodes;
+    ScanNodeMap                mScanNodes;
     /* Vector of the pose graph edges */
-    std::vector<PoseGraphEdge>         mEdges;
+    std::vector<PoseGraphEdge> mEdges;
 };
 
 } /* namespace Mapping */

@@ -144,10 +144,7 @@ void PoseGraph::AppendLocalMapNode(
     const RobotPose2D<double>& globalPose)
 {
     /* Insert a new local map node */
-    this->mLocalMapNodes.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(localMapId),
-        std::forward_as_tuple(localMapId, globalPose));
+    this->mLocalMapNodes.Append(localMapId, globalPose);
 }
 
 /* Append a new scan node and return a new node Id */
@@ -175,26 +172,6 @@ void PoseGraph::AppendEdge(
     this->mEdges.emplace_back(localMapNodeId, scanNodeId,
                               edgeType, constraintType,
                               relativePose, informationMat);
-}
-
-/* Get the latest local map node */
-LocalMapNode& PoseGraph::LatestLocalMapNode()
-{
-    /* Use the const version of the method */
-    const auto* pThis = static_cast<const PoseGraph*>(this);
-    return const_cast<LocalMapNode&>(pThis->LatestLocalMapNode());
-}
-
-/* Get the latest local map node */
-const LocalMapNode& PoseGraph::LatestLocalMapNode() const
-{
-    /* Make sure that the pose graph is not empty */
-    Assert(!this->mLocalMapNodes.empty());
-    /* Assume that the local map node with the largest local map Id
-     * is the latest node */
-    auto latestNodeIt = std::prev(this->mLocalMapNodes.end());
-    /* Return the associated local map node */
-    return latestNodeIt->second;
 }
 
 } /* namespace Mapping */
