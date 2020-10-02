@@ -32,35 +32,35 @@ public:
     GridMap();
 
     /* Constructor with number of grid cells */
-    GridMap(double mapResolution,
-            int patchSize,
-            int initialNumOfCellsX,
-            int initialNumOfCellsY,
-            const Point2D<double>& centerPos);
+    GridMap(const double mapResolution,
+            const int patchSize,
+            const int initialNumOfCellsX,
+            const int initialNumOfCellsY,
+            const Point2D<double>& localCenterPos);
 
     /* Constructor with map size */
-    GridMap(double mapResolution,
-            int patchSize,
-            double mapSizeX,
-            double mapSizeY,
-            const Point2D<double>& centerPos);
-    
+    GridMap(const double mapResolution,
+            const int patchSize,
+            const double mapSizeX,
+            const double mapSizeY,
+            const Point2D<double>& localCenterPos);
+
     /* Constructor with positions */
-    GridMap(double mapResolution,
-            int patchSize,
-            double minX,
-            double minY,
-            double maxX,
-            double maxY);
+    GridMap(const double mapResolution,
+            const int patchSize,
+            const double localMinX,
+            const double localMinY,
+            const double localMaxX,
+            const double localMaxY);
 
     /* Constructor with internal parameters */
-    GridMap(double mapResolution,
-            int patchSize,
-            int numOfPatchesX,
-            int numOfPatchesY,
-            double minX,
-            double minY);
-    
+    GridMap(const double mapResolution,
+            const int patchSize,
+            const int numOfPatchesX,
+            const int numOfPatchesY,
+            const double localMinX,
+            const double localMinY);
+
     /* Destructor */
     ~GridMap() = default;
 
@@ -79,32 +79,36 @@ public:
 
 public:
     /* Resize the map */
-    void Resize(double minX, double minY,
-                double maxX, double maxY);
+    void Resize(const double localMinX,
+                const double localMinY,
+                const double localMaxX,
+                const double localMaxY);
     /* Expand the map if necessary */
-    void Expand(double minX, double minY,
-                double maxX, double maxY,
-                double enlargeStep = 5.0);
-    
+    void Expand(const double localMinX,
+                const double localMinY,
+                const double localMaxX,
+                const double localMaxY,
+                const double enlargeStep = 5.0);
+
     /* Reset occupancy probability values of all grid cells */
     void Reset();
 
     /* Get the unknown occupancy probability value */
     ValueType UnknownValue() const override { return GridCellType::Unknown; }
- 
+
     /* Check if the grid cell index is inside the map */
     bool IsInside(int idxX, int idxY) const override;
     /* Check if the grid cell index is inside the map */
     bool IsInside(const Point2D<int>& gridCellIdx) const override
     { return this->IsInside(gridCellIdx.mX, gridCellIdx.mY); }
 
-    /* Check if the point in world frame is inside the map */
-    bool IsInside(double mapX, double mapY) const override
+    /* Check if the point in the local frame is inside the map */
+    bool IsInside(double localMapX, double localMapY) const override
     { return this->IsInside(
-        this->WorldCoordinateToGridCellIndex(mapX, mapY)); }
-    /* Check if the point in world frame is inside the map */
-    bool IsInside(const Point2D<double>& mapPos) const override
-    { return this->IsInside(mapPos.mX, mapPos.mY); }
+        this->LocalPosToGridCellIndex(localMapX, localMapY)); }
+    /* Check if the point in the local frame is inside the map */
+    bool IsInside(const Point2D<double>& localMapPos) const override
+    { return this->IsInside(localMapPos.mX, localMapPos.mY); }
 
     /* Check if the grid cell is allocated on the heap */
     bool IsAllocated(int idxX, int idxY) const override
@@ -114,34 +118,36 @@ public:
     bool IsAllocated(const Point2D<int>& gridCellIdx) const override
     { return this->IsAllocated(gridCellIdx.mX, gridCellIdx.mY); }
 
-    /* Convert the grid cell index into the point in world frame
+    /* Convert the grid cell index into the point in the local frame
      * The returned point is the bottom-left of the grid cell */
-    Point2D<double> GridCellIndexToWorldCoordinate(
+    Point2D<double> GridCellIndexToLocalPos(
         int idxX, int idxY) const override;
-    /* Convert the grid cell index into the point in world frame
+    /* Convert the grid cell index into the point in the local frame
      * The returned point is the bottom-left of the grid cell */
-    Point2D<double> GridCellIndexToWorldCoordinate(
+    Point2D<double> GridCellIndexToLocalPos(
         const Point2D<int>& gridCellIdx) const override
-    { return this->GridCellIndexToWorldCoordinate(
+    { return this->GridCellIndexToLocalPos(
         gridCellIdx.mX, gridCellIdx.mY); }
-    
-    /* Convert the point in world frame to the grid cell index */
-    Point2D<int> WorldCoordinateToGridCellIndex(
-        double mapX, double mapY) const override;
-    /* Convert the point in world frame to the grid cell index */
-    Point2D<int> WorldCoordinateToGridCellIndex(
-        const Point2D<double>& mapPos) const override
-    { return this->WorldCoordinateToGridCellIndex(mapPos.mX, mapPos.mY); }
 
-    /* Convert the point in world frame to the
+    /* Convert the point in the local frame to the grid cell index */
+    Point2D<int> LocalPosToGridCellIndex(
+        double localMapX, double localMapY) const override;
+    /* Convert the point in the local frame to the grid cell index */
+    Point2D<int> LocalPosToGridCellIndex(
+        const Point2D<double>& localMapPos) const override
+    { return this->LocalPosToGridCellIndex(
+        localMapPos.mX, localMapPos.mY); }
+
+    /* Convert the point in the local frame to the
      * floating-point grid cell index */
-    Point2D<double> WorldCoordinateToGridCellIndexFloat(
-        double mapX, double mapY) const override;
-    /* Convert the point in world frame to the
+    Point2D<double> LocalPosToGridCellIndexFloat(
+        double localMapX, double localMapY) const override;
+    /* Convert the point in the local frame to the
      * floating-point grid cell index */
-    Point2D<double> WorldCoordinateToGridCellIndexFloat(
-        const Point2D<double>& mapPos) const override
-    { return this->WorldCoordinateToGridCellIndexFloat(mapPos.mX, mapPos.mY); }
+    Point2D<double> LocalPosToGridCellIndexFloat(
+        const Point2D<double>& localMapPos) const override
+    { return this->LocalPosToGridCellIndexFloat(
+        localMapPos.mX, localMapPos.mY); }
 
     /* Get the grid cell of the specified index */
     GridCellType& GridCellAt(int idxX, int idxY);
@@ -178,13 +184,14 @@ public:
     { this->Update(gridCellIdx.mX, gridCellIdx.mY, updateVal); }
 
     /* Update the occupancy probability value of the specified point */
-    void Update(double mapX, double mapY, const ObservationType& updateVal)
-    { this->Update(this->WorldCoordinateToGridCellIndex(mapX, mapY),
+    void Update(double localMapX, double localMapY,
+                const ObservationType& updateVal)
+    { this->Update(this->LocalPosToGridCellIndex(localMapX, localMapY),
                    updateVal); }
     /* Update the occupancy probability value of the specified point */
-    void Update(const Point2D<double>& mapPos,
+    void Update(const Point2D<double>& localMapPos,
                 const ObservationType& updateVal)
-    { this->Update(mapPos.mX, mapPos.mY, updateVal); }
+    { this->Update(localMapPos.mX, localMapPos.mY, updateVal); }
 
     /* Calculate the distance between two grid cells */
     double Distance(int idxX0, int idxY0,
@@ -194,7 +201,7 @@ public:
                     const Point2D<int>& gridCellIdx1) const override
     { return this->Distance(gridCellIdx0.mX, gridCellIdx0.mY,
                             gridCellIdx1.mX, gridCellIdx1.mY); }
-    
+
     /* Calculate the squared distance between two grid cells */
     double SquaredDistance(int idxX0, int idxY0,
                            int idxX1, int idxY1) const override;
@@ -203,13 +210,14 @@ public:
                            const Point2D<int>& gridCellIdx1) const override
     { return this->SquaredDistance(gridCellIdx0.mX, gridCellIdx0.mY,
                                    gridCellIdx1.mX, gridCellIdx1.mY); }
-    
+
     /* Convert the grid cell index to the patch index */
     Point2D<int> GridCellIndexToPatchIndex(int idxX, int idxY) const;
     /* Convert the grid cell index to the patch index */
     Point2D<int> GridCellIndexToPatchIndex(
         const Point2D<int>& gridCellIdx) const
-    { return this->GridCellIndexToPatchIndex(gridCellIdx.mX, gridCellIdx.mY); }
+    { return this->GridCellIndexToPatchIndex(
+        gridCellIdx.mX, gridCellIdx.mY); }
 
     /* Convert the patch index to the grid cell index range
      * patch (patchIdxX, patchIdxY) corresponds to the square grid cells
@@ -226,7 +234,7 @@ public:
         patchIdx.mX, patchIdx.mY,
         minIdx.mX, minIdx.mY,
         maxIdx.mX, maxIdx.mY); }
-    
+
     /* Check if the patch is inside the map */
     bool PatchIsInside(int patchIdxX, int patchIdxY) const;
     /* Check if the patch is inside the map */
@@ -257,7 +265,8 @@ public:
                               Point2D<int>& gridCellIdxMin,
                               Point2D<int>& gridCellIdxMax,
                               Point2D<int>& mapSizeInPatches,
-                              Point2D<int>& mapSizeInGridCells) const;
+                              Point2D<int>& mapSizeInGridCells,
+                              Point2D<double>& mapSizeInMeters) const;
 
     /* Get the map resolution (grid cell size in meters) */
     inline double Resolution() const override
@@ -270,7 +279,7 @@ public:
     inline int NumOfPatchesX() const { return this->mNumOfPatchesX; }
     /* Get the number of the patches (vertical) */
     inline int NumOfPatchesY() const { return this->mNumOfPatchesY; }
-    
+
     /* Get the number of the grid cells (horizontal) */
     inline int NumOfGridCellsX() const override
     { return this->mNumOfGridCellsX; }
@@ -283,13 +292,13 @@ public:
     /* Get the size of the map in meters (vertical) */
     inline double MapSizeY() const override { return this->mMapSizeY; }
 
-    /* Get the minimum position of the map in world coordinate */
-    inline const Point2D<double>& MinPos() const override
-    { return this->mMinPos; }
+    /* Get the minimum position of the map in the local coordinate */
+    inline const Point2D<double>& LocalMinPos() const override
+    { return this->mLocalMinPos; }
 
-    /* Get the maximum position of the map in world coordinate */
-    inline const Point2D<double> MaxPos() const
-    { return this->GridCellIndexToWorldCoordinate(
+    /* Get the maximum position of the map in the local coordinate */
+    inline const Point2D<double> LocalMaxPos() const
+    { return this->GridCellIndexToLocalPos(
         this->mNumOfGridCellsX, this->mNumOfGridCellsY); }
 
 private:
@@ -309,10 +318,10 @@ private:
     double                      mMapSizeX;
     /* Size of the map in meters (vertical) */
     double                      mMapSizeY;
-    /* Minimum position of the map in world frame
+    /* Minimum position of the map in the local frame
      * corresponding to the origin grid cell (0, 0)
      * No relationship to pose graph nodes */
-    Point2D<double>             mMinPos;
+    Point2D<double>             mLocalMinPos;
     /* Patches */
     std::unique_ptr<Patch<T>[]> mPatches;
 };
@@ -328,18 +337,18 @@ GridMap<T>::GridMap() :
     mNumOfGridCellsY(0),
     mMapSizeX(0.0),
     mMapSizeY(0.0),
-    mMinPos(0.0, 0.0),
+    mLocalMinPos(0.0, 0.0),
     mPatches(nullptr)
 {
 }
 
 /* Constructor with number of grid cells */
 template <typename T>
-GridMap<T>::GridMap(double mapResolution,
-                    int patchSize,
-                    int initialNumOfCellsX,
-                    int initialNumOfCellsY,
-                    const Point2D<double>& centerPos)
+GridMap<T>::GridMap(const double mapResolution,
+                    const int patchSize,
+                    const int initialNumOfCellsX,
+                    const int initialNumOfCellsY,
+                    const Point2D<double>& localCenterPos)
 {
     /* Input validity checks */
     assert(mapResolution > 0.0);
@@ -362,7 +371,7 @@ GridMap<T>::GridMap(double mapResolution,
     this->mNumOfPatchesY = static_cast<int>(std::ceil(
         static_cast<double>(initialNumOfCellsY) /
         static_cast<double>(patchSize)));
-    
+
     assert(this->mNumOfPatchesX >= 0);
     assert(this->mNumOfPatchesY >= 0);
 
@@ -378,8 +387,8 @@ GridMap<T>::GridMap(double mapResolution,
         (this->mNumOfGridCellsX / 2) : (this->mNumOfGridCellsX / 2 + 0.5);
     const double idxOffsetY = (this->mNumOfGridCellsY % 2 == 0) ?
         (this->mNumOfGridCellsY / 2) : (this->mNumOfGridCellsY / 2 + 0.5);
-    this->mMinPos.mX = centerPos.mX - idxOffsetX * this->mResolution;
-    this->mMinPos.mY = centerPos.mY - idxOffsetY * this->mResolution;
+    this->mLocalMinPos.mX = localCenterPos.mX - idxOffsetX * this->mResolution;
+    this->mLocalMinPos.mY = localCenterPos.mY - idxOffsetY * this->mResolution;
 
     /* Allocate the memory for map patches if necessary */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
@@ -392,11 +401,11 @@ GridMap<T>::GridMap(double mapResolution,
 
 /* Constructor with map size */
 template <typename T>
-GridMap<T>::GridMap(double mapResolution,
-                    int patchSize,
-                    double mapSizeX,
-                    double mapSizeY,
-                    const Point2D<double>& centerPos)
+GridMap<T>::GridMap(const double mapResolution,
+                    const int patchSize,
+                    const double mapSizeX,
+                    const double mapSizeY,
+                    const Point2D<double>& localCenterPos)
 {
     /* Input validity checks */
     assert(mapResolution > 0.0);
@@ -419,7 +428,7 @@ GridMap<T>::GridMap(double mapResolution,
         mapSizeX / patchSizeInMeters));
     this->mNumOfPatchesY = static_cast<int>(std::ceil(
         mapSizeY / patchSizeInMeters));
-    
+
     assert(this->mNumOfPatchesX >= 0);
     assert(this->mNumOfPatchesY >= 0);
 
@@ -436,8 +445,8 @@ GridMap<T>::GridMap(double mapResolution,
         (this->mNumOfGridCellsX / 2) : (this->mNumOfGridCellsX / 2 + 0.5);
     const double idxOffsetY = (this->mNumOfGridCellsY % 2 == 0) ?
         (this->mNumOfGridCellsY / 2) : (this->mNumOfGridCellsY / 2 + 0.5);
-    this->mMinPos.mX = centerPos.mX - idxOffsetX * this->mResolution;
-    this->mMinPos.mY = centerPos.mY - idxOffsetY * this->mResolution;
+    this->mLocalMinPos.mX = localCenterPos.mX - idxOffsetX * this->mResolution;
+    this->mLocalMinPos.mY = localCenterPos.mY - idxOffsetY * this->mResolution;
 
     /* Allocate the memory for map patches (not grid cells) */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
@@ -450,18 +459,18 @@ GridMap<T>::GridMap(double mapResolution,
 
 /* Constructor with positions */
 template <typename T>
-GridMap<T>::GridMap(double mapResolution,
-                    int patchSize,
-                    double minX,
-                    double minY,
-                    double maxX,
-                    double maxY)
+GridMap<T>::GridMap(const double mapResolution,
+                    const int patchSize,
+                    const double localMinX,
+                    const double localMinY,
+                    const double localMaxX,
+                    const double localMaxY)
 {
     /* Input validity checks */
     assert(mapResolution > 0.0);
     assert(patchSize > 0);
-    assert(minX <= maxX);
-    assert(minY <= maxY);
+    assert(localMinX <= localMaxX);
+    assert(localMinY <= localMaxY);
 
     /* Set the map resolution (size of the each grid cell) */
     this->mResolution = mapResolution;
@@ -469,8 +478,8 @@ GridMap<T>::GridMap(double mapResolution,
     this->mPatchSize = patchSize;
 
     /* Empty grid map with no patch is allowed */
-    const double mapSizeX = std::max(0.0, maxX - minX);
-    const double mapSizeY = std::max(0.0, maxY - minY);
+    const double mapSizeX = std::max(0.0, localMaxX - localMinX);
+    const double mapSizeY = std::max(0.0, localMaxY - localMinY);
 
     /* Calculate the number of patches */
     const double patchSizeInMeters = patchSize * this->mResolution;
@@ -490,8 +499,8 @@ GridMap<T>::GridMap(double mapResolution,
     this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
 
     /* Set the minimum position */
-    this->mMinPos.mX = minX;
-    this->mMinPos.mY = minY;
+    this->mLocalMinPos.mX = localMinX;
+    this->mLocalMinPos.mY = localMinY;
 
     /* Allocate the memory for map patches */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
@@ -504,12 +513,12 @@ GridMap<T>::GridMap(double mapResolution,
 
 /* Constructor with internal parameters */
 template <typename T>
-GridMap<T>::GridMap(double mapResolution,
-                    int patchSize,
-                    int numOfPatchesX,
-                    int numOfPatchesY,
-                    double minX,
-                    double minY)
+GridMap<T>::GridMap(const double mapResolution,
+                    const int patchSize,
+                    const int numOfPatchesX,
+                    const int numOfPatchesY,
+                    const double localMinX,
+                    const double localMinY)
 {
     assert(mapResolution > 0.0);
     assert(patchSize > 0);
@@ -532,8 +541,8 @@ GridMap<T>::GridMap(double mapResolution,
     this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
 
     /* Set the minimum position */
-    this->mMinPos.mX = minX;
-    this->mMinPos.mY = minY;
+    this->mLocalMinPos.mX = localMinX;
+    this->mLocalMinPos.mY = localMinY;
 
     /* Allocate the memory for patches */
     const int numOfPatches = this->mNumOfPatchesX * this->mNumOfPatchesY;
@@ -556,7 +565,7 @@ GridMap<T>::GridMap(const GridMap<T>& other) :
     mNumOfGridCellsY(0),
     mMapSizeX(0.0),
     mMapSizeY(0.0),
-    mMinPos(0.0, 0.0),
+    mLocalMinPos(0.0, 0.0),
     mPatches(nullptr)
 {
     /* Just call the copy assignment operator */
@@ -587,7 +596,7 @@ GridMap<T>& GridMap<T>::operator=(const GridMap<T>& other)
     this->mNumOfGridCellsY = other.mNumOfGridCellsY;
     this->mMapSizeX = other.mMapSizeX;
     this->mMapSizeY = other.mMapSizeY;
-    this->mMinPos = other.mMinPos;
+    this->mLocalMinPos = other.mLocalMinPos;
 
     /* Allocate new patches and then copy the values */
     if (numOfPatches > 0) {
@@ -612,7 +621,7 @@ GridMap<T>::GridMap(GridMap<T>&& other) noexcept :
     mNumOfGridCellsY(other.mNumOfGridCellsY),
     mMapSizeX(other.mMapSizeX),
     mMapSizeY(other.mMapSizeY),
-    mMinPos(other.mMinPos),
+    mLocalMinPos(other.mLocalMinPos),
     mPatches(std::move(other.mPatches))
 {
 }
@@ -623,7 +632,7 @@ GridMap<T>& GridMap<T>::operator=(GridMap<T>&& other) noexcept
 {
     if (this == &other)
         return *this;
-    
+
     this->mResolution = other.mResolution;
     this->mPatchSize = other.mPatchSize;
     this->mNumOfPatchesX = other.mNumOfPatchesX;
@@ -632,7 +641,7 @@ GridMap<T>& GridMap<T>::operator=(GridMap<T>&& other) noexcept
     this->mNumOfGridCellsY = other.mNumOfGridCellsY;
     this->mMapSizeX = other.mMapSizeX;
     this->mMapSizeY = other.mMapSizeY;
-    this->mMinPos = other.mMinPos;
+    this->mLocalMinPos = other.mLocalMinPos;
     this->mPatches = std::move(other.mPatches);
 
     return *this;
@@ -646,22 +655,24 @@ GridMap<T> GridMap<T>::CreateSameSizeMap(const GridMap<U>& gridMap)
     /* Construct a new grid map with internal parameters */
     return GridMap<T> { gridMap.Resolution(), gridMap.PatchSize(),
                         gridMap.NumOfPatchesX(), gridMap.NumOfPatchesY(),
-                        gridMap.MinPos().mX, gridMap.MinPos().mY };
+                        gridMap.LocalMinPos().mX, gridMap.LocalMinPos().mY };
 }
 
 /* Resize the map */
 template <typename T>
-void GridMap<T>::Resize(double minX, double minY,
-                        double maxX, double maxY)
+void GridMap<T>::Resize(const double localMinX,
+                        const double localMinY,
+                        const double localMaxX,
+                        const double localMaxY)
 {
-    assert(minX <= maxX);
-    assert(minY <= maxY);
+    assert(localMinX <= localMaxX);
+    assert(localMinY <= localMaxY);
 
     /* Calculate the grid cell index (can be negative) */
     const Point2D<int> gridCellIdxMin =
-        this->WorldCoordinateToGridCellIndex(minX, minY);
+        this->LocalPosToGridCellIndex(localMinX, localMinY);
     const Point2D<int> gridCellIdxMax =
-        this->WorldCoordinateToGridCellIndex(maxX, maxY);
+        this->LocalPosToGridCellIndex(localMaxX, localMaxY);
 
     /* Calculate the patch index (can be negative) */
     const Point2D<int> patchIdxMin =
@@ -705,32 +716,35 @@ void GridMap<T>::Resize(double minX, double minY,
     this->mMapSizeX = this->mNumOfGridCellsX * this->mResolution;
     this->mMapSizeY = this->mNumOfGridCellsY * this->mResolution;
 
-    this->mMinPos.mX +=
+    this->mLocalMinPos.mX +=
         (patchIdxMin.mX * this->mPatchSize) * this->mResolution;
-    this->mMinPos.mY +=
+    this->mLocalMinPos.mY +=
         (patchIdxMin.mY * this->mPatchSize) * this->mResolution;
 }
 
 /* Expand the map if necessary */
 template <typename T>
-void GridMap<T>::Expand(double minX, double minY,
-                        double maxX, double maxY,
-                        double enlargeStep)
+void GridMap<T>::Expand(const double localMinX,
+                        const double localMinY,
+                        const double localMaxX,
+                        const double localMaxY,
+                        const double enlargeStep)
 {
-    assert(minX <= maxX);
-    assert(minY <= maxY);
+    assert(localMinX <= localMaxX);
+    assert(localMinY <= localMaxY);
 
-    if (this->IsInside(minX, minY) && this->IsInside(maxX, maxY))
+    if (this->IsInside(localMinX, localMinY) &&
+        this->IsInside(localMaxX, localMaxY))
         return;
 
-    Point2D<double> minPos = this->GridCellIndexToWorldCoordinate(0, 0);
-    Point2D<double> maxPos = this->GridCellIndexToWorldCoordinate(
+    Point2D<double> minPos = this->GridCellIndexToLocalPos(0, 0);
+    Point2D<double> maxPos = this->GridCellIndexToLocalPos(
         this->mNumOfGridCellsX, this->mNumOfGridCellsY);
 
-    minPos.mX = (minX < minPos.mX) ? minX - enlargeStep : minPos.mX;
-    minPos.mY = (minY < minPos.mY) ? minY - enlargeStep : minPos.mY;
-    maxPos.mX = (maxX > maxPos.mX) ? maxX + enlargeStep : maxPos.mX;
-    maxPos.mY = (maxY > maxPos.mY) ? maxY + enlargeStep : maxPos.mY;
+    minPos.mX = (localMinX < minPos.mX) ? localMinX - enlargeStep : minPos.mX;
+    minPos.mY = (localMinY < minPos.mY) ? localMinY - enlargeStep : minPos.mY;
+    maxPos.mX = (localMaxX > maxPos.mX) ? localMaxX + enlargeStep : maxPos.mX;
+    maxPos.mY = (localMaxY > maxPos.mY) ? localMaxY + enlargeStep : maxPos.mY;
 
     /* Expand the map if necessary */
     this->Resize(minPos.mX, minPos.mY, maxPos.mX, maxPos.mY);
@@ -761,45 +775,47 @@ bool GridMap<T>::IsInside(int idxX, int idxY) const
            (idxY >= 0 && idxY < this->mNumOfGridCellsY);
 }
 
-/* Convert the grid cell index into the point in world frame
+/* Convert the grid cell index into the point in the local frame
  * The returned point is the bottom-left of the grid cell */
 template <typename T>
-Point2D<double> GridMap<T>::GridCellIndexToWorldCoordinate(
+Point2D<double> GridMap<T>::GridCellIndexToLocalPos(
     int idxX, int idxY) const
 {
     assert(this->mResolution > 0.0);
 
-    const double mapX = this->mMinPos.mX + this->mResolution * idxX;
-    const double mapY = this->mMinPos.mY + this->mResolution * idxY;
+    const double localMapX = this->mLocalMinPos.mX + this->mResolution * idxX;
+    const double localMapY = this->mLocalMinPos.mY + this->mResolution * idxY;
 
-    return Point2D<double> { mapX, mapY };
+    return Point2D<double> { localMapX, localMapY };
 }
 
-/* Convert the point in world frame to the grid cell index */
+/* Convert the point in the local frame to the grid cell index */
 template <typename T>
-Point2D<int> GridMap<T>::WorldCoordinateToGridCellIndex(
-    double mapX, double mapY) const
+Point2D<int> GridMap<T>::LocalPosToGridCellIndex(
+    double localMapX, double localMapY) const
 {
     assert(this->mResolution > 0.0);
 
     const int cellIdxX = static_cast<int>(std::floor(
-        (mapX - this->mMinPos.mX) / this->mResolution));
+        (localMapX - this->mLocalMinPos.mX) / this->mResolution));
     const int cellIdxY = static_cast<int>(std::floor(
-        (mapY - this->mMinPos.mY) / this->mResolution));
-    
+        (localMapY - this->mLocalMinPos.mY) / this->mResolution));
+
     return Point2D<int> { cellIdxX, cellIdxY };
 }
 
-/* Convert the point in world frame to the
+/* Convert the point in the local frame to the
  * floating-point grid cell index */
 template <typename T>
-Point2D<double> GridMap<T>::WorldCoordinateToGridCellIndexFloat(
-    double mapX, double mapY) const
+Point2D<double> GridMap<T>::LocalPosToGridCellIndexFloat(
+    double localMapX, double localMapY) const
 {
     assert(this->mResolution > 0.0);
 
-    const double cellIdxX = (mapX - this->mMinPos.mX) / this->mResolution;
-    const double cellIdxY = (mapY - this->mMinPos.mY) / this->mResolution;
+    const double cellIdxX =
+        (localMapX - this->mLocalMinPos.mX) / this->mResolution;
+    const double cellIdxY =
+        (localMapY - this->mLocalMinPos.mY) / this->mResolution;
 
     return Point2D<double> { cellIdxX, cellIdxY };
 }
@@ -973,7 +989,8 @@ void GridMap<T>::ComputeActualMapSize(
     Point2D<int>& gridCellIdxMin,
     Point2D<int>& gridCellIdxMax,
     Point2D<int>& mapSizeInPatches,
-    Point2D<int>& mapSizeInGridCells) const
+    Point2D<int>& mapSizeInGridCells,
+    Point2D<double>& mapSizeInMeters) const
 {
     /* Get the range of the patch index (bounding box)
      * [patchIdxMin.mX, patchIdxMax.mX], [patchIdxMin.mY, patchIdxMax.mY] */
@@ -1013,6 +1030,9 @@ void GridMap<T>::ComputeActualMapSize(
 
     assert(mapSizeInGridCells.mX == mapSizeInPatches.mX * this->mPatchSize);
     assert(mapSizeInGridCells.mY == mapSizeInPatches.mY * this->mPatchSize);
+
+    mapSizeInMeters.mX = mapSizeInGridCells.mX * this->mResolution;
+    mapSizeInMeters.mY = mapSizeInGridCells.mY * this->mResolution;
 }
 
 } /* namespace MyLidarGraphSlam */
