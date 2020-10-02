@@ -62,6 +62,52 @@ struct LocalMapNode final
 };
 
 /*
+ * LocalMapNodeMap class provides several helper methods to manipulate
+ * local map nodes
+ */
+class LocalMapNodeMap final
+{
+public:
+    /* Constructor */
+    LocalMapNodeMap() = default;
+    /* Destructor */
+    ~LocalMapNodeMap() = default;
+
+    /* Get the minimum local map Id */
+    LocalMapId NodeIdMin() const;
+    /* Get the maximum local map Id */
+    LocalMapId NodeIdMax() const;
+
+    /* Get the map of the local map nodes */
+    inline const std::map<LocalMapId, LocalMapNode>& Nodes() const
+    { return this->mNodes; }
+
+    /* Check if the local map node with the specified Id exists */
+    inline bool Contains(const LocalMapId localMapId) const
+    { return this->mNodes.find(localMapId) != this->mNodes.end(); }
+
+    /* Get the local map node of the specified Id */
+    inline LocalMapNode& At(const LocalMapId localMapId)
+    { return this->mNodes.at(localMapId); }
+    /* Get the local map node of the specified Id */
+    inline const LocalMapNode& At(const LocalMapId localMapId) const
+    { return this->mNodes.at(localMapId); }
+
+    /* Get the latest local map node with the largest node Id */
+    LocalMapNode& LatestNode();
+    /* Get the latest local map node with the largest node Id */
+    const LocalMapNode& LatestNode() const;
+
+    /* Append a new local map node */
+    void Append(const LocalMapId localMapId,
+                const RobotPose2D<double>& globalPose);
+
+private:
+    /* Map of the local map nodes */
+    std::map<LocalMapId, LocalMapNode> mNodes;
+};
+
+/*
  * PoseGraphNodeId struct represents an Id value for a pose graph node
  */
 struct NodeId final

@@ -8,6 +8,63 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /*
+ * LocalMapNodeMap class implementations
+ */
+
+/* Get the minimum local map Id */
+LocalMapId LocalMapNodeMap::NodeIdMin() const
+{
+    /* Make sure that the local map nodes are not empty */
+    Assert(!this->mNodes.empty());
+    /* Local map node with the smallest Id is at the first element */
+    auto firstNodeIt = this->mNodes.begin();
+    /* Return the minimum local map Id */
+    return firstNodeIt->first;
+}
+
+/* Get the maximum local map Id */
+LocalMapId LocalMapNodeMap::NodeIdMax() const
+{
+    /* Make sure that the local map nodes are not empty */
+    Assert(!this->mNodes.empty());
+    /* Local map node with the largest Id is at the last element */
+    auto lastNodeIt = std::prev(this->mNodes.end());
+    /* Return the maximum local map Id */
+    return lastNodeIt->first;
+}
+
+/* Get the latest local map node with the largest node Id */
+LocalMapNode& LocalMapNodeMap::LatestNode()
+{
+    /* Use the const version of the method */
+    const auto* pThis = static_cast<const LocalMapNodeMap*>(this);
+    return const_cast<LocalMapNode&>(pThis->LatestNode());
+}
+
+/* Get the latest local map node with the largest node Id */
+const LocalMapNode& LocalMapNodeMap::LatestNode() const
+{
+    /* Make sure that the local map nodes are not empty */
+    Assert(!this->mNodes.empty());
+    /* Assume that the local map node with the largest Id is the latest one */
+    auto latestNodeIt = std::prev(this->mNodes.end());
+    /* Return the associated local map node */
+    return latestNodeIt->second;
+}
+
+/* Append a new local map node */
+void LocalMapNodeMap::Append(
+    const LocalMapId localMapId,
+    const RobotPose2D<double>& globalPose)
+{
+    /* Insert a new local map node */
+    this->mNodes.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(localMapId),
+        std::forward_as_tuple(localMapId, globalPose));
+}
+
+/*
  * ScanNodeMap class implementations
  */
 
