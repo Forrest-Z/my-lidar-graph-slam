@@ -125,10 +125,24 @@ public:
     inline T AngleAt(std::size_t scanIdx) const
     { return this->mAngles.at(scanIdx); }
 
-    /* Compute the hit point of the specified scan */
-    Point2D<double> HitPoint(const RobotPose2D<double>& sensorPose,
-                             std::size_t scanIdx) const;
-    
+    /* Compute the global hit point of the specified scan */
+    Point2D<double> GlobalHitPoint(
+        const RobotPose2D<double>& globalSensorPose,
+        const std::size_t scanIdx) const;
+
+    /* Compute the global hit pose of the specified scan */
+    RobotPose2D<double> GlobalHitPose(
+        const RobotPose2D<double>& globalSensorPose,
+        const std::size_t scanIdx) const;
+
+    /* Compute the local hit point of the specified scan */
+    Point2D<double> LocalHitPoint(
+        const std::size_t scanIdx) const;
+
+    /* Compute the local hit pose of the specified scan */
+    RobotPose2D<double> LocalHitPose(
+        const std::size_t scanIdx) const;
+
     /* Compute the hit point and missed point of the specified scan */
     void HitAndMissedPoint(const RobotPose2D<double>& sensorPose,
                            std::size_t scanIdx,
@@ -157,19 +171,65 @@ private:
     std::vector<T>  mRanges;
 };
 
-/* Compute the hit point of the specified scan */
+/* Compute the global hit point of the specified scan */
 template <typename T>
-Point2D<double> ScanData<T>::HitPoint(
-    const RobotPose2D<double>& sensorPose,
-    std::size_t scanIdx) const
+Point2D<double> ScanData<T>::GlobalHitPoint(
+    const RobotPose2D<double>& globalSensorPose,
+    const std::size_t scanIdx) const
 {
     const T scanRange = this->RangeAt(scanIdx);
     const T scanAngle = this->AngleAt(scanIdx);
-    const T cosTheta = std::cos(sensorPose.mTheta + scanAngle);
-    const T sinTheta = std::sin(sensorPose.mTheta + scanAngle);
+    const T cosTheta = std::cos(globalSensorPose.mTheta + scanAngle);
+    const T sinTheta = std::sin(globalSensorPose.mTheta + scanAngle);
 
-    return Point2D<double> { sensorPose.mX + scanRange * cosTheta,
-                             sensorPose.mY + scanRange * sinTheta };
+    return Point2D<double> {
+        globalSensorPose.mX + scanRange * cosTheta,
+        globalSensorPose.mY + scanRange * sinTheta };
+}
+
+/* Compute the global hit pose of the specified scan */
+template <typename T>
+RobotPose2D<double> ScanData<T>::GlobalHitPose(
+    const RobotPose2D<double>& globalSensorPose,
+    const std::size_t scanIdx) const
+{
+    const T scanRange = this->RangeAt(scanIdx);
+    const T scanAngle = this->AngleAt(scanIdx);
+    const T cosTheta = std::cos(globalSensorPose.mTheta + scanAngle);
+    const T sinTheta = std::sin(globalSensorPose.mTheta + scanAngle);
+
+    return RobotPose2D<double> {
+        globalSensorPose.mX + scanRange * cosTheta,
+        globalSensorPose.mY + scanRange * sinTheta,
+        globalSensorPose.mTheta + scanAngle };
+}
+
+/* Compute the local hit point of the specified scan */
+template <typename T>
+Point2D<double> ScanData<T>::LocalHitPoint(
+    const std::size_t scanIdx) const
+{
+    const T scanRange = this->RangeAt(scanIdx);
+    const T scanAngle = this->AngleAt(scanIdx);
+    const T cosTheta = std::cos(scanAngle);
+    const T sinTheta = std::sin(scanAngle);
+
+    return Point2D<double> {
+        scanRange * cosTheta, scanRange * sinTheta };
+}
+
+/* Compute the local hit pose of the specified scan */
+template <typename T>
+RobotPose2D<double> ScanData<T>::LocalHitPose(
+    const std::size_t scanIdx) const
+{
+    const T scanRange = this->RangeAt(scanIdx);
+    const T scanAngle = this->AngleAt(scanIdx);
+    const T cosTheta = std::cos(scanAngle);
+    const T sinTheta = std::sin(scanAngle);
+
+    return RobotPose2D<double> {
+        scanRange * cosTheta, scanAngle * sinTheta, scanAngle };
 }
 
 /* Compute the hit point and missed point of the specified scan */
