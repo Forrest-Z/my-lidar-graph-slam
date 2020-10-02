@@ -35,41 +35,41 @@ public:
     /* Check if the grid cell index is inside the map */
     virtual bool IsInside(const Point2D<int>& gridCellIdx) const = 0;
 
-    /* Check if the point in world frame is inside the map */
-    virtual bool IsInside(double mapX, double mapY) const = 0;
-    /* Check if the point in world frame is inside the map */
-    virtual bool IsInside(const Point2D<double>& mapPos) const = 0;
+    /* Check if the point in the local frame is inside the map */
+    virtual bool IsInside(double localMapX, double localMapY) const = 0;
+    /* Check if the point in the local frame is inside the map */
+    virtual bool IsInside(const Point2D<double>& localMapPos) const = 0;
 
     /* Check if the grid cell is allocated on the heap */
     virtual bool IsAllocated(int idxX, int idxY) const = 0;
     /* Check if the grid cell is allocated on the heap */
     virtual bool IsAllocated(const Point2D<int>& gridCellIdx) const = 0;
 
-    /* Convert the grid cell index into the point in world frame
+    /* Convert the grid cell index into the point in the local frame
      * The returned point is the bottom-left of the grid cell */
-    virtual Point2D<double> GridCellIndexToWorldCoordinate(
+    virtual Point2D<double> GridCellIndexToLocalPos(
         int idxX, int idxY) const = 0;
-    /* Convert the grid cell index into the point in world frame
+    /* Convert the grid cell index into the point in the local frame
      * The returned point is the bottom-left of the grid cell */
-    virtual Point2D<double> GridCellIndexToWorldCoordinate(
+    virtual Point2D<double> GridCellIndexToLocalPos(
         const Point2D<int>& gridCellIdx) const = 0;
 
-    /* Convert the point in world frame to the grid cell index */
-    virtual Point2D<int> WorldCoordinateToGridCellIndex(
-        double mapX, double mapY) const = 0;
-    /* Convert the point in world frame to the grid cell index */
-    virtual Point2D<int> WorldCoordinateToGridCellIndex(
-        const Point2D<double>& mapPos) const = 0;
+    /* Convert the point in the local frame to the grid cell index */
+    virtual Point2D<int> LocalPosToGridCellIndex(
+        double localMapX, double localMapY) const = 0;
+    /* Convert the point in the local frame to the grid cell index */
+    virtual Point2D<int> LocalPosToGridCellIndex(
+        const Point2D<double>& localMapPos) const = 0;
 
-    /* Convert the point in world frame to the
+    /* Convert the point in the local frame to the
      * floating-point grid cell index */
-    virtual Point2D<double> WorldCoordinateToGridCellIndexFloat(
-        double mapX, double mapY) const = 0;
-    /* Convert the point in world frame to the
+    virtual Point2D<double> LocalPosToGridCellIndexFloat(
+        double localMapX, double localMapY) const = 0;
+    /* Convert the point in the local frame to the
      * floating-point grid cell index */
-    virtual Point2D<double> WorldCoordinateToGridCellIndexFloat(
-        const Point2D<double>& mapPos) const = 0;
-    
+    virtual Point2D<double> LocalPosToGridCellIndexFloat(
+        const Point2D<double>& localMapPos) const = 0;
+
     /* Get the occupancy probability value of the specified grid cell */
     virtual T Value(int idxX, int idxY) const = 0;
     /* Get the occupancy probability value of the specified grid cell */
@@ -88,7 +88,7 @@ public:
     /* Calculate the distance between two grid cells */
     virtual double Distance(const Point2D<int>& gridCellIdx0,
                             const Point2D<int>& gridCellIdx1) const = 0;
-    
+
     /* Calculate the squared distance between two grid cells */
     virtual double SquaredDistance(int idxX0, int idxY0,
                                    int idxX1, int idxY1) const = 0;
@@ -109,8 +109,8 @@ public:
     /* Get the size of the map in meters (vertical) */
     virtual double MapSizeY() const = 0;
 
-    /* Get the minimum position of the map in world coordinate */
-    virtual const Point2D<double>& MinPos() const = 0;
+    /* Get the minimum position of the map in the local coordinate */
+    virtual const Point2D<double>& LocalMinPos() const = 0;
 };
 
 } /* namespace MyLidarGraphSlam */
