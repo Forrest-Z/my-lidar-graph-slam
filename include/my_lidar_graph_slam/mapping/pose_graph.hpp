@@ -122,7 +122,7 @@ struct ScanNode final
 
 /*
  * ScanNodeMap class provides several helper methods to manipulate
- * local grid maps
+ * scan nodes
  */
 class ScanNodeMap final
 {
