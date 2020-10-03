@@ -24,11 +24,11 @@ class ScanInterpolator final
 {
 public:
     /* Constructor */
-    ScanInterpolator(double distScans,
-                     double distThresholdEmpty) :
+    ScanInterpolator(const double distScans,
+                     const double distThresholdEmpty) :
         mDistScans(distScans),
         mDistThresholdEmpty(distThresholdEmpty) { }
-    
+
     /* Destructor */
     ~ScanInterpolator() = default;
 
@@ -38,9 +38,9 @@ public:
 
 private:
     /* Distance between two scan points */
-    double mDistScans;
+    const double mDistScans;
     /* Distance threshold for empty space */
-    double mDistThresholdEmpty;
+    const double mDistThresholdEmpty;
 };
 
 } /* namespace Mapping */

@@ -21,7 +21,7 @@ Sensor::ScanDataPtr<double> ScanInterpolator::Interpolate(
     /* Convert polar coordinate to cartesian coordinate */
     std::vector<Point2D<double>> scanPoints;
     scanPoints.reserve(scanData->NumOfScans());
-    
+
     for (std::size_t i = 0; i < scanData->NumOfScans(); ++i) {
         const Point2D<double> scanPoint =
             ToCartesianCoordinate(scanRanges.at(i), scanAngles.at(i));
