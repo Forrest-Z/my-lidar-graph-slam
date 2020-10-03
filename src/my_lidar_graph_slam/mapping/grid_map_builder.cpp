@@ -432,12 +432,12 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPointsMapLocal(
         InverseCompound(globalMapPose, globalSensorPose);
 
     /* Initialize the minimum coordinate of the given scan */
-    localMinPos.mX = globalSensorPose.mX;
-    localMinPos.mY = globalSensorPose.mY;
+    localMinPos.mX = localSensorPose.mX;
+    localMinPos.mY = localSensorPose.mY;
 
     /* Initialize the maximum coordinate of the given scan */
-    localMaxPos.mX = globalSensorPose.mX;
-    localMaxPos.mY = globalSensorPose.mY;
+    localMaxPos.mX = localSensorPose.mX;
+    localMaxPos.mY = localSensorPose.mY;
 
     const std::size_t numOfScans = scanData->NumOfScans();
     localHitPoints.reserve(numOfScans);
