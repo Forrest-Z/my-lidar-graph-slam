@@ -400,10 +400,9 @@ std::vector<Point2D<int>> GridMapBuilder::ComputeMissedGridCellIndices(
  */
 
 /* Compute the maximum of a 'winSize' pixel wide row at each pixel */
-void SlidingWindowMaxRow(
-    const GridMapType& gridMap,
-    PrecomputedMapType& intermediateMap,
-    int winSize)
+void SlidingWindowMaxRow(const GridMapType& gridMap,
+                         ConstMapType& intermediateMap,
+                         const int winSize)
 {
     /* Compute the maximum for each column */
     const double unknownVal = gridMap.UnknownValue();
@@ -434,10 +433,9 @@ void SlidingWindowMaxRow(
 }
 
 /* Compute the maximum of a 'winSize' pixel wide column at each pixel */
-void SlidingWindowMaxCol(
-    const PrecomputedMapType& intermediateMap,
-    PrecomputedMapType& precompMap,
-    int winSize)
+void SlidingWindowMaxCol(const ConstMapType& intermediateMap,
+                         ConstMapType& precompMap,
+                         const int winSize)
 {
     /* Compute the maximum for each row */
     const double unknownVal = intermediateMap.UnknownValue();
@@ -468,16 +466,14 @@ void SlidingWindowMaxCol(
 }
 
 /* Precompute coarser grid maps for efficiency */
-void PrecomputeGridMaps(
-    const GridMapType& gridMap,
-    std::map<int, PrecomputedMapType>& precomputedMaps,
-    const int nodeHeightMax)
+void PrecomputeGridMaps(const GridMapType& gridMap,
+                        std::map<int, ConstMapType>& precomputedMaps,
+                        const int nodeHeightMax)
 {
     /* Create the temporary grid map to store the intermediate result
      * The map size is as same as the local grid map and is reused for
      * several times below */
-    PrecomputedMapType intermediateMap =
-        PrecomputedMapType::CreateSameSizeMap(gridMap);
+    ConstMapType intermediateMap = ConstMapType::CreateSameSizeMap(gridMap);
 
     /* Clear the precomputed coarser grid maps */
     precomputedMaps.clear();
@@ -486,7 +482,7 @@ void PrecomputeGridMaps(
     for (int nodeHeight = 0, winSize = 1;
          nodeHeight <= nodeHeightMax; ++nodeHeight, winSize <<= 1) {
         /* Precompute a grid map */
-        PrecomputedMapType precompMap =
+        ConstMapType precompMap =
             PrecomputeGridMap(gridMap, intermediateMap, winSize);
 
         /* Append the newly created map */
@@ -495,16 +491,14 @@ void PrecomputeGridMaps(
 }
 
 /* Precompute grid map for efficiency */
-PrecomputedMapType PrecomputeGridMap(
-    const GridMapType& gridMap,
-    PrecomputedMapType& intermediateMap,
-    int winSize)
+ConstMapType PrecomputeGridMap(const GridMapType& gridMap,
+                               ConstMapType& intermediateMap,
+                               const int winSize)
 {
     /* Create a new grid map
      * Each pixel stores the maximum of the occupancy probability values of
      * 'winSize' * 'winSize' box of pixels beginning there */
-    PrecomputedMapType precompMap =
-        PrecomputedMapType::CreateSameSizeMap(gridMap);
+    ConstMapType precompMap = ConstMapType::CreateSameSizeMap(gridMap);
 
     /* Store the maximum of the 'winSize' pixel wide row */
     SlidingWindowMaxRow(gridMap, intermediateMap, winSize);
@@ -515,17 +509,14 @@ PrecomputedMapType PrecomputeGridMap(
 }
 
 /* Precompute grid map for efficiency */
-PrecomputedMapType PrecomputeGridMap(
-    const GridMapType& gridMap,
-    int winSize)
+ConstMapType PrecomputeGridMap(const GridMapType& gridMap,
+                               const int winSize)
 {
     /* Create a temporary map to store the intermediate result */
-    PrecomputedMapType intermediateMap =
-        PrecomputedMapType::CreateSameSizeMap(gridMap);
+    ConstMapType intermediateMap = ConstMapType::CreateSameSizeMap(gridMap);
 
     /* Create a new grid map */
-    PrecomputedMapType precompMap =
-        PrecomputedMapType::CreateSameSizeMap(gridMap);
+    ConstMapType precompMap = ConstMapType::CreateSameSizeMap(gridMap);
 
     /* Store the maximum of the 'winSize' pixel wide row */
     SlidingWindowMaxRow(gridMap, intermediateMap, winSize);

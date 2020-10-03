@@ -237,33 +237,28 @@ private:
  */
 
 /* Compute the maximum of a 'winSize' pixel wide row at each pixel */
-void SlidingWindowMaxRow(
-    const GridMapType& gridMap,
-    PrecomputedMapType& intermediateMap,
-    int winSize);
+void SlidingWindowMaxRow(const GridMapType& gridMap,
+                         ConstMapType& intermediateMap,
+                         const int winSize);
 
 /* Compute the maximum of a 'winSize' pixel wide column at each pixel */
-void SlidingWindowMaxCol(
-    const PrecomputedMapType& intermediateMap,
-    PrecomputedMapType& precompMap,
-    int winSize);
+void SlidingWindowMaxCol(const ConstMapType& intermediateMap,
+                         ConstMapType& precompMap,
+                         const int winSize);
 
 /* Precompute coarser grid maps for efficiency */
-void PrecomputeGridMaps(
-    const GridMapType& gridMap,
-    std::map<int, PrecomputedMapType>& precompMaps,
-    const int nodeHeightMax);
+void PrecomputeGridMaps(const GridMapType& gridMap,
+                        std::map<int, ConstMapType>& precompMaps,
+                        const int nodeHeightMax);
 
 /* Precompute grid map for efficiency */
-PrecomputedMapType PrecomputeGridMap(
-    const GridMapType& gridMap,
-    PrecomputedMapType& intermediateMap,
-    int winSize);
+ConstMapType PrecomputeGridMap(const GridMapType& gridMap,
+                               ConstMapType& intermediateMap,
+                               const int winSize);
 
 /* Precompute grid map for efficiency */
-PrecomputedMapType PrecomputeGridMap(
-    const GridMapType& gridMap,
-    int winSize);
+ConstMapType PrecomputeGridMap(const GridMapType& gridMap,
+                               const int winSize);
 
 } /* namespace Mapping */
 } /* namespace MyLidarGraphSlam */
