@@ -27,7 +27,7 @@ public:
     using ScanDataDeque = std::deque<Sensor::ScanDataPtr<double>>;
 
     /* Constructor */
-    ScanAccumulator(std::size_t numOfAccumulatedScans);
+    ScanAccumulator(const std::size_t numOfAccumulatedScans);
 
     /* Destructor */
     ~ScanAccumulator() = default;
@@ -40,7 +40,7 @@ public:
 
 private:
     /* Number of the scan data to be accumulated */
-    std::size_t   mNumOfAccumulatedScans;
+    const std::size_t   mNumOfAccumulatedScans;
     /* Accumulated scans */
     ScanDataDeque mAccumulatedScans;
 };

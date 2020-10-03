@@ -9,7 +9,7 @@ namespace MyLidarGraphSlam {
 namespace Mapping {
 
 /* Constructor */
-ScanAccumulator::ScanAccumulator(std::size_t numOfAccumulatedScans) :
+ScanAccumulator::ScanAccumulator(const std::size_t numOfAccumulatedScans) :
     mNumOfAccumulatedScans(numOfAccumulatedScans)
 {
     assert(numOfAccumulatedScans > 0);
