@@ -193,7 +193,7 @@ private:
         const Sensor::ScanDataPtr<double>& scanData,
         Point2D<double>& localMinPos,
         Point2D<double>& localMaxPos,
-        std::vector<RobotPose2D<double>>& localHitPoses);
+        std::vector<Point2D<double>>& localHitPoints);
 
     /* Compute the indices of the missed grid cells
      * using Bresenham algorithm */
