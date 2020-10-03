@@ -125,22 +125,22 @@ public:
     inline T AngleAt(std::size_t scanIdx) const
     { return this->mAngles.at(scanIdx); }
 
-    /* Compute the global hit point of the specified scan */
-    Point2D<double> GlobalHitPoint(
-        const RobotPose2D<double>& globalSensorPose,
+    /* Compute the hit point of the specified scan */
+    Point2D<double> HitPoint(
+        const RobotPose2D<double>& sensorPose,
         const std::size_t scanIdx) const;
 
-    /* Compute the global hit pose of the specified scan */
-    RobotPose2D<double> GlobalHitPose(
-        const RobotPose2D<double>& globalSensorPose,
+    /* Compute the hit pose of the specified scan */
+    RobotPose2D<double> HitPose(
+        const RobotPose2D<double>& sensorPose,
         const std::size_t scanIdx) const;
 
-    /* Compute the local hit point of the specified scan */
-    Point2D<double> LocalHitPoint(
+    /* Compute the hit point of the specified scan in a sensor local frame */
+    Point2D<double> SensorLocalHitPoint(
         const std::size_t scanIdx) const;
 
-    /* Compute the local hit pose of the specified scan */
-    RobotPose2D<double> LocalHitPose(
+    /* Compute the hit pose of the specified scan in a sensor local frame */
+    RobotPose2D<double> SensorLocalHitPose(
         const std::size_t scanIdx) const;
 
     /* Compute the hit point and missed point of the specified scan */
@@ -171,42 +171,42 @@ private:
     std::vector<T>  mRanges;
 };
 
-/* Compute the global hit point of the specified scan */
+/* Compute the hit point of the specified scan */
 template <typename T>
-Point2D<double> ScanData<T>::GlobalHitPoint(
-    const RobotPose2D<double>& globalSensorPose,
+Point2D<double> ScanData<T>::HitPoint(
+    const RobotPose2D<double>& sensorPose,
     const std::size_t scanIdx) const
 {
     const T scanRange = this->RangeAt(scanIdx);
     const T scanAngle = this->AngleAt(scanIdx);
-    const T cosTheta = std::cos(globalSensorPose.mTheta + scanAngle);
-    const T sinTheta = std::sin(globalSensorPose.mTheta + scanAngle);
+    const T cosTheta = std::cos(sensorPose.mTheta + scanAngle);
+    const T sinTheta = std::sin(sensorPose.mTheta + scanAngle);
 
     return Point2D<double> {
-        globalSensorPose.mX + scanRange * cosTheta,
-        globalSensorPose.mY + scanRange * sinTheta };
+        sensorPose.mX + scanRange * cosTheta,
+        sensorPose.mY + scanRange * sinTheta };
 }
 
-/* Compute the global hit pose of the specified scan */
+/* Compute the hit pose of the specified scan */
 template <typename T>
-RobotPose2D<double> ScanData<T>::GlobalHitPose(
-    const RobotPose2D<double>& globalSensorPose,
+RobotPose2D<double> ScanData<T>::HitPose(
+    const RobotPose2D<double>& sensorPose,
     const std::size_t scanIdx) const
 {
     const T scanRange = this->RangeAt(scanIdx);
     const T scanAngle = this->AngleAt(scanIdx);
-    const T cosTheta = std::cos(globalSensorPose.mTheta + scanAngle);
-    const T sinTheta = std::sin(globalSensorPose.mTheta + scanAngle);
+    const T cosTheta = std::cos(sensorPose.mTheta + scanAngle);
+    const T sinTheta = std::sin(sensorPose.mTheta + scanAngle);
 
     return RobotPose2D<double> {
-        globalSensorPose.mX + scanRange * cosTheta,
-        globalSensorPose.mY + scanRange * sinTheta,
-        globalSensorPose.mTheta + scanAngle };
+        sensorPose.mX + scanRange * cosTheta,
+        sensorPose.mY + scanRange * sinTheta,
+        sensorPose.mTheta + scanAngle };
 }
 
-/* Compute the local hit point of the specified scan */
+/* Compute the hit point of the specified scan in a sensor local frame */
 template <typename T>
-Point2D<double> ScanData<T>::LocalHitPoint(
+Point2D<double> ScanData<T>::SensorLocalHitPoint(
     const std::size_t scanIdx) const
 {
     const T scanRange = this->RangeAt(scanIdx);
@@ -218,9 +218,9 @@ Point2D<double> ScanData<T>::LocalHitPoint(
         scanRange * cosTheta, scanRange * sinTheta };
 }
 
-/* Compute the local hit pose of the specified scan */
+/* Compute the hit pose of the specified scan in a sensor local frame */
 template <typename T>
-RobotPose2D<double> ScanData<T>::LocalHitPose(
+RobotPose2D<double> ScanData<T>::SensorLocalHitPose(
     const std::size_t scanIdx) const
 {
     const T scanRange = this->RangeAt(scanIdx);
