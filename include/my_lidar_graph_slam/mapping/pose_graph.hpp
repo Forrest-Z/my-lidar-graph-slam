@@ -93,6 +93,46 @@ public:
     inline const MapType& Nodes() const
     { return this->mNodes; }
 
+    /* Get an iterator to the first local map node */
+    inline MapType::iterator begin() noexcept
+    { return this->mNodes.begin(); }
+    /* Get an iterator to the first local map node */
+    inline MapType::const_iterator begin() const noexcept
+    { return this->mNodes.begin(); }
+    /* Get an iterator to the first local map node */
+    inline MapType::const_iterator cbegin() const noexcept
+    { return this->mNodes.cbegin(); }
+
+    /* Get an iterator to the end local map node */
+    inline MapType::iterator end() noexcept
+    { return this->mNodes.end(); }
+    /* Get an iterator to the end local map node */
+    inline MapType::const_iterator end() const noexcept
+    { return this->mNodes.end(); }
+    /* Get an iterator to the end local map node */
+    inline MapType::const_iterator cend() const noexcept
+    { return this->mNodes.cend(); }
+
+    /* Get an iterator to the first local map node of the reversed map */
+    inline MapType::reverse_iterator rbegin() noexcept
+    { return this->mNodes.rbegin(); }
+    /* Get an iterator to the first local map node of the reversed map */
+    inline MapType::const_reverse_iterator rbegin() const noexcept
+    { return this->mNodes.rbegin(); }
+    /* Get an iterator to the first local map node of the reversed map */
+    inline MapType::const_reverse_iterator crbegin() const noexcept
+    { return this->mNodes.crbegin(); }
+
+    /* Get an iterator to the end local map node of the reversed map */
+    inline MapType::reverse_iterator rend() noexcept
+    { return this->mNodes.rend(); }
+    /* Get an iterator to the end local map node of the reversed map */
+    inline MapType::const_reverse_iterator rend() const noexcept
+    { return this->mNodes.rend(); }
+    /* Get an iterator to the end local map node of the reversed map */
+    inline MapType::const_reverse_iterator crend() const noexcept
+    { return this->mNodes.crend(); }
+
     /* Get the iterator pointing to the first local map node whose Id is
      * greater than the specified Id */
     inline MapType::const_iterator UpperBound(const LocalMapId nodeId) const
@@ -101,6 +141,13 @@ public:
      * greater than or equal to the specified Id */
     inline MapType::const_iterator LowerBound(const LocalMapId nodeId) const
     { return this->mNodes.lower_bound(nodeId); }
+
+    /* Check if the local map nodes are empty */
+    inline bool Empty() const
+    { return this->mNodes.empty(); }
+    /* Get the size of the local map nodes */
+    inline std::size_t Size() const
+    { return this->mNodes.size(); }
 
     /* Check if the local map node with the specified Id exists */
     inline bool Contains(const LocalMapId localMapId) const
