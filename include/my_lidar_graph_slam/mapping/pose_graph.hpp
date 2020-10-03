@@ -422,8 +422,8 @@ public:
                     const Eigen::Matrix3d& informationMat);
 
     /* Get the map of the local map nodes */
-    inline const std::map<LocalMapId, LocalMapNode>& LocalMapNodes() const
-    { return this->mLocalMapNodes.Nodes(); }
+    inline const LocalMapNodeMap& LocalMapNodes() const
+    { return this->mLocalMapNodes; }
 
     /* Get the local map node of the specified Id */
     inline LocalMapNode& LocalMapNodeAt(const LocalMapId nodeId)
@@ -440,8 +440,8 @@ public:
     { return this->mLocalMapNodes.LatestNode(); }
 
     /* Get the map of the scan nodes */
-    inline const std::map<NodeId, ScanNode>& ScanNodes() const
-    { return this->mScanNodes.Nodes(); }
+    inline const ScanNodeMap& ScanNodes() const
+    { return this->mScanNodes; }
 
     /* Check if the pose graph contains a scan node with the specified Id */
     inline bool ContainsScanNode(const NodeId nodeId) const
