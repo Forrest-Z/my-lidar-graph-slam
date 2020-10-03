@@ -144,11 +144,12 @@ public:
         const std::size_t scanIdx) const;
 
     /* Compute the hit point and missed point of the specified scan */
-    void HitAndMissedPoint(const RobotPose2D<double>& sensorPose,
-                           std::size_t scanIdx,
-                           T hitAndMissedDist,
-                           Point2D<double>& hitPoint,
-                           Point2D<double>& missedPoint) const;
+    void HitAndMissedPoint(
+        const RobotPose2D<double>& sensorPose,
+        const std::size_t scanIdx,
+        const T hitAndMissedDist,
+        Point2D<double>& hitPoint,
+        Point2D<double>& missedPoint) const;
 
 private:
     /* Odometry pose in world frame (required) */
@@ -236,8 +237,8 @@ RobotPose2D<double> ScanData<T>::SensorLocalHitPose(
 template <typename T>
 void ScanData<T>::HitAndMissedPoint(
     const RobotPose2D<double>& sensorPose,
-    std::size_t scanIdx,
-    T hitAndMissedDist,
+    const std::size_t scanIdx,
+    const T hitAndMissedDist,
     Point2D<double>& hitPoint,
     Point2D<double>& missedPoint) const
 {
