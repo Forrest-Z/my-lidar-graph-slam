@@ -435,7 +435,7 @@ void MapSaver::DrawScan(
     for (std::size_t i = 0; i < numOfScans; ++i) {
         /* Calculate the grid cell index */
         const RobotPose2D<double> globalHitPose =
-            scanData->GlobalHitPose(globalSensorPose, i);
+            scanData->HitPose(globalSensorPose, i);
         const RobotPose2D<double> localHitPose =
             InverseCompound(globalGridMapPose, globalHitPose);
         const Point2D<int> hitPointIdx =
