@@ -28,12 +28,20 @@ public:
      */
     struct Summary
     {
+        /* Constructor */
+        Summary(const double normalizedScore,
+                const double score,
+                const double knownRate) :
+            mNormalizedScore(normalizedScore),
+            mScore(score),
+            mKnownRate(knownRate) { }
+
         /* Normalized matching score */
-        double mNormalizedScore;
+        const double mNormalizedScore;
         /* Matching score */
-        double mScore;
+        const double mScore;
         /* Rate of the grid cells with valid occupancy probability value */
-        double mMatchRate;
+        const double mKnownRate;
     };
 
 public:
@@ -52,11 +60,10 @@ public:
     ScoreFunction& operator=(ScoreFunction&&) = delete;
 
     /* Evaluate score function (matching score between scan data and map) */
-    virtual void Score(
+    virtual Summary Score(
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& mapLocalSensorPose,
-        Summary& resultSummary) = 0;
+        const RobotPose2D<double>& mapLocalSensorPose) = 0;
 };
 
 } /* namespace Mapping */
