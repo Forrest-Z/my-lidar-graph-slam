@@ -28,7 +28,7 @@ LocalMapId LocalMapNodeMap::NodeIdMax() const
     /* Make sure that the local map nodes are not empty */
     Assert(!this->mNodes.empty());
     /* Local map node with the largest Id is at the last element */
-    auto lastNodeIt = std::prev(this->mNodes.end());
+    auto lastNodeIt = this->mNodes.rbegin();
     /* Return the maximum local map Id */
     return lastNodeIt->first;
 }
@@ -47,7 +47,7 @@ const LocalMapNode& LocalMapNodeMap::LatestNode() const
     /* Make sure that the local map nodes are not empty */
     Assert(!this->mNodes.empty());
     /* Assume that the local map node with the largest Id is the latest one */
-    auto latestNodeIt = std::prev(this->mNodes.end());
+    auto latestNodeIt = this->mNodes.rbegin();
     /* Return the associated local map node */
     return latestNodeIt->second;
 }
@@ -85,7 +85,7 @@ NodeId ScanNodeMap::NodeIdMax() const
     /* Make sure that the nodes are not empty */
     Assert(!this->mNodes.empty());
     /* Scan node with the largest Id is at the last element */
-    auto lastNodeIt = std::prev(this->mNodes.end());
+    auto lastNodeIt = this->mNodes.rbegin();
     /* Return the maximum scan node Id */
     return lastNodeIt->first;
 }
@@ -104,7 +104,7 @@ const ScanNode& ScanNodeMap::LatestNode() const
     /* Make sure that the nodes are not empty */
     Assert(!this->mNodes.empty());
     /* Assume that the scan node with the largest Id is the latest one */
-    auto latestNodeIt = std::prev(this->mNodes.end());
+    auto latestNodeIt = this->mNodes.rbegin();
     /* Return the associated scan node */
     return latestNodeIt->second;
 }
