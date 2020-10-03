@@ -17,57 +17,60 @@ class CostSquareError final : public CostFunction
 {
 public:
     /* Constructor */
-    CostSquareError(double usableRangeMin,
-                    double usableRangeMax);
-    
+    CostSquareError(const double usableRangeMin,
+                    const double usableRangeMax);
+
     /* Destructor */
     ~CostSquareError() = default;
 
     /* Calculate cost function (mismatch between scan data and map) */
-    double Cost(const GridMapBase<double>& gridMap,
-                const Sensor::ScanDataPtr<double>& scanData,
-                const RobotPose2D<double>& sensorPose) override;
+    double Cost(
+        const GridMapBase<double>& gridMap,
+        const Sensor::ScanDataPtr<double>& scanData,
+        const RobotPose2D<double>& mapLocalSensorPose) override;
 
     /* Calculate a gradient of the cost function
      * with respect to the robot pose */
     Eigen::Vector3d ComputeGradient(
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& sensorPose) override;
-    
+        const RobotPose2D<double>& mapLocalSensorPose) override;
+
     /* Calculate a covariance matrix */
     Eigen::Matrix3d ComputeCovariance(
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& sensorPose) override;
-    
+        const RobotPose2D<double>& mapLocalSensorPose) override;
+
     /* Calculate a gradient of the cost function
      * with respect to the robot pose numerically */
     Eigen::Vector3d ComputeNumericalGradient(
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& sensorPose);
-    
+        const RobotPose2D<double>& mapLocalSensorPose);
+
     /* Calculate a gradient of the smoothed map function
      * with respect to the specified position on the map */
-    Eigen::Vector2d ComputeMapGradient(const GridMapBase<double>& gridMap,
-                                       const Point2D<double>& mapPos);
-    
+    Eigen::Vector2d ComputeMapGradient(
+        const GridMapBase<double>& gridMap,
+        const Point2D<double>& localMapPos);
+
     /* Calculate a gradient of the smoothed map function
      * at the specified scan point with respect to the robot pose */
-    Eigen::Vector3d ComputeMapGradient(const GridMapBase<double>& gridMap,
-                                       const RobotPose2D<double>& sensorPose,
-                                       const double scanRange,
-                                       const double scanAngle);
+    Eigen::Vector3d ComputeMapGradient(
+        const GridMapBase<double>& gridMap,
+        const RobotPose2D<double>& mapLocalSensorPose,
+        const double scanRange,
+        const double scanAngle);
 
     /* Calculate a gradient of the smoothed map function
      * at the specified scan point with respect to the robot pose */
     Eigen::Vector3d ComputeMapNumericalGradient(
         const GridMapBase<double>& gridMap,
-        const RobotPose2D<double>& sensorPose,
+        const RobotPose2D<double>& mapLocalSensorPose,
         const double scanRange,
         const double scanAngle);
-    
+
     /* Calculate the smoothed occupancy probability value
      * using bicubic interpolation */
     double ComputeSmoothedValue(
@@ -76,9 +79,9 @@ public:
 
 private:
     /* Minimum laser scan range considered for calculation */
-    double mUsableRangeMin;
+    const double mUsableRangeMin;
     /* Maximum laser scan range considered for calculation */
-    double mUsableRangeMax;
+    const double mUsableRangeMax;
 };
 
 } /* namespace Mapping */

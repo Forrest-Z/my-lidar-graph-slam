@@ -8,8 +8,8 @@ namespace Mapping {
 
 /* Constructor */
 CostSquareError::CostSquareError(
-    double usableRangeMin,
-    double usableRangeMax) :
+    const double usableRangeMin,
+    const double usableRangeMax) :
     CostFunction(),
     mUsableRangeMin(usableRangeMin),
     mUsableRangeMax(usableRangeMax)
@@ -21,7 +21,7 @@ CostSquareError::CostSquareError(
 double CostSquareError::Cost(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     double costValue = 0.0;
 
@@ -29,7 +29,7 @@ double CostSquareError::Cost(
         this->mUsableRangeMin, scanData->MinRange());
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
-    
+
     const std::size_t numOfScans = scanData->NumOfScans();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
@@ -38,14 +38,15 @@ double CostSquareError::Cost(
         
         if (scanRange >= maxRange || scanRange <= minRange)
             continue;
-        
+
         /* Calculate the grid cell index corresponding to the scan point */
-        const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
-        
+        const Point2D<double> localHitPoint =
+            scanData->HitPoint(mapLocalSensorPose, i);
+
         /* Calculate the smoothed occupancy probability value
          * this must be close to 1 since it corresponds to the hit point */
         const Point2D<double> floatIdx =
-            gridMap.WorldCoordinateToGridCellIndexFloat(hitPoint);
+            gridMap.LocalPosToGridCellIndexFloat(localHitPoint);
         const double smoothedValue =
             this->ComputeSmoothedValue(gridMap, floatIdx);
         /* Calculate the squared error */
@@ -57,11 +58,11 @@ double CostSquareError::Cost(
     return costValue;
 }
 
-/* Calculate a gradient vector */
+/* Calculate a gradient vector in a map-local coordinate frame */
 Eigen::Vector3d CostSquareError::ComputeGradient(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     double gradX = 0.0;
     double gradY = 0.0;
@@ -72,22 +73,23 @@ Eigen::Vector3d CostSquareError::ComputeGradient(
         this->mUsableRangeMin, scanData->MinRange());
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
-    
+
     const std::size_t numOfScans = scanData->NumOfScans();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
         /* Retrieve the scan range and angle */
         const double scanRange = scanData->RangeAt(i);
         const double scanAngle = scanData->AngleAt(i);
-        
+
         if (scanRange >= maxRange || scanRange <= minRange)
             continue;
-        
+
         /* Calculate the grid cell index corresponding to the scan point */
-        const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
+        const Point2D<double> localHitPoint =
+            scanData->HitPoint(mapLocalSensorPose, i);
         const Point2D<double> floatingIdx =
-            gridMap.WorldCoordinateToGridCellIndexFloat(hitPoint);
-        
+            gridMap.LocalPosToGridCellIndexFloat(localHitPoint);
+
         /* Calculate the smoothed occupancy probability value */
         const double smoothedMapValue =
             this->ComputeSmoothedValue(gridMap, floatingIdx);
@@ -96,8 +98,8 @@ Eigen::Vector3d CostSquareError::ComputeGradient(
 
         /* Compute a gradient of the smoothed occupancy probability value
          * at the scan point with respect to the robot pose */
-        const Eigen::Vector3d gradVec =
-            this->ComputeMapGradient(gridMap, sensorPose, scanRange, scanAngle);
+        const Eigen::Vector3d gradVec = this->ComputeMapGradient(
+            gridMap, mapLocalSensorPose, scanRange, scanAngle);
 
         /* Update gradients */
         gradX += 2.0 * errorValue * (-gradVec(0));
@@ -108,11 +110,11 @@ Eigen::Vector3d CostSquareError::ComputeGradient(
     return Eigen::Vector3d { gradX, gradY, gradTheta };
 }
 
-/* Calculate a covariance matrix */
+/* Calculate a covariance matrix in a map-local coordinate frame */
 Eigen::Matrix3d CostSquareError::ComputeCovariance(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     /* Covariance matrix is calculated using Laplace approximation, which means
      * that the matrix is computed from the inverse of a Hessian matrix */
@@ -121,8 +123,8 @@ Eigen::Matrix3d CostSquareError::ComputeCovariance(
 
     /* Calculate the gradient vector */
     const Eigen::Vector3d gradVec =
-        this->ComputeGradient(gridMap, scanData, sensorPose);
-    
+        this->ComputeGradient(gridMap, scanData, mapLocalSensorPose);
+
     /* Create a covariance matrix */
     Eigen::Matrix3d covMat = gradVec * gradVec.transpose();
 
@@ -138,12 +140,12 @@ Eigen::Matrix3d CostSquareError::ComputeCovariance(
 Eigen::Vector3d CostSquareError::ComputeNumericalGradient(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     /* Compute a gradient of the cost function with respect to sensor pose
      * by numerical gradient (for debugging purpose) */
-    const double diffLinear = 1e-4;
-    const double diffAngular = 1e-4;
+    const double diffLinear = gridMap.Resolution();
+    const double diffAngular = 1e-2;
 
     const RobotPose2D<double> deltaX { diffLinear, 0.0, 0.0 };
     const RobotPose2D<double> deltaY { 0.0, diffLinear, 0.0 };
@@ -151,14 +153,14 @@ Eigen::Vector3d CostSquareError::ComputeNumericalGradient(
 
     const auto costValue = [&](const RobotPose2D<double>& pose) {
         return this->Cost(gridMap, scanData, pose); };
-    
-    const double diffCostX = costValue(sensorPose + deltaX) -
-                             costValue(sensorPose - deltaX);
-    const double diffCostY = costValue(sensorPose + deltaY) -
-                             costValue(sensorPose - deltaY);
-    const double diffCostTheta = costValue(sensorPose + deltaTheta) -
-                                 costValue(sensorPose - deltaTheta);
-    
+
+    const double diffCostX = costValue(mapLocalSensorPose + deltaX) -
+                             costValue(mapLocalSensorPose - deltaX);
+    const double diffCostY = costValue(mapLocalSensorPose + deltaY) -
+                             costValue(mapLocalSensorPose - deltaY);
+    const double diffCostTheta = costValue(mapLocalSensorPose + deltaTheta) -
+                                 costValue(mapLocalSensorPose - deltaTheta);
+
     /* Calculate gradients */
     const double gradX = 0.5 * diffCostX / diffLinear;
     const double gradY = 0.5 * diffCostY / diffLinear;
@@ -171,7 +173,7 @@ Eigen::Vector3d CostSquareError::ComputeNumericalGradient(
  * with respect to the specified position on the map */
 Eigen::Vector2d CostSquareError::ComputeMapGradient(
     const GridMapBase<double>& gridMap,
-    const Point2D<double>& mapPos)
+    const Point2D<double>& localMapPos)
 {
     const double deltaIdx = 0.1;
     const double deltaDist = gridMap.Resolution() * deltaIdx;
@@ -180,12 +182,12 @@ Eigen::Vector2d CostSquareError::ComputeMapGradient(
 
     const auto mapValue = [&](const Point2D<double>& floatingIdx) {
         return this->ComputeSmoothedValue(gridMap, floatingIdx); };
-    
+
     /* Compute a floating-point grid cell index corresponding to the
      * specified position on the map */
     const Point2D<double> floatingGridCellIdx =
-        gridMap.WorldCoordinateToGridCellIndexFloat(mapPos);
-    
+        gridMap.LocalPosToGridCellIndexFloat(localMapPos);
+
     /* Compute a gradient of the smoothed occupancy probability value
      * with respect to the map position */
     const double diffMapX = mapValue(floatingGridCellIdx + deltaX) -
@@ -202,29 +204,29 @@ Eigen::Vector2d CostSquareError::ComputeMapGradient(
  * at the specified scan point with respect to the robot pose */
 Eigen::Vector3d CostSquareError::ComputeMapGradient(
     const GridMapBase<double>& gridMap,
-    const RobotPose2D<double>& sensorPose,
+    const RobotPose2D<double>& mapLocalSensorPose,
     const double scanRange,
     const double scanAngle)
 {
     /* Calculate the grid cell index corresponding to the scan point */
-    const double cosTheta = std::cos(sensorPose.mTheta + scanAngle);
-    const double sinTheta = std::sin(sensorPose.mTheta + scanAngle);
-    
+    const double cosTheta = std::cos(mapLocalSensorPose.mTheta + scanAngle);
+    const double sinTheta = std::sin(mapLocalSensorPose.mTheta + scanAngle);
+
     /* Compute a gradient of the smoothed occupancy probability value
      * with respect to the scan point */
-    const Point2D<double> hitPoint {
-        sensorPose.mX + scanRange * cosTheta,
-        sensorPose.mY + scanRange * sinTheta };
+    const Point2D<double> localHitPoint {
+        mapLocalSensorPose.mX + scanRange * cosTheta,
+        mapLocalSensorPose.mY + scanRange * sinTheta };
     const Eigen::Vector2d gradVec =
-        this->ComputeMapGradient(gridMap, hitPoint);
-    
+        this->ComputeMapGradient(gridMap, localHitPoint);
+
     /* Compute a gradient of the smoothed occupancy probability value
      * at the scan point with respect to the robot pose */
     const double gradX = gradVec(0);
     const double gradY = gradVec(1);
     const double gradTheta = -scanRange * sinTheta * gradVec(0) +
                               scanRange * cosTheta * gradVec(1);
-    
+
     return Eigen::Vector3d { gradX, gradY, gradTheta };
 }
 
@@ -232,7 +234,7 @@ Eigen::Vector3d CostSquareError::ComputeMapGradient(
  * at the specified scan point with respect to the robot pose */
 Eigen::Vector3d CostSquareError::ComputeMapNumericalGradient(
     const GridMapBase<double>& gridMap,
-    const RobotPose2D<double>& sensorPose,
+    const RobotPose2D<double>& mapLocalSensorPose,
     const double scanRange,
     const double scanAngle)
 {
@@ -241,27 +243,27 @@ Eigen::Vector3d CostSquareError::ComputeMapNumericalGradient(
     const auto mapValue = [&](const RobotPose2D<double>& pose) {
         const double cosTheta = std::cos(pose.mTheta + scanAngle);
         const double sinTheta = std::sin(pose.mTheta + scanAngle);
-        const Point2D<double> hitPoint {
+        const Point2D<double> localHitPoint {
             pose.mX + scanRange * cosTheta,
             pose.mY + scanRange * sinTheta };
         const Point2D<double> floatingIdx =
-            gridMap.WorldCoordinateToGridCellIndexFloat(hitPoint);
+            gridMap.LocalPosToGridCellIndexFloat(localHitPoint);
         return this->ComputeSmoothedValue(gridMap, floatingIdx);
     };
 
-    const double diffLinear = 1e-2;
+    const double diffLinear = gridMap.Resolution();
     const double diffAngular = 1e-2;
 
     const RobotPose2D<double> deltaX { diffLinear, 0.0, 0.0 };
     const RobotPose2D<double> deltaY { 0.0, diffLinear, 0.0 };
     const RobotPose2D<double> deltaTheta { 0.0, 0.0, diffAngular };
 
-    const double diffMapX = mapValue(sensorPose + deltaX) -
-                            mapValue(sensorPose - deltaX);
-    const double diffMapY = mapValue(sensorPose + deltaY) -
-                            mapValue(sensorPose - deltaY);
-    const double diffMapTheta = mapValue(sensorPose + deltaTheta) -
-                                mapValue(sensorPose - deltaTheta);
+    const double diffMapX = mapValue(mapLocalSensorPose + deltaX) -
+                            mapValue(mapLocalSensorPose - deltaX);
+    const double diffMapY = mapValue(mapLocalSensorPose + deltaY) -
+                            mapValue(mapLocalSensorPose - deltaY);
+    const double diffMapTheta = mapValue(mapLocalSensorPose + deltaTheta) -
+                                mapValue(mapLocalSensorPose - deltaTheta);
 
     /* Calculate gradients */
     const double gradX = 0.5 * diffMapX / diffLinear;
@@ -290,7 +292,7 @@ double CostSquareError::ComputeSmoothedValue(
             const double at2 = std::pow(at, 2.0);
             return (-at3 + 5.0 * at2 - 8.0 * at + 4.0);
         }
-        
+
         return 0.0;
     };
 
@@ -337,7 +339,7 @@ double CostSquareError::ComputeSmoothedValue(
                 f(x + x3, y + y3), f(x + x3, y + y4),
                 f(x + x4, y - y1), f(x + x4, y - y2),
                 f(x + x4, y + y3), f(x + x4, y + y4);
-    
+
     /* Compute the smoothed value */
     const double smoothedValue = vecX.transpose() * matValue * vecY;
 
