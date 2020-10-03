@@ -362,14 +362,14 @@ GridMap<T>::GridMap(const double mapResolution,
     this->mPatchSize = patchSize;
 
     /* Empty grid map with no patch is allowed */
-    initialNumOfCellsX = std::max(0, initialNumOfCellsX);
-    initialNumOfCellsY = std::max(0, initialNumOfCellsY);
+    const int numOfCellsX = std::max(0, initialNumOfCellsX);
+    const int numOfCellsY = std::max(0, initialNumOfCellsY);
 
     this->mNumOfPatchesX = static_cast<int>(std::ceil(
-        static_cast<double>(initialNumOfCellsX) /
+        static_cast<double>(numOfCellsX) /
         static_cast<double>(patchSize)));
     this->mNumOfPatchesY = static_cast<int>(std::ceil(
-        static_cast<double>(initialNumOfCellsY) /
+        static_cast<double>(numOfCellsY) /
         static_cast<double>(patchSize)));
 
     assert(this->mNumOfPatchesX >= 0);
