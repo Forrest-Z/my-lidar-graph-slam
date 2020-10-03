@@ -46,7 +46,7 @@ struct LocalMapId final
     { return this->mId >= other.mId; }
 
     /* Local grid map Id */
-    const int mId;
+    int mId;
 };
 
 /*
@@ -156,7 +156,7 @@ struct NodeId final
     { return this->mId >= other.mId; }
 
     /* Pose graph node Id */
-    const int mId;
+    int mId;
 };
 
 /*
