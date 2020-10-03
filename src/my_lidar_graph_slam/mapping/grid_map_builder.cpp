@@ -347,7 +347,7 @@ void GridMapBuilder::ConstructMapFromScans(
 
             /* Compute the hit point in a local frame */
             const RobotPose2D<double> globalHitPose =
-                scanData->GlobalHitPose(globalSensorPose, i);
+                scanData->HitPose(globalSensorPose, i);
             const RobotPose2D<double> localHitPose =
                 InverseCompound(globalMapPose, globalHitPose);
             nodeLocalHitPoses.push_back(localHitPose);
@@ -455,7 +455,7 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPointsMapLocal(
 
         /* Calculate the hit point in a local frame */
         const RobotPose2D<double> globalHitPose =
-            scanData->GlobalHitPose(globalSensorPose, i);
+            scanData->HitPose(globalSensorPose, i);
         const RobotPose2D<double> localHitPose =
             InverseCompound(globalMapPose, globalHitPose);
         localHitPoses.push_back(localHitPose);
