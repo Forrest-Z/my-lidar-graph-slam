@@ -46,11 +46,11 @@ public:
     virtual bool IsAllocated(const Point2D<int>& gridCellIdx) const = 0;
 
     /* Convert the grid cell index into the point in the local frame
-     * The returned point is the bottom-left of the grid cell */
+     * The returned point is the minimum position of the grid cell */
     virtual Point2D<double> GridCellIndexToLocalPos(
         int idxX, int idxY) const = 0;
     /* Convert the grid cell index into the point in the local frame
-     * The returned point is the bottom-left of the grid cell */
+     * The returned point is the minimum position of the grid cell */
     virtual Point2D<double> GridCellIndexToLocalPos(
         const Point2D<int>& gridCellIdx) const = 0;
 

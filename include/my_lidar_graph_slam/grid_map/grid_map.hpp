@@ -119,11 +119,11 @@ public:
     { return this->IsAllocated(gridCellIdx.mX, gridCellIdx.mY); }
 
     /* Convert the grid cell index into the point in the local frame
-     * The returned point is the bottom-left of the grid cell */
+     * The returned point is the minimum position of the grid cell */
     Point2D<double> GridCellIndexToLocalPos(
         int idxX, int idxY) const override;
     /* Convert the grid cell index into the point in the local frame
-     * The returned point is the bottom-left of the grid cell */
+     * The returned point is the minimum position of the grid cell */
     Point2D<double> GridCellIndexToLocalPos(
         const Point2D<int>& gridCellIdx) const override
     { return this->GridCellIndexToLocalPos(
@@ -776,7 +776,7 @@ bool GridMap<T>::IsInside(int idxX, int idxY) const
 }
 
 /* Convert the grid cell index into the point in the local frame
- * The returned point is the bottom-left of the grid cell */
+ * The returned point is the minimum position of the grid cell */
 template <typename T>
 Point2D<double> GridMap<T>::GridCellIndexToLocalPos(
     int idxX, int idxY) const
