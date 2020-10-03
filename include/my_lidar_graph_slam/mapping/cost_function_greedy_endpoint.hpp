@@ -17,52 +17,53 @@ class CostGreedyEndpoint final : public CostFunction
 {
 public:
     /* Constructor */
-    CostGreedyEndpoint(double usableRangeMin,
-                       double usableRangeMax,
-                       double hitAndMissedDist,
-                       double occupancyThreshold,
-                       int kernelSize,
-                       double scalingFactor,
-                       double standardDeviation);
-    
+    CostGreedyEndpoint(const double usableRangeMin,
+                       const double usableRangeMax,
+                       const double hitAndMissedDist,
+                       const double occupancyThreshold,
+                       const int kernelSize,
+                       const double scalingFactor,
+                       const double standardDeviation);
+
     /* Destructor */
     ~CostGreedyEndpoint() = default;
 
     /* Calculate cost function (mismatch between scan data and map) */
-    double Cost(const GridMapBase<double>& gridMap,
-                const Sensor::ScanDataPtr<double>& scanData,
-                const RobotPose2D<double>& sensorPose) override;
+    double Cost(
+        const GridMapBase<double>& gridMap,
+        const Sensor::ScanDataPtr<double>& scanData,
+        const RobotPose2D<double>& mapLocalSensorPose) override;
 
-    /* Calculate a gradient vector */
+    /* Calculate a gradient vector in a map-local coordinate frame */
     Eigen::Vector3d ComputeGradient(
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& sensorPose) override;
-    
-    /* Calculate a covariance matrix */
+        const RobotPose2D<double>& mapLocalSensorPose) override;
+
+    /* Calculate a covariance matrix in a map-local coordinate frame */
     Eigen::Matrix3d ComputeCovariance(
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& sensorPose) override;
+        const RobotPose2D<double>& mapLocalSensorPose) override;
 
 private:
     /* TODO: Lookup table for squared distance between grid cells */
     /* Minimum laser scan range considered for calculation */
-    double mUsableRangeMin;
+    const double mUsableRangeMin;
     /* Maximum laser scan range considered for calculation */
-    double mUsableRangeMax;
+    const double mUsableRangeMax;
     /* Distance between hit and missed grid cells */
-    double mHitAndMissedDist;
+    const double mHitAndMissedDist;
     /* Probability threshold for being obstructed */
-    double mOccupancyThreshold;
+    const double mOccupancyThreshold;
     /* Size of searching window (in the number of grid cells) */
-    int    mKernelSize;
+    const int    mKernelSize;
     /* Standard deviation of the Gaussian distribution of the error */
-    double mStandardDeviation;
+    const double mStandardDeviation;
     /* Variance of the Gaussian distribution of the error */
-    double mVariance;
+    const double mVariance;
     /* Scaling factor for cost value */
-    double mScalingFactor;
+    const double mScalingFactor;
 };
 
 } /* namespace Mapping */

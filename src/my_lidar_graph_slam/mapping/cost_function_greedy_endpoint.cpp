@@ -8,13 +8,13 @@ namespace Mapping {
 
 /* Constructor */
 CostGreedyEndpoint::CostGreedyEndpoint(
-    double usableRangeMin,
-    double usableRangeMax,
-    double hitAndMissedDist,
-    double occupancyThreshold,
-    int kernelSize,
-    double scalingFactor,
-    double standardDeviation) :
+    const double usableRangeMin,
+    const double usableRangeMax,
+    const double hitAndMissedDist,
+    const double occupancyThreshold,
+    const int kernelSize,
+    const double scalingFactor,
+    const double standardDeviation) :
     CostFunction(),
     mUsableRangeMin(usableRangeMin),
     mUsableRangeMax(usableRangeMax),
@@ -32,7 +32,7 @@ CostGreedyEndpoint::CostGreedyEndpoint(
 double CostGreedyEndpoint::Cost(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     double costValue = 0.0;
 
@@ -40,27 +40,28 @@ double CostGreedyEndpoint::Cost(
         this->mUsableRangeMin, scanData->MinRange());
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
-    
+
     const std::size_t numOfScans = scanData->NumOfScans();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
         const double scanRange = scanData->RangeAt(i);
-        
+
         if (scanRange >= maxRange || scanRange <= minRange)
             continue;
-        
+
         /* Calculate the grid cell index corresponding to the
          * scan point and the missed point */
-        Point2D<double> hitPoint;
-        Point2D<double> missedPoint;
-        scanData->HitAndMissedPoint(sensorPose, i, this->mHitAndMissedDist,
-                                    hitPoint, missedPoint);
-        
+        Point2D<double> localHitPoint;
+        Point2D<double> localMissedPoint;
+        scanData->HitAndMissedPoint(
+            mapLocalSensorPose, i, this->mHitAndMissedDist,
+            localHitPoint, localMissedPoint);
+
         const Point2D<int> hitPointIdx =
-            gridMap.WorldCoordinateToGridCellIndex(hitPoint);
+            gridMap.LocalPosToGridCellIndex(localHitPoint);
         const Point2D<int> missedPointIdx =
-            gridMap.WorldCoordinateToGridCellIndex(missedPoint);
-        
+            gridMap.LocalPosToGridCellIndex(localMissedPoint);
+
         /* Find the best grid cell index from the searching window */
         const double unknownVal = gridMap.UnknownValue();
         double minSquaredDist = gridMap.SquaredDistance(
@@ -72,17 +73,17 @@ double CostGreedyEndpoint::Cost(
                     hitPointIdx.mX + kx, hitPointIdx.mY + ky };
                 const double hitCellValue =
                     gridMap.Value(hitIdx, unknownVal);
-                
+
                 const Point2D<int> missedIdx {
                     missedPointIdx.mX + kx, missedPointIdx.mY + ky };
                 const double missedCellValue =
                     gridMap.Value(missedIdx, unknownVal);
-                
+
                 /* Skip if the grid cell has unknown occupancy probability */
                 if (hitCellValue == unknownVal ||
                     missedCellValue == unknownVal)
                     continue;
-                
+
                 /* Skip if the occupancy probability of the grid cell
                  * that is assumed to be hit is less than the threshold or
                  * the occupancy probability of the missed grid cell
@@ -90,14 +91,14 @@ double CostGreedyEndpoint::Cost(
                 if (hitCellValue < this->mOccupancyThreshold ||
                     missedCellValue > this->mOccupancyThreshold)
                     continue;
-                
+
                 /* Calculate the distance between two grid cells */
                 const double squaredDist =
                     gridMap.SquaredDistance(hitPointIdx, hitIdx);
                 minSquaredDist = std::min(squaredDist, minSquaredDist);
             }
         }
-        
+
         /* Add to the cost value, which is proportional to the negative
          * log-likelihood of the observation probability and represents the
          * degree of the mismatch between the laser scan and the grid map */
@@ -110,11 +111,11 @@ double CostGreedyEndpoint::Cost(
     return costValue;
 }
 
-/* Calculate a gradient vector */
+/* Calculate a gradient vector in a map-local coordinate frame */
 Eigen::Vector3d CostGreedyEndpoint::ComputeGradient(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     /* Compute the step */
     const double diffLinear = gridMap.Resolution();
@@ -127,14 +128,14 @@ Eigen::Vector3d CostGreedyEndpoint::ComputeGradient(
 
     const auto costValue = [&](const RobotPose2D<double>& pose) {
         return this->Cost(gridMap, scanData, pose); };
-    
-    const double diffCostX = costValue(sensorPose + deltaX) -
-                             costValue(sensorPose - deltaX);
-    const double diffCostY = costValue(sensorPose + deltaY) -
-                             costValue(sensorPose - deltaY);
-    const double diffCostTheta = costValue(sensorPose + deltaTheta) -
-                                 costValue(sensorPose - deltaTheta);
-    
+
+    const double diffCostX = costValue(mapLocalSensorPose + deltaX) -
+                             costValue(mapLocalSensorPose - deltaX);
+    const double diffCostY = costValue(mapLocalSensorPose + deltaY) -
+                             costValue(mapLocalSensorPose - deltaY);
+    const double diffCostTheta = costValue(mapLocalSensorPose + deltaTheta) -
+                                 costValue(mapLocalSensorPose - deltaTheta);
+
     /* Calculate gradients */
     const double gradX = 0.5 * diffCostX / diffLinear;
     const double gradY = 0.5 * diffCostY / diffLinear;
@@ -143,11 +144,11 @@ Eigen::Vector3d CostGreedyEndpoint::ComputeGradient(
     return Eigen::Vector3d { gradX, gradY, gradTheta };
 }
 
-/* Calculate a covariance matrix */
+/* Calculate a covariance matrix in a map-local coordinate frame */
 Eigen::Matrix3d CostGreedyEndpoint::ComputeCovariance(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     /* Approximate a covariance matrix using Laplace approximation
      * Covariance matrix is computed from the inverse of a Hessian matrix
@@ -157,7 +158,7 @@ Eigen::Matrix3d CostGreedyEndpoint::ComputeCovariance(
 
     /* Calculate the gradient vector */
     const Eigen::Vector3d gradVec =
-        this->ComputeGradient(gridMap, scanData, sensorPose);
+        this->ComputeGradient(gridMap, scanData, mapLocalSensorPose);
 
     /* Create a covariance matrix */
     Eigen::Matrix3d covMat = gradVec * gradVec.transpose();
