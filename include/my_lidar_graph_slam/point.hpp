@@ -20,9 +20,9 @@ struct Point2D final
     Point2D() = default;
 
     /* Constructor with initial coordinates */
-    Point2D(T x, T y) :
+    constexpr Point2D(T x, T y) :
         mX(x), mY(y) { }
-    
+
     /* Cast operator */
     template <typename U, std::enable_if_t<
         std::is_constructible_v<U, T>, std::nullptr_t> = nullptr>

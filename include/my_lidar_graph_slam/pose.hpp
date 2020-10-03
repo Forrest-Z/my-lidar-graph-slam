@@ -20,9 +20,9 @@ struct RobotPose2D final
     RobotPose2D() = default;
 
     /* Constructor with initial coordinates */
-    RobotPose2D(T x, T y, T theta) :
+    constexpr RobotPose2D(T x, T y, T theta) :
         mX(x), mY(y), mTheta(theta) { }
-    
+
     /* Cast operator */
     template <typename U, std::enable_if_t<
         std::is_constructible_v<U, T>, std::nullptr_t> = nullptr>
