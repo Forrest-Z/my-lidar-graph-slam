@@ -201,6 +201,9 @@ struct ScanNode final
 class ScanNodeMap final
 {
 public:
+    /* Type definition for convenience */
+    using MapType = std::map<NodeId, ScanNode>;
+
     /* Constructor */
     ScanNodeMap() = default;
     /* Destructor */
@@ -212,8 +215,17 @@ public:
     NodeId NodeIdMax() const;
 
     /* Get the map of the scan nodes */
-    inline const std::map<NodeId, ScanNode>& Nodes() const
+    inline const MapType& Nodes() const
     { return this->mNodes; }
+
+    /* Get the iterator pointing to the first scan node whose Id is
+     * greater than the specified Id */
+    inline MapType::const_iterator UpperBound(const NodeId nodeId) const
+    { return this->mNodes.upper_bound(nodeId); }
+    /* Get the iterator pointing to the first scan node whose Id is
+     * greater than or equal to the specified Id */
+    inline MapType::const_iterator LowerBound(const NodeId nodeId) const
+    { return this->mNodes.lower_bound(nodeId); }
 
     /* Check if the scan node with the specified Id exists */
     inline bool Contains(const NodeId nodeId) const
@@ -243,7 +255,7 @@ private:
 
 private:
     /* Map of the scan nodes */
-    std::map<NodeId, ScanNode> mNodes;
+    MapType mNodes;
 };
 
 /*
