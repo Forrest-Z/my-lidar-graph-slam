@@ -360,8 +360,8 @@ void MapSaver::DrawTrajectory(
     Assert(scanNodeIdMax <= scanNodes.NodeIdMax());
 
     /* Get the iterators to the scan nodes with the specified Ids */
-    auto firstIt = scanNodes.Nodes().lower_bound(scanNodeIdMin);
-    auto lastIt = scanNodes.Nodes().upper_bound(scanNodeIdMax);
+    auto firstIt = scanNodes.LowerBound(scanNodeIdMin);
+    auto lastIt = scanNodes.UpperBound(scanNodeIdMax);
 
     /* Make sure that the iterator to the minimum Id is valid */
     Assert(firstIt != scanNodes.Nodes().end());
