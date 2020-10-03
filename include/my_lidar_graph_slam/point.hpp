@@ -13,6 +13,9 @@ namespace MyLidarGraphSlam {
 template <typename T>
 struct Point2D final
 {
+    /* Type of the coordinate */
+    using ValueType = T;
+
     /* Default constructor */
     Point2D() = default;
 
@@ -29,13 +32,13 @@ struct Point2D final
                             static_cast<U>(this->mY) };
     }
 
+    /* Origin point */
+    static constexpr Point2D Zero { 0.0, 0.0 };
+
     /* X-coordinate of the point */
     T mX;
     /* Y-coordinate of the point */
     T mY;
-
-    /* Type of the coordinate */
-    using ValueType = T;
 };
 
 /* Unary plus operator */
