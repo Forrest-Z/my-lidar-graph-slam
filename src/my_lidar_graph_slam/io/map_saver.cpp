@@ -430,17 +430,17 @@ void MapSaver::DrawScan(
 
     const RobotPose2D<double> globalSensorPose =
         Compound(globalScanPose, scanData->RelativeSensorPose());
+    const RobotPose2D<double> localSensorPose =
+        InverseCompound(globalGridMapPose, globalSensorPose);
     const std::size_t numOfScans = scanData->NumOfScans();
 
     for (std::size_t i = 0; i < numOfScans; ++i) {
         /* Calculate the grid cell index */
-        const RobotPose2D<double> globalHitPose =
-            scanData->HitPose(globalSensorPose, i);
-        const RobotPose2D<double> localHitPose =
-            InverseCompound(globalGridMapPose, globalHitPose);
+        const Point2D<double> localHitPoint =
+            scanData->HitPoint(localSensorPose, i);
         const Point2D<int> hitPointIdx =
             gridMap.LocalPosToGridCellIndex(
-                localHitPose.mX, localHitPose.mY);
+                localHitPoint.mX, localHitPoint.mY);
 
         if (hitPointIdx.mX < gridCellIdxMin.mX ||
             hitPointIdx.mX >= gridCellIdxMax.mX - 1 ||
