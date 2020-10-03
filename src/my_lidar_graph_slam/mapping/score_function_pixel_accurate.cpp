@@ -16,11 +16,10 @@ ScorePixelAccurate::ScorePixelAccurate(
 }
 
 /* Evaluate score function (matching score between scan data and map) */
-void ScorePixelAccurate::Score(
+ScoreFunction::Summary ScorePixelAccurate::Score(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& mapLocalSensorPose,
-    Summary& resultSummary)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     double sumScore = 0.0;
 
@@ -63,16 +62,12 @@ void ScorePixelAccurate::Score(
         sumScore / static_cast<double>(scanData->NumOfScans());
 
     /* Calculate the rate of valid grid cells */
-    const double matchRate =
+    const double knownRate =
         static_cast<double>(numOfKnownGridCells) /
         static_cast<double>(numOfScans);
 
-    /* Set the result summary */
-    resultSummary.mScore = sumScore;
-    resultSummary.mNormalizedScore = normalizedScore;
-    resultSummary.mMatchRate = matchRate;
-
-    return;
+    /* Return the score evaluation summary */
+    return Summary { normalizedScore, sumScore, knownRate };
 }
 
 } /* namespace Mapping */

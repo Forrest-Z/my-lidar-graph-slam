@@ -20,11 +20,10 @@ public:
     ~ScorePixelAccurate() = default;
 
     /* Evaluate score function (matching score between scan data and map) */
-    void Score(
+    Summary Score(
         const GridMapBase<double>& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& mapLocalSensorPose,
-        Summary& resultSummary) override;
+        const RobotPose2D<double>& mapLocalSensorPose) override;
 
 private:
     /* Minimum laser scan range considered for calculation */
