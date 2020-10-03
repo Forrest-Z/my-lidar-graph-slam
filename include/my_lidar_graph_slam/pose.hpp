@@ -13,6 +13,9 @@ namespace MyLidarGraphSlam {
 template <typename T>
 struct RobotPose2D final
 {
+    /* Type of the coordinate */
+    using ValueType = T;
+
     /* Default constructor */
     RobotPose2D() = default;
 
@@ -29,16 +32,16 @@ struct RobotPose2D final
                                 static_cast<U>(this->mY),
                                 static_cast<U>(this->mTheta) };
     }
-    
+
+    /* Origin pose */
+    static constexpr RobotPose2D Zero { 0.0, 0.0, 0.0 };
+
     /* X-coordinate of the robot */
     T mX;
     /* Y-coordinate of the robot */
     T mY;
     /* Rotation angle (yaw angle) of the robot */
     T mTheta;
-
-    /* Type of the coordinate */
-    using ValueType = T;
 };
 
 /* Unary plus operator */
