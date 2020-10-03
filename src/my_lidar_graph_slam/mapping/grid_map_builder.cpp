@@ -18,21 +18,22 @@ namespace Mapping {
 
 /* Constructor */
 GridMapBuilder::GridMapBuilder(
-    double mapResolution,
-    int patchSize,
-    int numOfScansForLatestMap,
-    double travelDistThreshold,
-    double usableRangeMin,
-    double usableRangeMax,
-    double probHit,
-    double probMiss) :
+    const double mapResolution,
+    const int patchSize,
+    const int numOfScansForLatestMap,
+    const double travelDistThreshold,
+    const double usableRangeMin,
+    const double usableRangeMax,
+    const double probHit,
+    const double probMiss) :
     mResolution(mapResolution),
     mPatchSize(patchSize),
     mLatestMap(mapResolution, patchSize, 0, 0, Point2D<double>(0.0, 0.0)),
+    mLatestMapPose(0.0, 0.0, 0.0),
     mAccumTravelDist(0.0),
     mNumOfScansForLatestMap(numOfScansForLatestMap),
-    mLatestScanIdxMin(0),
-    mLatestScanIdxMax(0),
+    mLatestScanIdMin(0),
+    mLatestScanIdMax(0),
     mLastRobotPose(0.0, 0.0, 0.0),
     mTravelDistLastLocalMap(0.0),
     mRobotPoseLastLocalMap(0.0, 0.0, 0.0),
@@ -46,71 +47,94 @@ GridMapBuilder::GridMapBuilder(
 
 /* Append the new scan data */
 bool GridMapBuilder::AppendScan(
-    const std::shared_ptr<PoseGraph>& poseGraph)
+    LocalMapNodeMap& localMapNodes,
+    const ScanNodeMap& scanNodes)
 {
     /* Update the grid map */
-    const bool localMapCreated = this->UpdateGridMap(poseGraph);
-
+    const bool localMapCreated = this->UpdateGridMap(localMapNodes, scanNodes);
     /* Update the grid map with latest scans */
-    this->UpdateLatestMap(poseGraph);
-
+    this->UpdateLatestMap(scanNodes);
     /* Return whether the new local map is created */
     return localMapCreated;
 }
 
 /* Re-create the local grid maps and latest map after the loop closure */
 void GridMapBuilder::AfterLoopClosure(
-    const std::shared_ptr<PoseGraph>& poseGraph)
+    const LocalMapNodeMap& localMapNodes,
+    const ScanNodeMap& scanNodes)
 {
     /* Update the all local grid maps */
-    for (auto& localMapInfo : this->mLocalMaps) {
-        this->ConstructMapFromScans(localMapInfo.mMap, poseGraph,
-                                    localMapInfo.mPoseGraphNodeIdxMin,
-                                    localMapInfo.mPoseGraphNodeIdxMax);
+    for (auto& localMapData : this->mLocalMaps) {
+        /* Retrieve the local map Id and global pose */
+        const LocalMapId localMapId = localMapData.mId;
+        const RobotPose2D<double>& globalMapPose =
+            localMapNodes.At(localMapId).mGlobalPose;
+
+        /* Reconstruct a local map */
+        this->ConstructMapFromScans(
+            globalMapPose, localMapData.mMap, scanNodes,
+            localMapData.mScanNodeIdMin, localMapData.mScanNodeIdMax);
+
         /* Reset the precomputed grid maps */
-        localMapInfo.mPrecomputedMaps.clear();
-        localMapInfo.mPrecomputed = false;
+        localMapData.mPrecomputedMaps.clear();
+        localMapData.mPrecomputed = false;
     }
 
-    /* Update the grid map with latest scans */
-    this->UpdateLatestMap(poseGraph);
+    /* Update the latest grid map with latest scans */
+    this->UpdateLatestMap(scanNodes);
 
     /* Update the accumulated travel distance */
-    this->UpdateAccumTravelDist(poseGraph);
+    this->UpdateAccumTravelDist(scanNodes);
 }
 
 /* Construct the global grid map */
-GridMapType GridMapBuilder::ConstructGlobalMap(
-    const std::shared_ptr<PoseGraph>& poseGraph) const
+void GridMapBuilder::ConstructGlobalMap(
+    const ScanNodeMap& scanNodes,
+    RobotPose2D<double>& globalMapPose,
+    GridMapType& globalMap)
 {
-    const int nodeIdxMin = poseGraph->Nodes().front().Index();
-    const int nodeIdxMax = poseGraph->Nodes().back().Index();
+    /* Use all acquired scan data to build a global map */
+    const NodeId scanNodeIdMin = scanNodes.NodeIdMin();
+    const NodeId scanNodeIdMax = scanNodes.NodeIdMax();
+
+    /* World coordinate pose of the latest scan node is used as the map pose */
+    const RobotPose2D<double> mapPose = scanNodes.LatestNode().mGlobalPose;
+    /* The above pose is the center of the local map coordinate */
+    const Point2D<double> localCenterPos = Point2D<double>::Zero;
 
     /* Construct the global map */
     GridMapType gridMap { this->mResolution, this->mPatchSize,
-                          0, 0, Point2D<double>(0.0, 0.0) };
-    this->ConstructMapFromScans(gridMap, poseGraph, nodeIdxMin, nodeIdxMax);
+                          0, 0, localCenterPos };
+    this->ConstructMapFromScans(mapPose, gridMap, scanNodes,
+                                scanNodeIdMin, scanNodeIdMax);
 
-    return gridMap;
+    /* Set the result */
+    globalMapPose = mapPose;
+    globalMap = std::move(gridMap);
+
+    return;
 }
 
 /* Update the grid map (list of the local grid maps) */
 bool GridMapBuilder::UpdateGridMap(
-    const std::shared_ptr<PoseGraph>& poseGraph)
+    LocalMapNodeMap& localMapNodes,
+    const ScanNodeMap& scanNodes)
 {
-    /* Current robot pose (stored in the latest pose graph node) */
-    const RobotPose2D<double>& robotPose = poseGraph->LatestNode().Pose();
-    /* Current scan data (stored in the latest pose graph node) */
-    const auto& scanData = poseGraph->LatestNode().ScanData();
-    /* Current node index */
-    const int nodeIdx = poseGraph->LatestNode().Index();
+    /* Retrieve the latest scan node */
+    const auto& latestScanNode = scanNodes.LatestNode();
+    /* Current robot pose (stored in the latest scan node) */
+    const RobotPose2D<double>& globalRobotPose = latestScanNode.mGlobalPose;
+    /* Current scan data (stored in the latest scan node) */
+    const auto& scanData = latestScanNode.mScanData;
+    /* Current scan node Id */
+    const NodeId scanNodeId = latestScanNode.mNodeId;
 
     /* Calculate the relative robot pose since the last method call */
     const RobotPose2D<double> relRobotPose = (this->mLocalMaps.size() == 0) ?
         RobotPose2D<double>(0.0, 0.0, 0.0) :
-        InverseCompound(this->mLastRobotPose, robotPose);
+        InverseCompound(this->mLastRobotPose, globalRobotPose);
 
-    this->mLastRobotPose = robotPose;
+    this->mLastRobotPose = globalRobotPose;
 
     /* Update the accumulated travel distance */
     this->mAccumTravelDist += Distance(relRobotPose);
@@ -129,48 +153,66 @@ bool GridMapBuilder::UpdateGridMap(
         if (this->mLocalMaps.size() > 0)
             this->mLocalMaps.back().mFinished = true;
 
+        /* Determine the Id of the new local map */
+        const LocalMapId localMapId = this->mLocalMaps.empty() ?
+            LocalMapId { 0 } :
+            LocalMapId { this->mLocalMaps.back().mId.mId + 1 };
+        /* Insert a local map node to the pose graph */
+        localMapNodes.Append(localMapId, globalRobotPose);
+
+        /* Current robot pose in a world frame is used as the
+         * origin of the local map coordinate */
+        const Point2D<double> centerPos { 0.0, 0.0 };
         /* Create a new local map */
-        const int localMapIdx = static_cast<int>(this->mLocalMaps.size());
-        const Point2D<double> centerPos { robotPose.mX, robotPose.mY };
         GridMapType newLocalMap {
             this->mResolution, this->mPatchSize, 0, 0, centerPos };
         this->mLocalMaps.emplace_back(
-            localMapIdx, std::move(newLocalMap), nodeIdx);
+            localMapId, std::move(newLocalMap), scanNodeId);
 
         /* Reset the variables properly */
         this->mTravelDistLastLocalMap = 0.0;
-        this->mRobotPoseLastLocalMap = robotPose;
+        this->mRobotPoseLastLocalMap = globalRobotPose;
     }
 
     /* Local map to which the latest scan is added */
-    LocalMapInfo& localMapInfo = this->mLocalMaps.back();
-    GridMapType& localMap = localMapInfo.mMap;
+    LocalMap& localMapData = this->mLocalMaps.back();
+    GridMapType& localMap = localMapData.mMap;
+
+    /* Local map pose in a world frame */
+    const RobotPose2D<double>& globalMapPose =
+        localMapNodes.LatestNode().mGlobalPose;
 
     /* Compute the scan points and bounding box */
-    Point2D<double> scanBottomLeft;
-    Point2D<double> scanTopRight;
-    std::vector<Point2D<double>> hitPoints;
-    this->ComputeBoundingBoxAndScanPoints(
-        robotPose, scanData, scanBottomLeft, scanTopRight, hitPoints);
+    Point2D<double> localMinPos;
+    Point2D<double> localMaxPos;
+    std::vector<RobotPose2D<double>> localHitPoses;
+    this->ComputeBoundingBoxAndScanPointsMapLocal(
+        globalMapPose, globalRobotPose, scanData,
+        localMinPos, localMaxPos, localHitPoses);
 
     /* Expand the local map so that it can contain the latest scan */
-    localMap.Expand(scanBottomLeft.mX, scanBottomLeft.mY,
-                    scanTopRight.mX, scanTopRight.mY);
+    localMap.Expand(localMinPos.mX, localMinPos.mY,
+                    localMaxPos.mX, localMaxPos.mY);
 
     /* Compute the sensor pose from the robot pose */
-    const RobotPose2D<double> sensorPose =
-        Compound(robotPose, scanData->RelativeSensorPose());
+    const RobotPose2D<double> globalSensorPose =
+        Compound(globalRobotPose, scanData->RelativeSensorPose());
+    /* Compute the sensor pose in a local map coordinate */
+    const RobotPose2D<double> localSensorPose =
+        InverseCompound(globalMapPose, globalSensorPose);
     /* Calculate the grid cell index corresponding to the sensor pose */
     const Point2D<int> sensorGridCellIdx =
-        localMap.WorldCoordinateToGridCellIndex(sensorPose.mX, sensorPose.mY);
+        localMap.LocalPosToGridCellIndex(
+            localSensorPose.mX, localSensorPose.mY);
 
     /* Integrate the scan into the local map */
-    const std::size_t numOfFilteredScans = hitPoints.size();
+    const std::size_t numOfFilteredScans = localHitPoses.size();
 
     for (std::size_t i = 0; i < numOfFilteredScans; ++i) {
         /* Compute the index of the hit grid cell */
         const Point2D<int> hitGridCellIdx =
-            localMap.WorldCoordinateToGridCellIndex(hitPoints[i]);
+            localMap.LocalPosToGridCellIndex(
+                localHitPoses[i].mX, localHitPoses[i].mY);
 
         /* Compute the indices of the missed grid cells */
         const std::vector<Point2D<int>> missedGridCellIndices =
@@ -186,72 +228,105 @@ bool GridMapBuilder::UpdateGridMap(
     }
 
     /* Update the index of the pose graph node */
-    localMapInfo.mPoseGraphNodeIdxMax = nodeIdx;
+    localMapData.mScanNodeIdMax = scanNodeId;
 
     /* Return whether the new local map is created */
     return createNewLocalMap;
 }
 
 /* Update the grid map with the latest scans */
-void GridMapBuilder::UpdateLatestMap(
-    const std::shared_ptr<PoseGraph>& poseGraph)
+void GridMapBuilder::UpdateLatestMap(const ScanNodeMap& scanNodes)
 {
-    /* Calculate the minimum and maximum node index */
-    this->mLatestScanIdxMin = std::max(
-        0, poseGraph->LatestNode().Index() - this->mNumOfScansForLatestMap + 1);
-    this->mLatestScanIdxMax = poseGraph->LatestNode().Index();
+    /* Make sure that the pose graph is not empty */
+    Assert(!scanNodes.Nodes().empty());
 
+    /* Get the iterator pointing to the scan nodes used for latest maps */
+    const int numOfScansForMap =
+        std::min(1, this->mNumOfScansForLatestMap);
+    const auto lastNodeIt = scanNodes.Nodes().rbegin();
+    const auto latestNodeIt = std::next(lastNodeIt, numOfScansForMap);
+
+    /* Calculate the minimum and maximum scan node Id */
+    this->mLatestScanIdMin = latestNodeIt->first;
+    this->mLatestScanIdMax = lastNodeIt->first;
+
+    /* Update the pose of the latest map */
+    this->mLatestMapPose = latestNodeIt->second.mGlobalPose;
+
+    /* Update the latest map */
     this->ConstructMapFromScans(
-        this->mLatestMap, poseGraph,
-        this->mLatestScanIdxMin, this->mLatestScanIdxMax);
+        this->mLatestMapPose, this->mLatestMap, scanNodes,
+        this->mLatestScanIdMin, this->mLatestScanIdMax);
+
+    return;
 }
 
 /* Update the accumulated travel distance after the loop closure */
-void GridMapBuilder::UpdateAccumTravelDist(
-    const std::shared_ptr<PoseGraph>& poseGraph)
+void GridMapBuilder::UpdateAccumTravelDist(const ScanNodeMap& scanNodes)
 {
+    /* Reset the accumulated travel distance */
     this->mAccumTravelDist = 0.0;
 
-    const int numOfNodes = static_cast<int>(poseGraph->Nodes().size());
+    /* Retrieve the two iterators pointing to the first scan node and
+     * the node following to the last scan node */
+    auto nodeIt = scanNodes.Nodes().begin();
+    auto endIt = scanNodes.Nodes().end();
+    auto nextIt = std::next(nodeIt);
+
+    /* Return if the scan nodes are empty or only one scan node exists
+     * `nextIt` is invalid and undefined behaviour if there is no node */
+    if (nodeIt == endIt || nextIt == endIt)
+        return;
 
     /* Accumulate the travel distance using pose graph nodes */
-    for (int i = 1; i < numOfNodes; ++i) {
-        const auto& prevNode = poseGraph->NodeAt(i - 1);
-        const auto& node = poseGraph->NodeAt(i);
-
-        this->mAccumTravelDist += Distance(prevNode.Pose(), node.Pose());
+    for (; nextIt != endIt; ++nodeIt, ++nextIt) {
+        const RobotPose2D<double>& nodePose = nodeIt->second.mGlobalPose;
+        const RobotPose2D<double>& nextNodePose = nextIt->second.mGlobalPose;
+        this->mAccumTravelDist += Distance(nodePose, nextNodePose);
     }
 }
 
 /* Construct the grid map from the specified scans */
 void GridMapBuilder::ConstructMapFromScans(
+    const RobotPose2D<double>& globalMapPose,
     GridMapType& gridMap,
-    const std::shared_ptr<PoseGraph>& poseGraph,
-    int poseGraphNodeIdxMin,
-    int poseGraphNodeIdxMax) const
+    const ScanNodeMap& scanNodes,
+    const NodeId scanNodeIdMin,
+    const NodeId scanNodeIdMax) const
 {
-    /* Compute the scan points and bounding box */
-    Point2D<double> bottomLeft { std::numeric_limits<double>::max(),
+    /* Get the iterators to the scan nodes */
+    auto firstNodeIt = scanNodes.LowerBound(scanNodeIdMin);
+    auto lastNodeIt = scanNodes.UpperBound(scanNodeIdMax);
+
+    /* Make sure that at least one scan data is used to build a map
+     * Otherwise the bounding box below is not updated and causes a overflow */
+    Assert(firstNodeIt != lastNodeIt);
+
+    /* Compute the scan points and bounding box in a grid map frame */
+    Point2D<double> localMinPos { std::numeric_limits<double>::max(),
                                  std::numeric_limits<double>::max() };
-    Point2D<double> topRight { std::numeric_limits<double>::min(),
+    Point2D<double> localMaxPos { std::numeric_limits<double>::min(),
                                std::numeric_limits<double>::min() };
-    std::map<int, std::vector<Point2D<double>>> hitPoints;
+    std::map<NodeId, std::vector<RobotPose2D<double>>> localHitPoses;
 
-    for (int nodeIdx = poseGraphNodeIdxMin;
-         nodeIdx <= poseGraphNodeIdxMax; ++nodeIdx) {
-        /* Retrieve the pose and scan data in the node */
-        const PoseGraph::Node& node = poseGraph->NodeAt(nodeIdx);
-        const RobotPose2D<double>& nodePose = node.Pose();
-        const auto& scanData = node.ScanData();
+    for (auto nodeIt = firstNodeIt; nodeIt != lastNodeIt; ++nodeIt) {
+        /* Retrieve the pose and scan data in the scan node */
+        const NodeId scanNodeId = nodeIt->first;
+        const auto& scanNode = nodeIt->second;
+        const RobotPose2D<double>& globalNodePose = scanNode.mGlobalPose;
+        const auto& scanData = scanNode.mScanData;
 
-        /* Compute the sensor pose from the node pose */
-        const RobotPose2D<double> sensorPose =
-            Compound(nodePose, scanData->RelativeSensorPose());
+        /* Compute the global sensor pose from the node pose */
+        const RobotPose2D<double> globalSensorPose =
+            Compound(globalNodePose, scanData->RelativeSensorPose());
+        /* Compute the local sensor pose */
+        const RobotPose2D<double> localSensorPose =
+            InverseCompound(globalMapPose, globalSensorPose);
 
-        bottomLeft.mX = std::min(bottomLeft.mX, sensorPose.mX);
-        bottomLeft.mY = std::min(bottomLeft.mY, sensorPose.mY);
-        topRight.mX = std::max(topRight.mX, sensorPose.mX);
-        topRight.mY = std::max(topRight.mY, sensorPose.mY);
+        localMinPos.mX = std::min(localMinPos.mX, localSensorPose.mX);
+        localMinPos.mY = std::min(localMinPos.mY, localSensorPose.mY);
+        localMaxPos.mX = std::max(localMaxPos.mX, localSensorPose.mX);
+        localMaxPos.mY = std::max(localMaxPos.mY, localSensorPose.mY);
 
         /* Compute the minimum and maximum range of the scan */
         const double minRange = std::max(
@@ -261,8 +336,8 @@ void GridMapBuilder::ConstructMapFromScans(
 
         /* Compute the scan points and bounding box */
         const std::size_t numOfScans = scanData->NumOfScans();
-        std::vector<Point2D<double>> nodeHitPoints;
-        nodeHitPoints.reserve(numOfScans);
+        std::vector<RobotPose2D<double>> nodeLocalHitPoses;
+        nodeLocalHitPoses.reserve(numOfScans);
 
         for (std::size_t i = 0; i < numOfScans; ++i) {
             const double scanRange = scanData->RangeAt(i);
@@ -270,49 +345,59 @@ void GridMapBuilder::ConstructMapFromScans(
             if (scanRange >= maxRange || scanRange <= minRange)
                 continue;
 
-            /* Compute the hit grid cell point */
-            const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
-            nodeHitPoints.push_back(hitPoint);
+            /* Compute the hit point in a local frame */
+            const RobotPose2D<double> globalHitPose =
+                scanData->GlobalHitPose(globalSensorPose, i);
+            const RobotPose2D<double> localHitPose =
+                InverseCompound(globalMapPose, globalHitPose);
+            nodeLocalHitPoses.push_back(localHitPose);
 
             /* Update the bounding box */
-            bottomLeft.mX = std::min(bottomLeft.mX, hitPoint.mX);
-            bottomLeft.mY = std::min(bottomLeft.mY, hitPoint.mY);
-            topRight.mX = std::max(topRight.mX, hitPoint.mX);
-            topRight.mY = std::max(topRight.mY, hitPoint.mY);
+            localMinPos.mX = std::min(localMinPos.mX, localHitPose.mX);
+            localMinPos.mY = std::min(localMinPos.mY, localHitPose.mY);
+            localMaxPos.mX = std::max(localMaxPos.mX, localHitPose.mX);
+            localMaxPos.mY = std::max(localMaxPos.mY, localHitPose.mY);
         }
 
-        hitPoints.emplace(nodeIdx, std::move(nodeHitPoints));
+        localHitPoses.emplace(scanNodeId, std::move(nodeLocalHitPoses));
     }
 
     /* Create a new grid map that contains all scan points */
-    gridMap.Resize(bottomLeft.mX, bottomLeft.mY,
-                   topRight.mX, topRight.mY);
+    gridMap.Resize(localMinPos.mX, localMinPos.mY,
+                   localMaxPos.mX, localMaxPos.mY);
     gridMap.Reset();
 
-    /* Integrate the scan into the grid map */
-    for (int nodeIdx = poseGraphNodeIdxMin;
-         nodeIdx <= poseGraphNodeIdxMax; ++nodeIdx) {
-        /* Retrieve the pose in the node */
-        const PoseGraph::Node& node = poseGraph->NodeAt(nodeIdx);
-        const RobotPose2D<double>& nodePose = node.Pose();
-        const auto& scanData = node.ScanData();
+    /* Integrate the scan into the grid map
+     * Reuse the same iterators as above since the pose graph is constant */
+    for (auto nodeIt = firstNodeIt; nodeIt != lastNodeIt; ++nodeIt) {
+        /* Retrieve the pose and scan data in the scan node */
+        const NodeId scanNodeId = nodeIt->first;
+        const auto& scanNode = nodeIt->second;
+        const RobotPose2D<double>& globalNodePose = scanNode.mGlobalPose;
+        const auto& scanData = scanNode.mScanData;
 
-        /* Compute the sensor pose from the node pose */
-        const RobotPose2D<double> sensorPose =
-            Compound(nodePose, scanData->RelativeSensorPose());
+        /* Compute the global sensor pose from the node pose */
+        const RobotPose2D<double> globalSensorPose =
+            Compound(globalNodePose, scanData->RelativeSensorPose());
+        /* Compute the local sensor pose */
+        const RobotPose2D<double> localSensorPose =
+            InverseCompound(globalMapPose, globalSensorPose);
         /* Compute the grid cell index corresponding to the sensor pose */
         const Point2D<int> sensorGridCellIdx =
-            gridMap.WorldCoordinateToGridCellIndex(
-                sensorPose.mX, sensorPose.mY);
+            gridMap.LocalPosToGridCellIndex(
+                localSensorPose.mX, localSensorPose.mY);
 
         /* Integrate the scan into the grid map */
-        const std::size_t numOfFilteredScans = hitPoints[nodeIdx].size();
+        const std::size_t numOfFilteredScans = localHitPoses[scanNodeId].size();
 
         for (std::size_t i = 0; i < numOfFilteredScans; ++i) {
+            /* Retrieve the hit point in a local frame */
+            const RobotPose2D<double>& localHitPose =
+                localHitPoses[scanNodeId].at(i);
             /* Compute the index of the hit grid cell */
             const Point2D<int> hitGridCellIdx =
-                gridMap.WorldCoordinateToGridCellIndex(
-                    hitPoints[nodeIdx].at(i));
+                gridMap.LocalPosToGridCellIndex(
+                    localHitPose.mX, localHitPose.mY);
 
             /* Compute the indices of the missed grid cells */
             const std::vector<Point2D<int>> missedGridCellIndices =
@@ -331,28 +416,29 @@ void GridMapBuilder::ConstructMapFromScans(
     return;
 }
 
-/* Compute the bounding box of the scan and scan points */
-void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
-    const RobotPose2D<double>& robotPose,
+/* Compute the bounding box of the scan and scan points in a local frame */
+void GridMapBuilder::ComputeBoundingBoxAndScanPointsMapLocal(
+    const RobotPose2D<double>& globalMapPose,
+    const RobotPose2D<double>& globalRobotPose,
     const Sensor::ScanDataPtr<double>& scanData,
-    Point2D<double>& bottomLeft,
-    Point2D<double>& topRight,
-    std::vector<Point2D<double>>& hitPoints)
+    Point2D<double>& localMinPos,
+    Point2D<double>& localMaxPos,
+    std::vector<RobotPose2D<double>>& localHitPoses)
 {
     /* Compute the sensor pose from the robot pose */
-    const RobotPose2D<double> sensorPose =
-        Compound(robotPose, scanData->RelativeSensorPose());
+    const RobotPose2D<double> globalSensorPose =
+        Compound(globalRobotPose, scanData->RelativeSensorPose());
 
-    /* Bottom-left corner position of the given scan */
-    bottomLeft.mX = sensorPose.mX;
-    bottomLeft.mY = sensorPose.mY;
+    /* Initialize the minimum coordinate of the given scan */
+    localMinPos.mX = globalSensorPose.mX;
+    localMinPos.mY = globalSensorPose.mY;
 
-    /* Top-right corner position of the given scan */
-    topRight.mX = sensorPose.mX;
-    topRight.mY = sensorPose.mY;
+    /* Initialize the maximum coordinate of the given scan */
+    localMaxPos.mX = globalSensorPose.mX;
+    localMaxPos.mY = globalSensorPose.mY;
 
     const std::size_t numOfScans = scanData->NumOfScans();
-    hitPoints.reserve(numOfScans);
+    localHitPoses.reserve(numOfScans);
 
     /* Minimum and maximum range of the scan */
     const double minRange = std::max(
@@ -360,23 +446,28 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPoints(
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
 
-    /* Calculate the bounding box and scan points */
+    /* Calculate the bounding box and scan points in a local frame */
     for (std::size_t i = 0; i < numOfScans; ++i) {
         const double scanRange = scanData->RangeAt(i);
 
         if (scanRange >= maxRange || scanRange <= minRange)
             continue;
 
-        /* Calculate the hit grid cell point */
-        const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
-        hitPoints.push_back(hitPoint);
+        /* Calculate the hit point in a local frame */
+        const RobotPose2D<double> globalHitPose =
+            scanData->GlobalHitPose(globalSensorPose, i);
+        const RobotPose2D<double> localHitPose =
+            InverseCompound(globalMapPose, globalHitPose);
+        localHitPoses.push_back(localHitPose);
 
         /* Update the corner positions (bounding box) */
-        bottomLeft.mX = std::min(bottomLeft.mX, hitPoint.mX);
-        bottomLeft.mY = std::min(bottomLeft.mY, hitPoint.mY);
-        topRight.mX = std::max(topRight.mX, hitPoint.mX);
-        topRight.mY = std::max(topRight.mY, hitPoint.mY);
+        localMinPos.mX = std::min(localMinPos.mX, localHitPose.mX);
+        localMinPos.mY = std::min(localMinPos.mY, localHitPose.mY);
+        localMaxPos.mX = std::max(localMaxPos.mX, localHitPose.mX);
+        localMaxPos.mY = std::max(localMaxPos.mY, localHitPose.mY);
     }
+
+    return;
 }
 
 /* Compute the indices of the missed grid cells

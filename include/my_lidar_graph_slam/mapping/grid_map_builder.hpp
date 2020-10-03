@@ -112,41 +112,48 @@ struct LocalMap final
     std::map<int, ConstMapType> mPrecomputedMaps;
 };
 
+/*
+ * GridMapBuilder class is responsible for creating and updating grid maps
+ */
 class GridMapBuilder
 {
 public:
     /* Constructor */
-    GridMapBuilder(double mapResolution,
-                   int patchSize,
-                   int numOfScansForLatestMap,
-                   double travelDistThreshold,
-                   double usableRangeMin,
-                   double usableRangeMax,
-                   double probHit,
-                   double probMiss);
+    GridMapBuilder(const double mapResolution,
+                   const int patchSize,
+                   const int numOfScansForLatestMap,
+                   const double travelDistThreshold,
+                   const double usableRangeMin,
+                   const double usableRangeMax,
+                   const double probHit,
+                   const double probMiss);
 
     /* Destructor */
     ~GridMapBuilder() = default;
 
     /* Append the new scan data */
-    bool AppendScan(const std::shared_ptr<PoseGraph>& poseGraph);
+    bool AppendScan(LocalMapNodeMap& localMapNodes,
+                    const ScanNodeMap& scanNodes);
 
     /* Re-create the local grid maps and latest map after the loop closure */
-    void AfterLoopClosure(const std::shared_ptr<PoseGraph>& poseGraph);
+    void AfterLoopClosure(const LocalMapNodeMap& localMapNodes,
+                          const ScanNodeMap& scanNodes);
 
     /* Construct the global map */
-    GridMapType ConstructGlobalMap(
-        const std::shared_ptr<PoseGraph>& poseGraph) const;
+    void ConstructGlobalMap(
+        const ScanNodeMap& scanNodes,
+        RobotPose2D<double>& globalMapPose,
+        GridMapType& globalMap);
 
     /* Retrieve the local grid maps */
-    inline const std::vector<LocalMapInfo>& LocalMaps() const
+    inline const std::vector<LocalMap>& LocalMaps() const
     { return this->mLocalMaps; }
 
     /* Retrieve the local map information of the specified index */
-    inline LocalMapInfo& LocalMapAt(int localMapIdx)
+    inline LocalMap& LocalMapAt(int localMapIdx)
     { return this->mLocalMaps.at(localMapIdx); }
     /* Retrieve the local map information of the specified index */
-    inline const LocalMapInfo& LocalMapAt(int localMapIdx) const
+    inline const LocalMap& LocalMapAt(int localMapIdx) const
     { return this->mLocalMaps.at(localMapIdx); }
 
     /* Retrieve the grid map constructed from the latest scans */
@@ -155,38 +162,38 @@ public:
     /* Get the accumulated travel distance */
     inline double AccumTravelDist() const { return this->mAccumTravelDist; }
 
-    /* Get the minimum index of the latest scans */
-    inline int LatestScanIdxMin() const { return this->mLatestScanIdxMin; }
-    /* Get the maximum index of the latest scans */
-    inline int LatestScanIdxMax() const { return this->mLatestScanIdxMax; }
+    /* Get the minimum Id of the latest scan nodes */
+    inline NodeId LatestScanIdMin() const { return this->mLatestScanIdMin; }
+    /* Get the maximum Id of the latest scan nodes */
+    inline NodeId LatestScanIdMax() const { return this->mLatestScanIdMax; }
 
 private:
     /* Update the grid map (list of the local grid maps) */
-    bool UpdateGridMap(
-        const std::shared_ptr<PoseGraph>& poseGraph);
-    
+    bool UpdateGridMap(LocalMapNodeMap& localMapNodes,
+                       const ScanNodeMap& scanNodes);
+
     /* Update the grid map with the latest scans */
-    void UpdateLatestMap(
-        const std::shared_ptr<PoseGraph>& poseGraph);
-    
+    void UpdateLatestMap(const ScanNodeMap& scanNodes);
+
     /* Update the accumulated travel distance after the loop closure */
-    void UpdateAccumTravelDist(
-        const std::shared_ptr<PoseGraph>& poseGraph);
+    void UpdateAccumTravelDist(const ScanNodeMap& scanNodes);
 
     /* Construct the grid map from the specified scans */
     void ConstructMapFromScans(
+        const RobotPose2D<double>& globalMapPose,
         GridMapType& gridMap,
-        const std::shared_ptr<PoseGraph>& poseGraph,
-        int poseGraphNodeIdxMin,
-        int poseGraphNodeIdxMax) const;
+        const ScanNodeMap& scanNodes,
+        const NodeId scanNodeIdMin,
+        const NodeId scanNodeIdMax) const;
 
-    /* Compute the bounding box of the scan and scan points */
-    void ComputeBoundingBoxAndScanPoints(
-        const RobotPose2D<double>& robotPose,
+    /* Compute the bounding box of the scan and scan points in a local frame */
+    void ComputeBoundingBoxAndScanPointsMapLocal(
+        const RobotPose2D<double>& globalMapPose,
+        const RobotPose2D<double>& globalRobotPose,
         const Sensor::ScanDataPtr<double>& scanData,
-        Point2D<double>& bottomLeft,
-        Point2D<double>& topRight,
-        std::vector<Point2D<double>>& hitPoints);
+        Point2D<double>& localMinPos,
+        Point2D<double>& localMaxPos,
+        std::vector<RobotPose2D<double>>& localHitPoses);
 
     /* Compute the indices of the missed grid cells
      * using Bresenham algorithm */
@@ -196,40 +203,42 @@ private:
 
 private:
     /* Map resolution (in meters) */
-    double                        mResolution;
+    const double          mResolution;
     /* Patch size (in the number of grid cells) */
-    int                           mPatchSize;
-    /* List of the local grid maps */
-    std::vector<LocalMapInfo>     mLocalMaps;
+    const int             mPatchSize;
+    /* Vector of the local grid maps */
+    std::vector<LocalMap> mLocalMaps;
     /* Grid map constructed from the latest scans
-     * Used for scan matching and updated when new scan data is available */
-    GridMapType                   mLatestMap;
+     * Used for scan matching and updated when a new scan data is available */
+    GridMapType           mLatestMap;
+    /* Latest map pose in a world frame */
+    RobotPose2D<double>   mLatestMapPose;
     /* Accumulated travel distance */
-    double                        mAccumTravelDist;
+    double                mAccumTravelDist;
     /* The number of scans used to construct the latest map */
-    int                           mNumOfScansForLatestMap;
-    /* The minimum index of the latest scans */
-    int                           mLatestScanIdxMin;
-    /* The maximum index of the latest scans */
-    int                           mLatestScanIdxMax;
-    /* Last robot pose */
-    RobotPose2D<double>           mLastRobotPose;
+    const int             mNumOfScansForLatestMap;
+    /* The minimum Id of the latest scan nodes */
+    NodeId                mLatestScanIdMin;
+    /* The maximum Id of the latest scan nodes */
+    NodeId                mLatestScanIdMax;
+    /* Last robot pose in a world frame */
+    RobotPose2D<double>   mLastRobotPose;
     /* Accumulated travel distance since the last local grid map is created */
-    double                        mTravelDistLastLocalMap;
-    /* Robot pose when the last local grid map is created */
-    RobotPose2D<double>           mRobotPoseLastLocalMap;
+    double                mTravelDistLastLocalMap;
+    /* Robot pose in a world frame when the last local grid map is created */
+    RobotPose2D<double>   mRobotPoseLastLocalMap;
     /* Travel distance threshold for creating a new local grid map */
-    double                        mTravelDistThreshold;
+    const double          mTravelDistThreshold;
     /* Minimum range of the laser scan that is considered valid */
-    double                        mUsableRangeMin;
+    const double          mUsableRangeMin;
     /* Maximum range of the laser scan that is considered valid */
-    double                        mUsableRangeMax;
+    const double          mUsableRangeMax;
     /* Occupancy probability value for hit grid cell
      * Used for calculating the probability value with Binary Bayes Filter */
-    double                        mProbHit;
+    const double          mProbHit;
     /* Occupancy probability value for missed grid cell
      * Used for calculating the probability value with Binary Bayes Filter */
-    double                        mProbMiss;
+    const double          mProbMiss;
 };
 
 /*
