@@ -52,10 +52,11 @@ public:
     ScoreFunction& operator=(ScoreFunction&&) = delete;
 
     /* Evaluate score function (matching score between scan data and map) */
-    virtual void Score(const GridMapBase<double>& gridMap,
-                       const Sensor::ScanDataPtr<double>& scanData,
-                       const RobotPose2D<double>& sensorPose,
-                       Summary& resultSummary) = 0;
+    virtual void Score(
+        const GridMapBase<double>& gridMap,
+        const Sensor::ScanDataPtr<double>& scanData,
+        const RobotPose2D<double>& mapLocalSensorPose,
+        Summary& resultSummary) = 0;
 };
 
 } /* namespace Mapping */
