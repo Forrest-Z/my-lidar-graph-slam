@@ -13,23 +13,24 @@ class ScorePixelAccurate final : public ScoreFunction
 {
 public:
     /* Constructor */
-    ScorePixelAccurate(double usableRangeMin,
-                       double usableRangeMax);
-    
+    ScorePixelAccurate(const double usableRangeMin,
+                       const double usableRangeMax);
+
     /* Destructor */
     ~ScorePixelAccurate() = default;
 
     /* Evaluate score function (matching score between scan data and map) */
-    void Score(const GridMapBase<double>& gridMap,
-               const Sensor::ScanDataPtr<double>& scanData,
-               const RobotPose2D<double>& sensorPose,
-               Summary& resultSummary) override;
+    void Score(
+        const GridMapBase<double>& gridMap,
+        const Sensor::ScanDataPtr<double>& scanData,
+        const RobotPose2D<double>& mapLocalSensorPose,
+        Summary& resultSummary) override;
 
 private:
     /* Minimum laser scan range considered for calculation */
-    double mUsableRangeMin;
+    const double mUsableRangeMin;
     /* Maximum laser scan range considered for calculation */
-    double mUsableRangeMax;
+    const double mUsableRangeMax;
 };
 
 } /* namespace Mapping */

@@ -8,8 +8,8 @@ namespace Mapping {
 
 /* Constructor */
 ScorePixelAccurate::ScorePixelAccurate(
-    double usableRangeMin,
-    double usableRangeMax) :
+    const double usableRangeMin,
+    const double usableRangeMax) :
     mUsableRangeMin(usableRangeMin),
     mUsableRangeMax(usableRangeMax)
 {
@@ -19,7 +19,7 @@ ScorePixelAccurate::ScorePixelAccurate(
 void ScorePixelAccurate::Score(
     const GridMapBase<double>& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose,
+    const RobotPose2D<double>& mapLocalSensorPose,
     Summary& resultSummary)
 {
     double sumScore = 0.0;
@@ -28,7 +28,7 @@ void ScorePixelAccurate::Score(
         this->mUsableRangeMin, scanData->MinRange());
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
-    
+
     const std::size_t numOfScans = scanData->NumOfScans();
     std::size_t numOfKnownGridCells = 0;
 
@@ -39,15 +39,15 @@ void ScorePixelAccurate::Score(
 
         if (scanRange >= maxRange || scanRange <= minRange)
             continue;
-        
+
         /* Add the occupancy probability value at the hit point */
-        const Point2D<double> hitPoint =
-            scanData->HitPoint(sensorPose, i);
+        const Point2D<double> localHitPoint =
+            scanData->HitPoint(mapLocalSensorPose, i);
         const Point2D<int> hitPointIdx =
-            gridMap.WorldCoordinateToGridCellIndex(hitPoint);
+            gridMap.LocalPosToGridCellIndex(localHitPoint);
         const double hitGridCellValue =
             gridMap.Value(hitPointIdx, unknownVal);
-        
+
         /* Ignore the grid cell with unknown occupancy probability */
         if (hitGridCellValue == unknownVal)
             continue;
@@ -61,7 +61,7 @@ void ScorePixelAccurate::Score(
     /* Normalize the score function */
     const double normalizedScore =
         sumScore / static_cast<double>(scanData->NumOfScans());
-    
+
     /* Calculate the rate of valid grid cells */
     const double matchRate =
         static_cast<double>(numOfKnownGridCells) /
