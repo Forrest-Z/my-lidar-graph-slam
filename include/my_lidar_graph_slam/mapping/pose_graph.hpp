@@ -76,6 +76,9 @@ struct LocalMapNode final
 class LocalMapNodeMap final
 {
 public:
+    /* Type definition for convenience */
+    using MapType = std::map<LocalMapId, LocalMapNode>;
+
     /* Constructor */
     LocalMapNodeMap() = default;
     /* Destructor */
@@ -87,8 +90,17 @@ public:
     LocalMapId NodeIdMax() const;
 
     /* Get the map of the local map nodes */
-    inline const std::map<LocalMapId, LocalMapNode>& Nodes() const
+    inline const MapType& Nodes() const
     { return this->mNodes; }
+
+    /* Get the iterator pointing to the first local map node whose Id is
+     * greater than the specified Id */
+    inline MapType::const_iterator UpperBound(const LocalMapId nodeId) const
+    { return this->mNodes.upper_bound(nodeId); }
+    /* Get the iterator pointing to the first local map node whose Id is
+     * greater than or equal to the specified Id */
+    inline MapType::const_iterator LowerBound(const LocalMapId nodeId) const
+    { return this->mNodes.lower_bound(nodeId); }
 
     /* Check if the local map node with the specified Id exists */
     inline bool Contains(const LocalMapId localMapId) const
@@ -112,7 +124,7 @@ public:
 
 private:
     /* Map of the local map nodes */
-    std::map<LocalMapId, LocalMapNode> mNodes;
+    MapType mNodes;
 };
 
 /*
