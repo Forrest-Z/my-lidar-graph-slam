@@ -24,21 +24,21 @@ public:
     /* Destructor */
     ~LoopSearcherNearest() = default;
 
-    /* Find a local map and a pose graph node used for loop detection */
+    /* Find a local map and a scan node used for loop detection */
     LoopCandidateVector Search(
         const LoopSearchHint& searchHint) override;
 
 private:
     /* Travel distance threhsold for loop search
-     * Pose graph node that can be traversed from the current node
+     * Scan nodes that can be traversed from the current scan node
      * with the travel distance less than this threshold is not considered
      * for loop search */
     const double mTravelDistThreshold;
     /* Maximum distance between the current robot pose and
-     * the pose of the node which is considered for loop search */
+     * the pose of the scan node which is considered for loop search */
     const double mNodeDistThreshold;
-    /* Number of the selected pose graph nodes around the node which are
-     * matched against the closest grid map */
+    /* Number of the selected scan nodes around the scan node which are
+     * matched against their closest grid map */
     const int    mNumOfCandidateNodes;
 };
 

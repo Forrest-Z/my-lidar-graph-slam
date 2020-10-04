@@ -9,100 +9,135 @@
 namespace MyLidarGraphSlam {
 namespace Mapping {
 
-/* Find a local map and a pose graph node used for loop detection */
+/* Find a local map and a scan node used for loop detection */
 LoopCandidateVector LoopSearcherNearest::Search(
     const LoopSearchHint& searchHint)
 {
-    const auto& poseGraphNodes = searchHint.mPoseGraphNodes;
-    const auto& localMapPositions = searchHint.mLocalMapPositions;
-    const int numOfNodes = static_cast<int>(poseGraphNodes.size());
-    const int numOfMaps = static_cast<int>(localMapPositions.size());
+    const auto& scanNodes = searchHint.mScanNodes;
+    const auto& localMapNodes = searchHint.mLocalMapNodes;
 
-    /* Check that the grid map and the pose graph are not empty */
-    assert(numOfMaps > 0);
-    assert(numOfNodes > 0);
+    /* Check that the local map nodes and scan nodes are not empty */
+    Assert(!scanNodes.empty());
+    Assert(!localMapNodes.empty());
 
-    /* Retrieve the index of the current node */
-    const int latestNodeIdx = searchHint.mLatestNodeIdx;
-    /* Retrieve the pose of the current node */
+    /* Retrieve the pose of the current scan node */
     const RobotPose2D<double>& robotPose =
-        poseGraphNodes.at(latestNodeIdx).mPose;
+        scanNodes.at(searchHint.mLatestScanNodeId).mGlobalPose;
 
-    /* Find the index of the local grid map and the pose graph node
+    /* Find the Id of the local grid map and the scan node
      * that may contain loop closure point */
     double nodeDistMinSq = std::pow(this->mNodeDistThreshold, 2.0);
-    int candidateMapIdx = numOfMaps;
-    int candidateNodeIdx = numOfNodes;
+    int candidateMapId = LocalMapId::Invalid;
+    int candidateNodeId = NodeId::Invalid;
 
     /* Retrieve the accumulated travel distance of the robot */
     const double accumTravelDist = searchHint.mAccumTravelDist;
 
     double nodeTravelDist = 0.0;
-    RobotPose2D<double> prevPose = poseGraphNodes.at(0).mPose;
+    bool isFirstNode = true;
+    RobotPose2D<double> prevPose;
 
-    /* Exclude the latest (unfinished) local grid map */
-    for (int mapIdx = 0; mapIdx < numOfMaps - 1; ++mapIdx) {
-        /* Retrieve the local grid map */
-        const auto& localMapPosition = localMapPositions.at(mapIdx);
-        const int nodeIdxMin = localMapPosition.mPoseGraphNodeIdxMin;
-        const int nodeIdxMax = localMapPosition.mPoseGraphNodeIdxMax;
+    /* Traverse all the local grid maps except the last unfinished one */
+    const auto firstMapIt = localMapNodes.begin();
+    const auto lastMapIt = std::prev(localMapNodes.end());
 
-        /* Make sure that the local grid map is finished */
-        assert(localMapPosition.mFinished);
+    for (auto mapIt = firstMapIt; mapIt != lastMapIt; ++mapIt) {
+        /* Retrieve the local map node */
+        const auto& localMapId = mapIt->first;
+        const auto& localMapNode = mapIt->second;
 
-        for (int nodeIdx = nodeIdxMin; nodeIdx <= nodeIdxMax; ++nodeIdx) {
-            /* Retrieve the pose graph node */
-            const RobotPose2D<double>& nodePose =
-                poseGraphNodes.at(nodeIdx).mPose;
+        /* Make sure that the local map is finished */
+        Assert(localMapNode.mFinished);
 
-            /* Calculate the accumulated travel distance */
-            nodeTravelDist += Distance(prevPose, nodePose);
+        /* Retrieve the Id range of the scan nodes in this local map */
+        const NodeId scanNodeIdMin = localMapNode.mScanNodeIdMin;
+        const NodeId scanNodeIdMax = localMapNode.mScanNodeIdMax;
+
+        /* Retrieve two iterators pointing the scan nodes in this local map */
+        const auto firstIt = scanNodes.find(scanNodeIdMin);
+        const auto lastIt = scanNodes.find(scanNodeIdMax);
+
+        /* Make sure that the iterators are valid */
+        Assert(firstIt != scanNodes.end());
+        Assert(lastIt != scanNodes.end());
+
+        for (auto nodeIt = firstIt; nodeIt != std::next(lastIt); ++nodeIt) {
+            /* Retrieve the scan node */
+            const auto& scanNodeId = nodeIt->first;
+            const auto& scanNode = nodeIt->second;
+
+            /* Retrieve the global pose of the scan node */
+            const RobotPose2D<double>& nodePose = scanNode.mGlobalPose;
+
+            /* Compute the accumulated travel distance */
+            nodeTravelDist += isFirstNode ? 0.0 : Distance(prevPose, nodePose);
             prevPose = nodePose;
+            isFirstNode = false;
 
             /* Stop the iteration if the travel distance difference falls below
              * the specified threshold */
             if (accumTravelDist - nodeTravelDist < this->mTravelDistThreshold)
                 goto Done;
 
-            /* Calculate the distance between the pose graph node and
+            /* Calculate the distance between the scan node and
              * the current pose */
             const double nodeDistSq = SquaredDistance(nodePose, robotPose);
 
             /* Update the candidate map index and node index */
             if (nodeDistSq < nodeDistMinSq) {
                 nodeDistMinSq = nodeDistSq;
-                candidateMapIdx = mapIdx;
-                candidateNodeIdx = nodeIdx;
+                candidateMapId = localMapId.mId;
+                candidateNodeId = scanNodeId.mId;
             }
         }
     }
 
 Done:
-    /* LoopSearcherNearest class selects the closest pose graph node
+    /* LoopSearcherNearest class selects the closest scan node
      * and its corresponding local grid map from the current robot pose */
     LoopCandidateVector loopCandidates;
 
     /* Return an empty collection of candidates if not found */
-    if (candidateMapIdx < 0 || candidateMapIdx >= numOfMaps ||
-        candidateNodeIdx < 0 || candidateNodeIdx >= numOfNodes)
+    if (candidateMapId == LocalMapId::Invalid ||
+        candidateNodeId == NodeId::Invalid)
         return loopCandidates;
 
-    /* Set the pose graph nodes around the closest pose graph node */
+    /* Set the scan nodes around the current scan node */
     const auto& latestLocalMap =
-        searchHint.mLocalMapPositions.at(searchHint.mLatestLocalMapIdx);
-    const int nodeIdxMin = std::max(
-        latestLocalMap.mPoseGraphNodeIdxMin,
-        latestNodeIdx - this->mNumOfCandidateNodes);
-    const int nodeIdxMax = std::min(
-        latestLocalMap.mPoseGraphNodeIdxMax,
-        latestNodeIdx + this->mNumOfCandidateNodes);
+        localMapNodes.at(searchHint.mLatestLocalMapNodeId);
+    const auto firstNodeIt =
+        scanNodes.find(latestLocalMap.mScanNodeIdMin);
+    const auto lastNodeIt =
+        scanNodes.find(latestLocalMap.mScanNodeIdMax);
+    const auto latestNodeIt =
+        scanNodes.find(searchHint.mLatestScanNodeId);
 
-    std::vector<int> nodeIndices;
-    nodeIndices.resize(nodeIdxMax - nodeIdxMin + 1);
-    std::iota(std::begin(nodeIndices), std::end(nodeIndices), nodeIdxMin);
+    Assert(firstNodeIt != scanNodes.end());
+    Assert(lastNodeIt != scanNodes.end());
+    Assert(latestNodeIt != scanNodes.end());
 
-    loopCandidates.emplace_back(
-        std::move(nodeIndices), candidateMapIdx, candidateNodeIdx);
+    const int distToFirstCandidate = std::min(
+        static_cast<int>(std::distance(firstNodeIt, latestNodeIt)),
+        this->mNumOfCandidateNodes);
+    const int distToLastCandidate = std::min(
+        static_cast<int>(std::distance(latestNodeIt, lastNodeIt)),
+        this->mNumOfCandidateNodes);
+    const auto firstCandidateNodeIt =
+        std::prev(latestNodeIt, distToFirstCandidate);
+    const auto lastCandidateNodeIt =
+        std::next(latestNodeIt, distToLastCandidate);
+    const int numOfActualCandidateNodes =
+        std::distance(firstCandidateNodeIt, lastCandidateNodeIt) + 1;
+
+    std::vector<NodeId> nodeIds;
+    nodeIds.resize(numOfActualCandidateNodes);
+
+    for (auto nodeIt = firstCandidateNodeIt;
+         nodeIt != std::next(lastCandidateNodeIt); ++nodeIt)
+        nodeIds.push_back(nodeIt->first);
+
+    /* Set the loop candidate information */
+    loopCandidates.emplace_back(std::move(nodeIds), candidateMapId);
 
     return loopCandidates;
 }
