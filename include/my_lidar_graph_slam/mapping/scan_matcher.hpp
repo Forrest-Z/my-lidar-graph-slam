@@ -20,18 +20,19 @@ namespace Mapping {
 
 /*
  * ScanMatchingQuery struct holds the necessary information for
- * executing a scan matching, such as an initial robot pose in a world frame,
- * a grid map, and a scan data to be matched against a grid map
+ * executing a scan matching, such as an initial robot pose in a
+ * map-local coordinate frame, a grid map, and a scan data to be
+ * matched against a grid map
  */
 struct ScanMatchingQuery final
 {
     /* Constructor */
     ScanMatchingQuery(GridMapType&& gridMap,
                       const Sensor::ScanDataPtr<double>& scanData,
-                      const RobotPose2D<double>& initialPose) :
+                      const RobotPose2D<double>& mapLocalInitialPose) :
         mGridMap(std::move(gridMap)),
         mScanData(scanData),
-        mInitialPose(initialPose) { }
+        mMapLocalInitialPose(mapLocalInitialPose) { }
 
     /* Destructor */
     ~ScanMatchingQuery() = default;
@@ -40,8 +41,8 @@ struct ScanMatchingQuery final
     const GridMapType                 mGridMap;
     /* Scan data */
     const Sensor::ScanDataPtr<double> mScanData;
-    /* Initial robot pose (in a world frame) */
-    const RobotPose2D<double>         mInitialPose;
+    /* Initial robot pose (in a map-local coordinate frame) */
+    const RobotPose2D<double>         mMapLocalInitialPose;
 };
 
 /*
@@ -52,12 +53,12 @@ struct ScanMatchingSummary final
     /* Constructor */
     ScanMatchingSummary(const bool poseFound,
                         const double normalizedCost,
-                        const RobotPose2D<double>& initialPose,
+                        const RobotPose2D<double>& mapLocalInitialPose,
                         const RobotPose2D<double>& estimatedPose,
                         const Eigen::Matrix3d& estimatedCovariance) :
         mPoseFound(poseFound),
         mNormalizedCost(normalizedCost),
-        mInitialPose(initialPose),
+        mMapLocalInitialPose(mapLocalInitialPose),
         mEstimatedPose(estimatedPose),
         mEstimatedCovariance(estimatedCovariance) { }
 
@@ -68,11 +69,11 @@ struct ScanMatchingSummary final
     const bool                mPoseFound;
     /* Normalized cost value */
     const double              mNormalizedCost;
-    /* Initial robot pose in a world frame */
-    const RobotPose2D<double> mInitialPose;
-    /* Estimated pose in a world frame */
+    /* Initial robot pose in a map-local coordinate frame */
+    const RobotPose2D<double> mMapLocalInitialPose;
+    /* Estimated pose in a map-local coordinate frame */
     const RobotPose2D<double> mEstimatedPose;
-    /* Estimated pose covariance matrix in a world frame */
+    /* Estimated pose covariance matrix in a map-local coordinate frame */
     const Eigen::Matrix3d     mEstimatedCovariance;
 };
 
