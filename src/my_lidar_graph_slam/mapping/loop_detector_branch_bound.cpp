@@ -37,55 +37,48 @@ void LoopDetectorBranchBound::Detect(
     /* Perform loop detection for each query */
     for (auto& loopDetectionQuery : loopDetectionQueries) {
         /* Retrieve the information about each query */
-        const auto& poseGraphNodes = loopDetectionQuery.mPoseGraphNodes;
-        auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
+        const auto& scanNodes = loopDetectionQuery.mScanNodes;
+        auto& localMap = loopDetectionQuery.mLocalMap;
         const auto& localMapNode = loopDetectionQuery.mLocalMapNode;
 
-        /* Make sure that the node is inside the local grid map */
-        assert(localMapNode.Index() >= localMapInfo.mPoseGraphNodeIdxMin &&
-               localMapNode.Index() <= localMapInfo.mPoseGraphNodeIdxMax);
-
+        /* Check the local map Id */
+        Assert(localMap.mId == localMapNode.mLocalMapId);
         /* Make sure that the grid map is in finished state */
-        assert(localMapInfo.mFinished);
+        Assert(localMap.mFinished);
 
         /* Precompute the coarser local grid maps for efficiency */
-        if (!localMapInfo.mPrecomputed) {
+        if (!localMap.mPrecomputed) {
             /* Precompute multiple coarser grid maps */
-            std::map<int, PrecomputedMapType> precompMaps =
-                this->mScanMatcher->ComputeCoarserMaps(localMapInfo.mMap);
+            std::map<int, ConstMapType> precompMaps =
+                this->mScanMatcher->ComputeCoarserMaps(localMap.mMap);
             /* Set the newly created grid map pyramid */
-            localMapInfo.mPrecomputedMaps = std::move(precompMaps);
+            localMap.mPrecomputedMaps = std::move(precompMaps);
             /* Mark the current local map as precomputed */
-            localMapInfo.mPrecomputed = true;
+            localMap.mPrecomputed = true;
         }
 
         /* Perform loop detection for each node */
-        for (const auto& poseGraphNode : poseGraphNodes) {
-            /* Find the corresponding position of the node
+        for (const auto& scanNode : scanNodes) {
+            /* Compute the scan node pose in a map-local coordinate frame */
+            const RobotPose2D<double> mapLocalScanPose =
+                InverseCompound(localMapNode.mGlobalPose, scanNode.mGlobalPose);
+            /* Find the corresponding position of the scan node
              * inside the local grid map */
             RobotPose2D<double> correspondingPose;
             Eigen::Matrix3d covarianceMatrix;
             const bool loopDetected = this->FindCorrespondingPose(
-                localMapInfo.mMap, localMapInfo.mPrecomputedMaps,
-                poseGraphNode.ScanData(), poseGraphNode.Pose(),
+                localMap.mMap, localMap.mPrecomputedMaps,
+                scanNode.mScanData, mapLocalScanPose,
                 correspondingPose, covarianceMatrix);
 
             /* Do not build a new loop closing edge if loop not detected */
             if (!loopDetected)
                 continue;
 
-            /* Setup loop closing edge information */
-            /* Relative pose of the edge */
-            const RobotPose2D<double> relativePose =
-                InverseCompound(localMapNode.Pose(), correspondingPose);
-            /* Indices of the start and end node */
-            const int startNodeIdx = localMapNode.Index();
-            const int endNodeIdx = poseGraphNode.Index();
-
             /* Append to the loop detection results */
             loopDetectionResults.emplace_back(
-                relativePose, localMapNode.Pose(),
-                startNodeIdx, endNodeIdx, covarianceMatrix);
+                correspondingPose, localMapNode.mGlobalPose,
+                localMapNode.mLocalMapId, scanNode.mNodeId, covarianceMatrix);
         }
     }
 
@@ -96,21 +89,22 @@ void LoopDetectorBranchBound::Detect(
  * from the local grid map */
 bool LoopDetectorBranchBound::FindCorrespondingPose(
     const GridMapType& localMap,
-    const std::map<int, PrecomputedMapType>& precompMaps,
+    const std::map<int, ConstMapType>& precompMaps,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& robotPose,
+    const RobotPose2D<double>& mapLocalScanPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
     /* Just call the scan matcher to find a corresponding pose */
     const auto matchingSummary = this->mScanMatcher->OptimizePose(
-        localMap, precompMaps, scanData, robotPose, this->mScoreThreshold);
+        localMap, precompMaps, scanData,
+        mapLocalScanPose, this->mScoreThreshold);
 
     /* Loop detection fails if the solution is not found */
     if (!matchingSummary.mPoseFound)
         return false;
 
-    /* Return the result pose and the covariance in a world frame */
+    /* Return the result pose and the covariance in a map-local frame */
     correspondingPose = matchingSummary.mEstimatedPose;
     estimatedCovMat = matchingSummary.mEstimatedCovariance;
 
