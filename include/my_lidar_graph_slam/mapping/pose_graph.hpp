@@ -45,6 +45,9 @@ struct LocalMapId final
     inline bool operator>=(const LocalMapId& other) const
     { return this->mId >= other.mId; }
 
+    /* Invalid local map Id */
+    static constexpr const int Invalid = -1;
+
     /* Local grid map Id */
     int mId;
 };
@@ -175,7 +178,7 @@ private:
 };
 
 /*
- * PoseGraphNodeId struct represents an Id value for a pose graph node
+ * NodeId struct represents an Id value for a pose graph node
  */
 struct NodeId final
 {
@@ -201,6 +204,9 @@ struct NodeId final
     /* Greater-than or equal to comparison operator */
     inline bool operator>=(const NodeId& other) const
     { return this->mId >= other.mId; }
+
+    /* Invalid node Id */
+    static constexpr const int Invalid = -1;
 
     /* Pose graph node Id */
     int mId;
