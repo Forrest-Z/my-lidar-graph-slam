@@ -465,30 +465,33 @@ struct ScanNodeData final
 };
 
 /*
- * EdgeConnection struct represents the indices of the adjacent
- * pose graph nodes and the type (odometry or loop constraint), which is
- * intended for the use in rendering the current pose graph, where
- * the corresponding information matrix is not needed
+ * EdgeData struct represents the Ids of the two adjacent pose graph nodes
+ * and the type (odometry or loop constraint, intra-local or inter-local),
+ * which is intended for the use in rendering the current pose graph, where
+ * the corresponding information matrix and the relative pose are not needed
  */
-struct EdgeConnection final
+struct EdgeData final
 {
     /* Constructor */
-    EdgeConnection(int startNodeIdx,
-                   int endNodeIdx,
-                   bool isOdometry) :
-        mStartNodeIdx(startNodeIdx),
-        mEndNodeIdx(endNodeIdx),
-        mIsOdometry(isOdometry) { }
+    EdgeData(const LocalMapId localMapNodeId,
+             const NodeId scanNodeId,
+             const EdgeType edgeType,
+             const ConstraintType constraintType) :
+        mLocalMapNodeId(localMapNodeId),
+        mScanNodeId(scanNodeId),
+        mEdgeType(edgeType),
+        mConstraintType(constraintType) { }
     /* Destructor */
-    ~EdgeConnection() = default;
+    ~EdgeData() = default;
 
-    /* Index of the start node */
-    const int  mStartNodeIdx;
-    /* Index of the end node */
-    const int  mEndNodeIdx;
-    /* Flag to determine whether the edge represents
-     * odometry or loop constraint */
-    const bool mIsOdometry;
+    /* Local map node Id */
+    const LocalMapId     mLocalMapNodeId;
+    /* Scan data node Id */
+    const NodeId         mScanNodeId;
+    /* Edge type (intra-local or inter-local) */
+    const EdgeType       mEdgeType;
+    /* Constraint type (odometry or loop) */
+    const ConstraintType mConstraintType;
 };
 
 /*
