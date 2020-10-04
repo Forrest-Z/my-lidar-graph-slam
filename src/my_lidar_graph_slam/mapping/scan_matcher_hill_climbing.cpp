@@ -8,10 +8,10 @@ namespace Mapping {
 
 /* Constructor */
 ScanMatcherHillClimbing::ScanMatcherHillClimbing(
-    double linearStep,
-    double angularStep,
-    int maxIterations,
-    int maxNumOfRefinements,
+    const double linearStep,
+    const double angularStep,
+    const int maxIterations,
+    const int maxNumOfRefinements,
     const CostFuncPtr& costFunc) :
     ScanMatcher(),
     mLinearStep(linearStep),
@@ -34,15 +34,19 @@ ScanMatchingSummary ScanMatcherHillClimbing::OptimizePose(
     /* Retrieve the query information */
     const auto& gridMap = queryInfo.mGridMap;
     const auto& scanData = queryInfo.mScanData;
-    const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
+    const RobotPose2D<double>& mapLocalInitialPose =
+        queryInfo.mMapLocalInitialPose;
 
-    /* Calculate the sensor pose from the initial robot pose */
+    /* Calculate the sensor pose from the initial robot pose
+     * Sensor pose is in the map-local coordinate frame */
     const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
-    const RobotPose2D<double> sensorPose = Compound(initialPose, relPose);
+    const RobotPose2D<double> mapLocalSensorPose =
+        Compound(mapLocalInitialPose, relPose);
 
-    /* Minimum cost and the pose */
-    double minCost = this->mCostFunc->Cost(gridMap, scanData, sensorPose);
-    RobotPose2D<double> bestPose = sensorPose;
+    /* Minimum cost and the best pose in the map-local coordinate frame */
+    double minCost = this->mCostFunc->Cost(
+        gridMap, scanData, mapLocalSensorPose);
+    RobotPose2D<double> bestSensorPose = mapLocalSensorPose;
 
     /* The number of iterations */
     int numOfIterations = 0;
@@ -56,14 +60,14 @@ ScanMatchingSummary ScanMatcherHillClimbing::OptimizePose(
     do {
         /* Local optimization */
         double minLocalCost = minCost;
-        RobotPose2D<double> bestLocalPose = bestPose;
+        RobotPose2D<double> bestLocalPose = bestSensorPose;
         poseUpdated = false;
 
         for (int i = 0; i < 6; ++i) {
             /* Move forward, backward, left, right,
              * rotate left and rotate right a little bit
              * then calculate the cost value */
-            RobotPose2D<double> localPose = bestPose;
+            RobotPose2D<double> localPose = bestSensorPose;
             localPose.mX += moveX[i] * currentLinearStep;
             localPose.mY += moveY[i] * currentLinearStep;
             localPose.mTheta += moveTheta[i] * currentAngularStep;
@@ -82,7 +86,7 @@ ScanMatchingSummary ScanMatcherHillClimbing::OptimizePose(
         /* Update best pose */
         if (poseUpdated) {
             minCost = minLocalCost;
-            bestPose = bestLocalPose;
+            bestSensorPose = bestLocalPose;
         } else {
             /* Update the step value if pose not improved */
             ++numOfRefinements;
@@ -94,17 +98,17 @@ ScanMatchingSummary ScanMatcherHillClimbing::OptimizePose(
 
     /* Compute the normalized cost value */
     const double normalizedCost = minCost / scanData->NumOfScans();
-    /* Compute the estimated robot pose in a world frame */
+    /* Compute the estimated robot pose in a map-local coordinate frame */
     const RobotPose2D<double> estimatedPose =
-        MoveBackward(bestPose, relPose);
-    /* Calculate the pose covariance matrix in a world frame */
+        MoveBackward(bestSensorPose, relPose);
+    /* Calculate the pose covariance matrix in a map-local coordinate frame */
     const Eigen::Matrix3d estimatedCovariance =
-        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestPose);
+        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
 
     /* Return the normalized cost value, the estimated robot pose,
-     * and the estimated pose covariance matrix in a world frame */
+     * and the estimated covariance matrix in a map-local frame */
     return ScanMatchingSummary {
-        true, normalizedCost, initialPose,
+        true, normalizedCost, mapLocalInitialPose,
         estimatedPose, estimatedCovariance };
 }
 

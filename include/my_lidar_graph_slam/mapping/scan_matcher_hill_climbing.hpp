@@ -15,12 +15,12 @@ class ScanMatcherHillClimbing final : public ScanMatcher
 {
 public:
     /* Constructor */
-    ScanMatcherHillClimbing(double linearStep,
-                            double angularStep,
-                            int maxIterations,
-                            int maxNumOfRefinements,
+    ScanMatcherHillClimbing(const double linearStep,
+                            const double angularStep,
+                            const int maxIterations,
+                            const int maxNumOfRefinements,
                             const CostFuncPtr& costFunc);
-    
+
     /* Destructor */
     ~ScanMatcherHillClimbing() = default;
 
@@ -30,15 +30,15 @@ public:
 
 private:
     /* Initial step of the linear components (x and y) */
-    double      mLinearStep;
+    const double      mLinearStep;
     /* Initial step of the angular component (theta) */
-    double      mAngularStep;
+    const double      mAngularStep;
     /* Maximum number of iterations */
-    int         mMaxIterations;
+    const int         mMaxIterations;
     /* Maximum number of step parameter updates */
-    int         mMaxNumOfRefinements;
+    const int         mMaxNumOfRefinements;
     /* Cost function */
-    CostFuncPtr mCostFunc;
+    const CostFuncPtr mCostFunc;
 };
 
 } /* namespace Mapping */
