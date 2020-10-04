@@ -13,12 +13,12 @@ namespace Mapping {
 
 /* Constructor */
 ScanMatcherLinearSolver::ScanMatcherLinearSolver(
-    int numOfIterationsMax,
-    double convergenceThreshold,
-    double usableRangeMin,
-    double usableRangeMax,
-    double translationRegularizer,
-    double rotationRegularizer,
+    const int numOfIterationsMax,
+    const double convergenceThreshold,
+    const double usableRangeMin,
+    const double usableRangeMax,
+    const double translationRegularizer,
+    const double rotationRegularizer,
     const CostFuncPtr& costFunc) :
     ScanMatcher(),
     mNumOfIterationsMax(numOfIterationsMax),
@@ -41,23 +41,25 @@ ScanMatchingSummary ScanMatcherLinearSolver::OptimizePose(
     /* Retrieve the query information */
     const auto& gridMap = queryInfo.mGridMap;
     const auto& scanData = queryInfo.mScanData;
-    const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
+    const RobotPose2D<double>& mapLocalInitialPose =
+        queryInfo.mMapLocalInitialPose;
 
     /* Calculate the sensor pose from the initial robot pose */
     const RobotPose2D<double>& relPose = scanData->RelativeSensorPose();
-    const RobotPose2D<double> sensorPose = Compound(initialPose, relPose);
+    const RobotPose2D<double> mapLocalSensorPose =
+        Compound(mapLocalInitialPose, relPose);
 
     /* Minimum cost and the pose */
     double prevCost = std::numeric_limits<double>::max();
     double cost = std::numeric_limits<double>::max();
-    RobotPose2D<double> bestPose = sensorPose;
+    RobotPose2D<double> bestSensorPose = mapLocalSensorPose;
     int numOfIterations = 0;
 
     while (true) {
         /* Perform one scan matching step */
-        bestPose = this->OptimizeStep(gridMap, scanData, bestPose);
+        bestSensorPose = this->OptimizeStep(gridMap, scanData, bestSensorPose);
         /* Compute the cost value */
-        cost = this->mCostFunc->Cost(gridMap, scanData, bestPose);
+        cost = this->mCostFunc->Cost(gridMap, scanData, bestSensorPose);
 
         /* Stop the optimization if the number of iteration steps
          * exceeded the maximum or the cost converged */
@@ -70,17 +72,17 @@ ScanMatchingSummary ScanMatcherLinearSolver::OptimizePose(
 
     /* Compute the normalized cost value */
     const double normalizedCost = cost / scanData->NumOfScans();
-    /* Compute the estimated robot pose in a world frame */
+    /* Compute the estimated robot pose in a map-local coordinate frame */
     const RobotPose2D<double> estimatedPose =
-        MoveBackward(bestPose, relPose);
-    /* Calculate the pose covariance matrix */
+        MoveBackward(bestSensorPose, relPose);
+    /* Calculate the pose covariance matrix in a map-local coordinate frame */
     const Eigen::Matrix3d estimatedCovariance =
-        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestPose);
+        this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
 
     /* Return the normalized cost value, the estimated robot pose,
-     * and the estimated pose covariance matrix in a world frame */
+     * and the estimated pose covariance matrix in a map-local frame */
     return ScanMatchingSummary {
-        true, normalizedCost, initialPose,
+        true, normalizedCost, mapLocalInitialPose,
         estimatedPose, estimatedCovariance };
 }
 
@@ -88,7 +90,7 @@ ScanMatchingSummary ScanMatcherLinearSolver::OptimizePose(
 RobotPose2D<double> ScanMatcherLinearSolver::OptimizeStep(
     const GridMapType& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& sensorPose)
+    const RobotPose2D<double>& mapLocalSensorPose)
 {
     /* Construct and compute the linear system */
     Eigen::Vector3d vecB = Eigen::Vector3d::Zero();
@@ -98,7 +100,7 @@ RobotPose2D<double> ScanMatcherLinearSolver::OptimizeStep(
         this->mUsableRangeMin, scanData->MinRange());
     const double maxRange = std::min(
         this->mUsableRangeMax, scanData->MaxRange());
-    
+
     const std::size_t numOfScans = scanData->NumOfScans();
 
     /* Setup a dense matrix and a vector for coefficients */
@@ -106,27 +108,28 @@ RobotPose2D<double> ScanMatcherLinearSolver::OptimizeStep(
         /* Retrieve the scan range and angle */
         const double scanRange = scanData->RangeAt(i);
         const double scanAngle = scanData->AngleAt(i);
-        
+
         if (scanRange >= maxRange || scanRange <= minRange)
             continue;
-        
+
         /* Calculate the hit point */
-        const Point2D<double> hitPoint = scanData->HitPoint(sensorPose, i);
+        const Point2D<double> localHitPoint =
+            scanData->HitPoint(mapLocalSensorPose, i);
 
         /* Calculate the smoothed occupancy probability value */
         const Point2D<double> floatingIdx = 
-            gridMap.WorldCoordinateToGridCellIndexFloat(hitPoint);
+            gridMap.LocalPosToGridCellIndexFloat(localHitPoint);
         const double smoothedMapValue =
             this->mCostFunc->ComputeSmoothedValue(gridMap, floatingIdx);
         /* Calculate the residual */
         const double residualValue = 1.0 - smoothedMapValue;
-        
+
         /* Calculate a gradient of the smoothed map function
          * at the scan point with respect to the sensor pose */
         const Eigen::Vector3d gradVec =
             this->mCostFunc->ComputeMapGradient(
-                gridMap, sensorPose, scanRange, scanAngle);
-        
+                gridMap, mapLocalSensorPose, scanRange, scanAngle);
+
         /* Update the coefficients */
         vecB += residualValue * gradVec;
         matH += gradVec * gradVec.transpose();
@@ -142,9 +145,9 @@ RobotPose2D<double> ScanMatcherLinearSolver::OptimizeStep(
     const Eigen::Vector3d vecDelta = matH.colPivHouseholderQr().solve(vecB);
 
     /* Update and return the sensor pose */
-    return RobotPose2D<double> { sensorPose.mX + vecDelta(0),
-                                 sensorPose.mY + vecDelta(1),
-                                 sensorPose.mTheta + vecDelta(2) };
+    return RobotPose2D<double> { mapLocalSensorPose.mX + vecDelta(0),
+                                 mapLocalSensorPose.mY + vecDelta(1),
+                                 mapLocalSensorPose.mTheta + vecDelta(2) };
 }
 
 } /* namespace Mapping */

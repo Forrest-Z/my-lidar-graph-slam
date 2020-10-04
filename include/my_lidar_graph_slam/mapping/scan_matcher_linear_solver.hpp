@@ -16,12 +16,12 @@ class ScanMatcherLinearSolver final : public ScanMatcher
 {
 public:
     /* Constructor */
-    ScanMatcherLinearSolver(int numOfIterationsMax,
-                            double convergenceThreshold,
-                            double usableRangeMin,
-                            double usableRangeMax,
-                            double translationRegularizer,
-                            double rotationRegularizer,
+    ScanMatcherLinearSolver(const int numOfIterationsMax,
+                            const double convergenceThreshold,
+                            const double usableRangeMin,
+                            const double usableRangeMax,
+                            const double translationRegularizer,
+                            const double rotationRegularizer,
                             const CostFuncPtr& costFunc);
 
     /* Destructor */
@@ -36,21 +36,21 @@ private:
     RobotPose2D<double> OptimizeStep(
         const GridMapType& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& sensorPose);
+        const RobotPose2D<double>& mapLocalSensorPose);
 
 private:
     /* Maximum number of the optimization iterations */
-    int                mNumOfIterationsMax;
+    const int          mNumOfIterationsMax;
     /* Threshold to check the convergence */
-    double             mConvergenceThreshold;
+    const double       mConvergenceThreshold;
     /* Minimum laser scan range considered for calculation */
-    double             mUsableRangeMin;
+    const double       mUsableRangeMin;
     /* Maximum laser scan range considered for calculation */
-    double             mUsableRangeMax;
+    const double       mUsableRangeMax;
     /* Penalty for the translation in the scan matching process */
-    double             mTranslationRegularizer;
+    const double       mTranslationRegularizer;
     /* Penalty for the rotation in the scan matching process */
-    double             mRotationRegularizer;
+    const double       mRotationRegularizer;
     /* Cost function */
     CostSquareErrorPtr mCostFunc;
 };
