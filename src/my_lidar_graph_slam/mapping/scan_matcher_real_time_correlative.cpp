@@ -34,29 +34,31 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     /* Retrieve the query information */
     const auto& gridMap = queryInfo.mGridMap;
     const auto& scanData = queryInfo.mScanData;
-    const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
+    const RobotPose2D<double>& mapLocalInitialPose =
+        queryInfo.mMapLocalInitialPose;
 
     /* Precompute the grid map */
-    const PrecomputedMapType precompMap = this->ComputeCoarserMap(gridMap);
+    const ConstMapType precompMap = this->ComputeCoarserMap(gridMap);
 
     /* Optimize the robot pose by scan matching
      * Pass the minimum possible value as a score threshold to
      * search the entire window */
-    return this->OptimizePose(gridMap, precompMap, scanData, initialPose,
-                              std::numeric_limits<double>::min());
+    return this->OptimizePose(
+        gridMap, precompMap, scanData, mapLocalInitialPose,
+        std::numeric_limits<double>::min());
 }
 
 /* Optimize the robot pose by scan matching */
 ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     const GridMapType& gridMap,
-    const PrecomputedMapType& precompMap,
+    const ConstMapType& precompMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& initialPose,
+    const RobotPose2D<double>& mapLocalInitialPose,
     const double normalizedScoreThreshold) const
 {
     /* Find the best pose from the search window */
-    const RobotPose2D<double> sensorPose =
-        Compound(initialPose, scanData->RelativeSensorPose());
+    const RobotPose2D<double> mapLocalSensorPose =
+        Compound(mapLocalInitialPose, scanData->RelativeSensorPose());
 
     /* Determine the search step */
     double stepX;
@@ -88,7 +90,9 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     for (int t = -winTheta; t <= winTheta; ++t) {
         /* Compute the grid cell indices for scan points */
         const RobotPose2D<double> currentSensorPose {
-            sensorPose.mX, sensorPose.mY, sensorPose.mTheta + stepTheta * t };
+            mapLocalSensorPose.mX,
+            mapLocalSensorPose.mY,
+            mapLocalSensorPose.mTheta + stepTheta * t };
         this->ComputeScanIndices(
             precompMap, currentSensorPose, scanData, scanIndices);
 
@@ -120,9 +124,9 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     const bool poseFound = scoreMax > scoreThreshold;
     /* Compute the best sensor pose */
     const RobotPose2D<double> bestSensorPose {
-        sensorPose.mX + bestWinX * stepX,
-        sensorPose.mY + bestWinY * stepY,
-        sensorPose.mTheta + bestWinTheta * stepTheta };
+        mapLocalSensorPose.mX + bestWinX * stepX,
+        mapLocalSensorPose.mY + bestWinY * stepY,
+        mapLocalSensorPose.mTheta + bestWinTheta * stepTheta };
 
     /* Evaluate the cost value */
     const double costVal = this->mCostFunc->Cost(
@@ -130,22 +134,22 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     /* Compute the normalized cost value */
     const double normalizedCost = costVal / scanData->NumOfScans();
 
-    /* Compute the estimated robot pose in a world frame */
+    /* Compute the estimated robot pose in a map-local coordinate frame */
     const RobotPose2D<double> estimatedPose =
         MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
-    /* Compute the pose covariance matrix */
+    /* Compute the pose covariance matrix in a map-local coordinate frame */
     const Eigen::Matrix3d estimatedCovariance =
         this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
 
     /* Return the normalized cost value, the estimated robot pose,
-     * and the estimated pose covariance matrix in a world frame */
+     * and the estimated pose covariance matrix in a map-local frame */
     return ScanMatchingSummary {
-        poseFound, normalizedCost, initialPose,
+        poseFound, normalizedCost, mapLocalInitialPose,
         estimatedPose, estimatedCovariance };
 }
 
 /* Precompute a coarser grid map for scan matching */
-PrecomputedMapType ScanMatcherRealTimeCorrelative::ComputeCoarserMap(
+ConstMapType ScanMatcherRealTimeCorrelative::ComputeCoarserMap(
     const GridMapType& gridMap) const
 {
     /* Create a coarser grid map with the specified resolution */
@@ -176,8 +180,8 @@ void ScanMatcherRealTimeCorrelative::ComputeSearchStep(
 
 /* Compute the grid cell indices for scan points */
 void ScanMatcherRealTimeCorrelative::ComputeScanIndices(
-    const PrecomputedMapType& precompMap,
-    const RobotPose2D<double>& sensorPose,
+    const ConstMapType& precompMap,
+    const RobotPose2D<double>& mapLocalSensorPose,
     const Sensor::ScanDataPtr<double>& scanData,
     std::vector<Point2D<int>>& scanIndices) const
 {
@@ -192,10 +196,10 @@ void ScanMatcherRealTimeCorrelative::ComputeScanIndices(
         if (range >= this->mScanRangeMax)
             continue;
 
-        Point2D<double> hitPoint =
-            scanData->HitPoint(sensorPose, i);
+        Point2D<double> localHitPoint =
+            scanData->HitPoint(mapLocalSensorPose, i);
         Point2D<int> hitIdx =
-            precompMap.WorldCoordinateToGridCellIndex(hitPoint);
+            precompMap.LocalPosToGridCellIndex(localHitPoint);
         scanIndices.push_back(std::move(hitIdx));
     }
 

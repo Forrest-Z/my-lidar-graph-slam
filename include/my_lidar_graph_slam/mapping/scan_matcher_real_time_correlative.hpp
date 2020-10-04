@@ -34,35 +34,38 @@ public:
     /* Optimize the robot pose by scan matching */
     ScanMatchingSummary OptimizePose(
         const GridMapType& gridMap,
-        const PrecomputedMapType& precompMap,
+        const ConstMapType& precompMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& initialPose,
+        const RobotPose2D<double>& mapLocalInitialPose,
         const double normalizedScoreThreshold) const;
 
     /* Precompute a coarser grid map for scan matching */
-    PrecomputedMapType ComputeCoarserMap(
+    ConstMapType ComputeCoarserMap(
         const GridMapType& gridMap) const;
 
 private:
     /* Compute the search step */
-    void ComputeSearchStep(const GridMapBase<double>& gridMap,
-                           const Sensor::ScanDataPtr<double>& scanData,
-                           double& stepX,
-                           double& stepY,
-                           double& stepTheta) const;
+    void ComputeSearchStep(
+        const GridMapBase<double>& gridMap,
+        const Sensor::ScanDataPtr<double>& scanData,
+        double& stepX,
+        double& stepY,
+        double& stepTheta) const;
 
     /* Compute the grid cell indices for scan points */
-    void ComputeScanIndices(const PrecomputedMapType& precompMap,
-                            const RobotPose2D<double>& sensorPose,
-                            const Sensor::ScanDataPtr<double>& scanData,
-                            std::vector<Point2D<int>>& scanIndices) const;
+    void ComputeScanIndices(
+        const ConstMapType& precompMap,
+        const RobotPose2D<double>& mapLocalSensorPose,
+        const Sensor::ScanDataPtr<double>& scanData,
+        std::vector<Point2D<int>>& scanIndices) const;
 
     /* Compute the scan matching score based on the already projected
      * scan points (indices) and index offsets */
-    double ComputeScore(const GridMapBase<double>& gridMap,
-                        const std::vector<Point2D<int>>& scanIndices,
-                        const int offsetX,
-                        const int offsetY) const;
+    double ComputeScore(
+        const GridMapBase<double>& gridMap,
+        const std::vector<Point2D<int>>& scanIndices,
+        const int offsetX,
+        const int offsetY) const;
 
     /* Evaluate the matching score using high-resolution grid map */
     void EvaluateHighResolutionMap(
