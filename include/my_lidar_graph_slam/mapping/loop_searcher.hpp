@@ -18,67 +18,60 @@ namespace Mapping {
 
 /*
  * LoopSearchHint struct holds the necessary information
- * for searching the local grid map and the pose graph node, which are used
+ * for searching the local grid map and the scan node, which are used
  * for the loop detection based on exhaustive scan matching
  */
 struct LoopSearchHint final
 {
     /* Constructor */
     LoopSearchHint(
-        std::map<int, NodePosition>&& poseGraphNodes,
-        std::map<int, LocalMapPosition>&& localMapPositions,
+        std::map<NodeId, ScanNodeData>&& scanNodes,
+        std::map<LocalMapId, LocalMapData>&& localMapNodes,
         const double accumTravelDist,
-        const int latestNodeIdx,
-        const int latestLocalMapIdx) :
-        mPoseGraphNodes(std::move(poseGraphNodes)),
-        mLocalMapPositions(std::move(localMapPositions)),
+        const NodeId latestScanNodeId,
+        const LocalMapId latestLocalMapNodeId) :
+        mScanNodes(std::move(scanNodes)),
+        mLocalMapNodes(std::move(localMapNodes)),
         mAccumTravelDist(accumTravelDist),
-        mLatestNodeIdx(latestNodeIdx),
-        mLatestLocalMapIdx(latestLocalMapIdx) { }
+        mLatestScanNodeId(latestScanNodeId),
+        mLatestLocalMapNodeId(latestLocalMapNodeId) { }
 
     /* Destructor */
     ~LoopSearchHint() = default;
 
-    /* Information about the pose graph nodes (poses) */
-    const std::map<int, NodePosition>     mPoseGraphNodes;
-    /* Information about the local map positions
-     * Bounding box, grid map resolution, pose graph node indices */
-    const std::map<int, LocalMapPosition> mLocalMapPositions;
-    /* Accumulated travel distance of the robot (current node) */
-    const double                          mAccumTravelDist;
-    /* Index of the current pose graph node */
-    const int                             mLatestNodeIdx;
-    /* Index of the local map that contains the current pose graph node */
-    const int                             mLatestLocalMapIdx;
+    /* Information about the scan nodes */
+    const std::map<NodeId, ScanNodeData>     mScanNodes;
+    /* Information about the local map nodes */
+    const std::map<LocalMapId, LocalMapData> mLocalMapNodes;
+    /* Accumulated travel distance of the robot (current scan node) */
+    const double                             mAccumTravelDist;
+    /* Id of the current scan node */
+    const NodeId                             mLatestScanNodeId;
+    /* Id of the local map that contains the current scan node */
+    const LocalMapId                         mLatestLocalMapNodeId;
 };
 
 /*
- * LoopCandidate struct holds a collection of local map indices and
- * a pose graph node index, which are used for the loop detection.
- * A scan data that is associated to each node is matched against
- * a single local grid map for many-to-one scan matching
+ * LoopCandidate struct holds a collection of a local map Id and
+ * scan node Ids, which are used for the loop detection.
+ * A scan data that is associated to each scan node is matched against
+ * a single local map for a many-to-one scan matching.
  */
 struct LoopCandidate final
 {
     /* Constructor */
-    LoopCandidate(std::vector<int>&& nodeIndices,
-                  const int localMapIdx,
-                  const int localMapNodeIdx) :
-        mNodeIndices(std::move(nodeIndices)),
-        mLocalMapIdx(localMapIdx),
-        mLocalMapNodeIdx(localMapNodeIdx) { }
+    LoopCandidate(std::vector<NodeId>&& scanNodeIds,
+                  const LocalMapId localMapId) :
+        mScanNodeIds(std::move(scanNodeIds)),
+        mLocalMapId(localMapId) { }
 
     /* Destructor */
     ~LoopCandidate() = default;
 
-    /* Indices of the pose graph nodes */
-    const std::vector<int> mNodeIndices;
-    /* Index of the local map */
-    const int              mLocalMapIdx;
-    /* Index of the pose graph node that resides in the local map,
-     * which is used for building the loop closing edge
-     * Any index of the node inside the local map can be used */
-    const int              mLocalMapNodeIdx;
+    /* Ids of the scan nodes */
+    const std::vector<NodeId> mScanNodeIds;
+    /* Id of the local map node */
+    const LocalMapId          mLocalMapId;
 };
 
 /* Vector of the loop candidates */
@@ -93,7 +86,7 @@ public:
     /* Destructor */
     virtual ~LoopSearcher() = default;
 
-    /* Find a local map and a pose graph node for loop detection */
+    /* Find a local map and a scan node for loop detection */
     virtual LoopCandidateVector Search(
         const LoopSearchHint& searchHint) = 0;
 };
