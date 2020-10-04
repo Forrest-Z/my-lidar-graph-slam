@@ -40,7 +40,7 @@ public:
     ScanMatchingSummary OptimizePose(
         const GridMapType& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& initialPose,
+        const RobotPose2D<double>& mapLocalInitialPose,
         const double normalizedScoreThreshold) const;
 
 private:
