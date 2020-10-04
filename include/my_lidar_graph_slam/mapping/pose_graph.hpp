@@ -440,28 +440,28 @@ struct PoseGraphEdge final
 };
 
 /*
- * NodePosition struct represents the pose and index of
- * the pose graph nodes, which is intended for the use in
- * rendering the current pose graph or searching the loop closure
- * candidate, where the corresponding scan data of the node is not needed
+ * ScanNodeData struct represents the global pose and Id of the scan node,
+ * which is intended for the use in rendering the current pose graph or
+ * searching the loop closure candidate, where the corresponding scan data
+ * of the scan node is not needed
  */
-struct NodePosition final
+struct ScanNodeData final
 {
     /* Constructor */
-    NodePosition(int nodeIdx,
-                 const RobotPose2D<double>& pose) :
-        mIdx(nodeIdx), mPose(pose) { }
+    ScanNodeData(const NodeId nodeId,
+                 const RobotPose2D<double>& globalPose) :
+        mNodeId(nodeId), mGlobalPose(globalPose) { }
     /* Destructor */
-    ~NodePosition() = default;
+    ~ScanNodeData() = default;
 
     /* Comparison (less than) operator */
-    inline bool operator<(const NodePosition& other) const
-    { return this->mIdx < other.mIdx; }
+    inline bool operator<(const ScanNodeData& other) const
+    { return this->mNodeId < other.mNodeId; }
 
-    /* Index of the node */
-    const int                 mIdx;
-    /* Robot pose */
-    const RobotPose2D<double> mPose;
+    /* Node Id */
+    const NodeId              mNodeId;
+    /* Robot pose in a world coordinate */
+    const RobotPose2D<double> mGlobalPose;
 };
 
 /*
