@@ -49,8 +49,9 @@ public:
 
     /* Draw the pose graph */
     void DrawPoseGraph(
-        const std::map<int, Mapping::NodePosition>& poseGraphNodes,
-        const std::vector<Mapping::EdgeConnection>& poseGraphEdges) const;
+        const Mapping::LocalMapNodeMap& localMapNodes,
+        const std::map<Mapping::NodeId, Mapping::ScanNodeData>& scanNodes,
+        const std::vector<Mapping::EdgeData>& poseGraphEdges) const;
 
 private:
     std::unique_ptr<FILE, PipeDeleter> mGnuplot;

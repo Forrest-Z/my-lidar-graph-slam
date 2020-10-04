@@ -20,22 +20,25 @@ GnuplotHelper::GnuplotHelper() :
 
 /* Draw the pose graph */
 void GnuplotHelper::DrawPoseGraph(
-    const std::map<int, Mapping::NodePosition>& poseGraphNodes,
-    const std::vector<Mapping::EdgeConnection>& poseGraphEdges) const
+    const Mapping::LocalMapNodeMap& localMapNodes,
+    const std::map<Mapping::NodeId, Mapping::ScanNodeData>& scanNodes,
+    const std::vector<Mapping::EdgeData>& poseGraphEdges) const
 {
-    /* Setup pose graph edges for odometric constraints */
+    /* Setup pose graph edges for odometry constraints */
     std::fprintf(this->mGnuplot.get(), "$odometryEdges << EOF\n");
 
     for (const auto& edge : poseGraphEdges) {
-        if (!edge.mIsOdometry)
+        if (edge.mConstraintType != Mapping::ConstraintType::Odometry)
             continue;
 
-        const auto& startNode = poseGraphNodes.at(edge.mStartNodeIdx);
-        const auto& endNode = poseGraphNodes.at(edge.mEndNodeIdx);
+        const RobotPose2D<double>& startPose =
+            localMapNodes.At(edge.mLocalMapNodeId).mGlobalPose;
+        const RobotPose2D<double>& endPose =
+            scanNodes.at(edge.mScanNodeId).mGlobalPose;
 
         std::fprintf(this->mGnuplot.get(), "%f %f\n%f %f\n\n",
-                     startNode.mPose.mX, startNode.mPose.mY,
-                     endNode.mPose.mX, endNode.mPose.mY);
+                     startPose.mX, startPose.mY,
+                     endPose.mX, endPose.mY);
     }
 
     std::fprintf(this->mGnuplot.get(), "EOF\n");
@@ -44,15 +47,17 @@ void GnuplotHelper::DrawPoseGraph(
     std::fprintf(this->mGnuplot.get(), "$loopClosingEdges << EOF\n");
 
     for (const auto& edge : poseGraphEdges) {
-        if (edge.mIsOdometry)
+        if (edge.mConstraintType != Mapping::ConstraintType::Loop)
             continue;
 
-        const auto& startNode = poseGraphNodes.at(edge.mStartNodeIdx);
-        const auto& endNode = poseGraphNodes.at(edge.mEndNodeIdx);
+        const RobotPose2D<double>& startPose =
+            localMapNodes.At(edge.mLocalMapNodeId).mGlobalPose;
+        const RobotPose2D<double>& endPose =
+            scanNodes.at(edge.mScanNodeId).mGlobalPose;
 
         std::fprintf(this->mGnuplot.get(), "%f %f\n%f %f\n\n",
-                     startNode.mPose.mX, startNode.mPose.mY,
-                     endNode.mPose.mX, endNode.mPose.mY);
+                     startPose.mX, startPose.mY,
+                     endPose.mX, endPose.mY);
     }
 
     std::fprintf(this->mGnuplot.get(), "EOF\n");
