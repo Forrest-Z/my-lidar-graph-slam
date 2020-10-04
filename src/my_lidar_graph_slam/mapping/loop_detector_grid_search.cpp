@@ -36,45 +36,40 @@ void LoopDetectorGridSearch::Detect(
 
     /* Perform loop detection for each query */
     for (const auto& loopDetectionQuery : loopDetectionQueries) {
-        /* Retrieve the pose graph nodes, each of whose scan data is
+        /* Retrieve the scan nodes, each of whose scan data is
          * matched against the local grid map to detect a loop */
-        const auto& poseGraphNodes = loopDetectionQuery.mPoseGraphNodes;
+        const auto& scanNodes = loopDetectionQuery.mScanNodes;
         /* Retrieve the local grid map information */
-        auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
-        /* Retrieve the pose graph node inside the local grid map */
+        auto& localMap = loopDetectionQuery.mLocalMap;
+        /* Retrieve the local map node */
         const auto& localMapNode = loopDetectionQuery.mLocalMapNode;
 
-        /* Make sure that the node is inside the local grid map */
-        assert(localMapNode.Index() >= localMapInfo.mPoseGraphNodeIdxMin &&
-               localMapNode.Index() <= localMapInfo.mPoseGraphNodeIdxMax);
+        /* Check the local map Id */
+        Assert(localMap.mId == localMapNode.mLocalMapId);
 
-        /* Perform loop detection for each node */
-        for (const auto& poseGraphNode : poseGraphNodes) {
-            /* Find the corresponding position of the node
+        /* Perform loop detection for each scan node */
+        for (const auto& scanNode : scanNodes) {
+            /* Compute the scan node pose in a map-local coordinate frame */
+            const RobotPose2D<double> mapLocalScanPose =
+                InverseCompound(localMapNode.mGlobalPose, scanNode.mGlobalPose);
+            /* Find the corresponding position of the scan node
              * inside the local grid map */
             RobotPose2D<double> correspondingPose;
             Eigen::Matrix3d covarianceMatrix;
             const bool loopDetected = this->FindCorrespondingPose(
-                localMapInfo.mMap,
-                poseGraphNode.ScanData(), poseGraphNode.Pose(),
+                localMap.mMap, scanNode.mScanData, mapLocalScanPose,
                 correspondingPose, covarianceMatrix);
 
             /* Do not build a new loop closing edge if loop not detected */
             if (!loopDetected)
                 continue;
 
-            /* Setup loop closing edge information */
-            /* Relative pose of the edge */
-            const RobotPose2D<double> relativePose =
-                InverseCompound(localMapNode.Pose(), correspondingPose);
-            /* Indices of the start and end node */
-            const int startNodeIdx = localMapNode.Index();
-            const int endNodeIdx = poseGraphNode.Index();
-
             /* Append to the loop detection results */
+            /* Relative pose and covariance matrix in a map-local coordinate
+             * frame is already obtained */
             loopDetectionResults.emplace_back(
-                relativePose, localMapNode.Pose(),
-                startNodeIdx, endNodeIdx, covarianceMatrix);
+                correspondingPose, localMapNode.mGlobalPose,
+                localMapNode.mLocalMapId, scanNode.mNodeId, covarianceMatrix);
         }
     }
 
@@ -86,13 +81,13 @@ void LoopDetectorGridSearch::Detect(
 bool LoopDetectorGridSearch::FindCorrespondingPose(
     const GridMapType& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& robotPose,
+    const RobotPose2D<double>& mapLocalScanPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
     /* Just call the exhaustive grid search scan matcher */
     const auto matchingSummary = this->mScanMatcher->OptimizePose(
-        gridMap, scanData, robotPose, this->mScoreThreshold);
+        gridMap, scanData, mapLocalScanPose, this->mScoreThreshold);
 
     /* Loop detection fails if the matching score falls below the threshold */
     if (!matchingSummary.mPoseFound)

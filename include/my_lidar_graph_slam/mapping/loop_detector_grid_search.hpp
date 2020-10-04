@@ -35,7 +35,7 @@ private:
      * from the local grid map */
     bool FindCorrespondingPose(const GridMapType& gridMap,
                                const Sensor::ScanDataPtr<double>& scanData,
-                               const RobotPose2D<double>& robotPose,
+                               const RobotPose2D<double>& mapLocalScanPose,
                                RobotPose2D<double>& correspondingPose,
                                Eigen::Matrix3d& estimatedCovMat) const;
 
