@@ -26,27 +26,24 @@ namespace Mapping {
 struct LoopDetectionQuery final
 {
     /* Constructor */
-    LoopDetectionQuery(
-        std::vector<PoseGraph::Node>&& poseGraphNodes,
-        const LocalMapInfo& localMapInfo,
-        const PoseGraph::Node& localMapNode) :
-        mPoseGraphNodes(std::move(poseGraphNodes)),
-        mLocalMapInfo(localMapInfo),
+    LoopDetectionQuery(std::vector<ScanNode>&& scanNodes,
+                       const LocalMap& localMap,
+                       const LocalMapNode& localMapNode) :
+        mScanNodes(std::move(scanNodes)),
+        mLocalMap(localMap),
         mLocalMapNode(localMapNode) { }
 
     /* Destructor */
     ~LoopDetectionQuery() = default;
 
-    /* Vector of pose graph nodes, each of which is matched against
+    /* Vector of scan nodes, each of which is matched against
      * the local grid map using the node pose and its associated scan data */
-    const std::vector<PoseGraph::Node> mPoseGraphNodes;
+    const std::vector<ScanNode> mScanNodes;
     /* Local grid map, which is not constant since the precomputation
      * of the coarser grid maps is needed */
-    LocalMapInfo                       mLocalMapInfo;
-    /* Pose graph node that resides in the local map, which is used to
-     * specify the node index and to compute the relative pose of the
-     * loop closing edge */
-    const PoseGraph::Node              mLocalMapNode;
+    LocalMap                    mLocalMap;
+    /* Local map node */
+    const LocalMapNode          mLocalMapNode;
 };
 
 /* Vector of the loop detection query */
@@ -62,13 +59,13 @@ struct LoopDetectionResult final
     /* Constructor */
     LoopDetectionResult(const RobotPose2D<double>& relativePose,
                         const RobotPose2D<double>& startNodePose,
-                        const int startNodeIdx,
-                        const int endNodeIdx,
+                        const LocalMapId localMapNodeId,
+                        const NodeId scanNodeId,
                         const Eigen::Matrix3d& estimatedCovMat) :
         mRelativePose(relativePose),
         mStartNodePose(startNodePose),
-        mStartNodeIdx(startNodeIdx),
-        mEndNodeIdx(endNodeIdx),
+        mLocalMapNodeId(localMapNodeId),
+        mScanNodeId(scanNodeId),
         mEstimatedCovMat(estimatedCovMat) { }
 
     /* Destructor */
@@ -76,13 +73,13 @@ struct LoopDetectionResult final
 
     /* Actual relative pose between two nodes */
     const RobotPose2D<double> mRelativePose;
-    /* Pose of the start node */
+    /* Pose of the start node in a global frame */
     const RobotPose2D<double> mStartNodePose;
-    /* Index of the start pose graph node */
-    const int                 mStartNodeIdx;
-    /* Index of the end pose graph node */
-    const int                 mEndNodeIdx;
-    /* Estimated covariance matrix (inverse of the information matrix) */
+    /* Id of the local map node */
+    const LocalMapId          mLocalMapNodeId;
+    /* Id of the scan node */
+    const NodeId              mScanNodeId;
+    /* Estimated covariance matrix in a map-local coordinate frame */
     const Eigen::Matrix3d     mEstimatedCovMat;
 };
 
@@ -98,9 +95,7 @@ public:
     /* Destructor */
     virtual ~LoopDetector() = default;
 
-    /* Find a loop and return a loop constraint
-     * Current scan data stored in the latest pose graph node is
-     * matched against the previous local grid map */
+    /* Find a loop and return a loop constraint */
     virtual void Detect(
         LoopDetectionQueryVector& loopDetectionQueries,
         LoopDetectionResultVector& loopDetectionResults) = 0;
