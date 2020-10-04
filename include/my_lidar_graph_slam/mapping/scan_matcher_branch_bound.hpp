@@ -59,13 +59,13 @@ public:
     /* Optimize the robot pose by scan matching */
     ScanMatchingSummary OptimizePose(
         const GridMapType& gridMap,
-        const std::map<int, PrecomputedMapType>& precompMaps,
+        const std::map<int, ConstMapType>& precompMaps,
         const Sensor::ScanDataPtr<double>& scanData,
-        const RobotPose2D<double>& initialPose,
+        const RobotPose2D<double>& mapLocalInitialPose,
         const double normalizedScoreThreshold) const;
 
     /* Precompute multiple coarser grid maps for scan matching */
-    std::map<int, PrecomputedMapType> ComputeCoarserMaps(
+    std::map<int, ConstMapType> ComputeCoarserMaps(
         const GridMapType& gridMap) const;
 
 private:

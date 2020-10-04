@@ -32,29 +32,31 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
     /* Retrieve the query information */
     const auto& gridMap = queryInfo.mGridMap;
     const auto& scanData = queryInfo.mScanData;
-    const RobotPose2D<double>& initialPose = queryInfo.mInitialPose;
+    const RobotPose2D<double>& mapLocalInitialPose =
+        queryInfo.mMapLocalInitialPose;
 
     /* Precompute the coarser grid maps */
-    const std::map<int, PrecomputedMapType> precompMaps =
+    const std::map<int, ConstMapType> precompMaps =
         this->ComputeCoarserMaps(gridMap);
 
     /* Optimize the robot pose by scan matching */
-    return this->OptimizePose(gridMap, precompMaps, scanData, initialPose,
-                              std::numeric_limits<double>::min());
+    return this->OptimizePose(
+        gridMap, precompMaps, scanData, mapLocalInitialPose,
+        std::numeric_limits<double>::min());
 }
 
 /* Optimize the robot pose by scan matching */
 ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
     const GridMapType& gridMap,
-    const std::map<int, PrecomputedMapType>& precompMaps,
+    const std::map<int, ConstMapType>& precompMaps,
     const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& initialPose,
+    const RobotPose2D<double>& mapLocalInitialPose,
     const double normalizedScoreThreshold) const
 {
     /* Find the best pose from the search window
      * that maximizes the matching score value */
-    const RobotPose2D<double> sensorPose =
-        Compound(initialPose, scanData->RelativeSensorPose());
+    const RobotPose2D<double> mapLocalSensorPose =
+        Compound(mapLocalInitialPose, scanData->RelativeSensorPose());
 
     /* Determine the search window step */
     double stepX;
@@ -76,7 +78,7 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
     double scoreMax = scoreThreshold;
 
     /* Setup the best pose */
-    RobotPose2D<double> bestSensorPose = sensorPose;
+    RobotPose2D<double> bestSensorPose = mapLocalSensorPose;
 
     /* Initialize a stack with nodes covering the entire search window */
     std::stack<Node> nodeStack;
@@ -94,15 +96,13 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
         const Node& currentNode = nodeStack.top();
         /* Compute the corresponding node pose */
         const RobotPose2D<double> nodePose {
-            sensorPose.mX + currentNode.mX * stepX,
-            sensorPose.mY + currentNode.mY * stepY,
-            sensorPose.mTheta + currentNode.mTheta * stepTheta };
+            mapLocalSensorPose.mX + currentNode.mX * stepX,
+            mapLocalSensorPose.mY + currentNode.mY * stepY,
+            mapLocalSensorPose.mTheta + currentNode.mTheta * stepTheta };
 
         /* Calculate node score */
-        ScoreFunction::Summary resultSummary;
-        this->mScoreFunc->Score(
-            precompMaps.at(currentNode.mHeight), scanData,
-            nodePose, resultSummary);
+        const ScoreFunction::Summary resultSummary = this->mScoreFunc->Score(
+            precompMaps.at(currentNode.mHeight), scanData, nodePose);
 
         /* Ignore the node if the score falls below the threshold */
         if (resultSummary.mScore <= scoreMax) {
@@ -148,26 +148,26 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
     /* Compute the normalized cost value */
     const double normalizedCost = costVal / scanData->NumOfScans();
 
-    /* Compute the estimated robot pose in a world frame */
+    /* Compute the estimated robot pose in a map-local coordinate frame */
     const RobotPose2D<double> estimatedPose =
         MoveBackward(bestSensorPose, scanData->RelativeSensorPose());
-    /* Compute the pose covariance matrix */
+    /* Compute the pose covariance matrix in a map-local coordinate frame */
     const Eigen::Matrix3d estimatedCovariance =
         this->mCostFunc->ComputeCovariance(gridMap, scanData, bestSensorPose);
 
     /* Return the normalized cost value, the estimated robot pose,
-     * and the estimated pose covariance matrix in a world frame */
+     * and the estimated pose covariance matrix in a map-local frame */
     return ScanMatchingSummary {
-        poseFound, normalizedCost, initialPose,
+        poseFound, normalizedCost, mapLocalInitialPose,
         estimatedPose, estimatedCovariance };
 }
 
 /* Precompute multiple coarser grid maps for scan matching */
-std::map<int, PrecomputedMapType> ScanMatcherBranchBound::ComputeCoarserMaps(
+std::map<int, ConstMapType> ScanMatcherBranchBound::ComputeCoarserMaps(
     const GridMapType& gridMap) const
 {
     /* Map with the tree height (key) and the coarser grid map (value) */
-    std::map<int, PrecomputedMapType> precompMaps;
+    std::map<int, ConstMapType> precompMaps;
     /* Create multiple coarser grid maps */
     PrecomputeGridMaps(gridMap, precompMaps, this->mNodeHeightMax);
     /* Return the grid map pyramid */
