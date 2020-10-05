@@ -134,6 +134,17 @@ T SquaredDistance(const Point2D<T>& p0, const Point2D<T>& p1)
            (p0.mY - p1.mY) * (p0.mY - p1.mY);
 }
 
+/* Rotate the point by a specified angle */
+template <typename T>
+Point2D<T> Rotate(const Point2D<T>& lhs, const T theta)
+{
+    const T sinTheta = std::sin(theta);
+    const T cosTheta = std::cos(theta);
+
+    return Point2D<T> { cosTheta * lhs.mX - sinTheta * lhs.mY,
+                        sinTheta * lhs.mX + cosTheta * lhs.mY };
+}
+
 /* Print to an output stream */
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const Point2D<int>& rhs)
