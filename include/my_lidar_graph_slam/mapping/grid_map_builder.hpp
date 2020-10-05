@@ -157,7 +157,11 @@ public:
     { return this->mLocalMaps.at(localMapId); }
 
     /* Retrieve the grid map constructed from the latest scans */
-    inline const GridMapType& LatestMap() const { return this->mLatestMap; }
+    inline const GridMapType& LatestMap() const
+    { return this->mLatestMap; }
+    /* Retrieve the latest map pose in a world frame */
+    inline const RobotPose2D<double>& LatestMapPose() const
+    { return this->mLatestMapPose; }
 
     /* Get the accumulated travel distance */
     inline double AccumTravelDist() const { return this->mAccumTravelDist; }
