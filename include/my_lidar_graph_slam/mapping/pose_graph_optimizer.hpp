@@ -21,8 +21,9 @@ public:
 
     /* Optimize a pose graph */
     virtual void Optimize(
-        std::vector<PoseGraph::Node>& poseGraphNodes,
-        const std::vector<PoseGraph::Edge>& poseGraphEdges) = 0;
+        LocalMapNodeMap& localMapNodes,
+        ScanNodeMap& scanNodes,
+        const std::vector<PoseGraphEdge>& poseGraphEdges) = 0;
 
     /* Compute error function */
     virtual void ComputeErrorFunction(
