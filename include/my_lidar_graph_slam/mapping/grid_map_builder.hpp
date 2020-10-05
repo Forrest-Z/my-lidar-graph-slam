@@ -32,14 +32,14 @@ struct LocalMapData final
 {
     /* Constructor */
     LocalMapData(const LocalMapId localMapId,
-                 const Point2D<double>& minGlobalPos,
-                 const Point2D<double>& maxGlobalPos,
+                 const Point2D<double>& globalMinPos,
+                 const Point2D<double>& globalMaxPos,
                  const NodeId scanNodeIdMin,
                  const NodeId scanNodeIdMax,
                  const bool isFinished) :
         mId(localMapId),
-        mMinGlobalPos(minGlobalPos),
-        mMaxGlobalPos(maxGlobalPos),
+        mGlobalMinPos(globalMinPos),
+        mGlobalMaxPos(globalMaxPos),
         mScanNodeIdMin(scanNodeIdMin),
         mScanNodeIdMax(scanNodeIdMax),
         mFinished(isFinished) { }
@@ -50,9 +50,9 @@ struct LocalMapData final
     /* Local map Id */
     const LocalMapId      mId;
     /* Minimum position of the local map (in a world frame) */
-    const Point2D<double> mMinGlobalPos;
+    const Point2D<double> mGlobalMinPos;
     /* Maximum position of the local map (in a world frame) */
-    const Point2D<double> mMaxGlobalPos;
+    const Point2D<double> mGlobalMaxPos;
     /* Minimum scan node Id inside this local map */
     const NodeId          mScanNodeIdMin;
     /* Maximum scan node Id inside this local map */
