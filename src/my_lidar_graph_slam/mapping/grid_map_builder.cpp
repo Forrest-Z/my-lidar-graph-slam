@@ -248,11 +248,14 @@ void GridMapBuilder::UpdateLatestMap(const ScanNodeMap& scanNodes)
     const int numOfScansForMap =
         std::min(1, this->mNumOfScansForLatestMap);
     const auto lastNodeIt = scanNodes.Nodes().rbegin();
-    const auto latestNodeIt = std::next(lastNodeIt, numOfScansForMap);
+    const auto latestNodeIt = std::next(lastNodeIt, numOfScansForMap - 1);
 
     /* Calculate the minimum and maximum scan node Id */
     this->mLatestScanIdMin = latestNodeIt->first;
     this->mLatestScanIdMax = lastNodeIt->first;
+
+    /* Validate the scan node Ids */
+    Assert(this->mLatestScanIdMin <= this->mLatestScanIdMax);
 
     /* Update the pose of the latest map */
     this->mLatestMapPose = latestNodeIt->second.mGlobalPose;
