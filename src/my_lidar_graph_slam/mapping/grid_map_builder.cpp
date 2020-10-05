@@ -64,20 +64,19 @@ void GridMapBuilder::AfterLoopClosure(
     const ScanNodeMap& scanNodes)
 {
     /* Update the all local grid maps */
-    for (auto& localMapData : this->mLocalMaps) {
+    for (auto& [localMapId, localMap] : this->mLocalMaps) {
         /* Retrieve the local map Id and global pose */
-        const LocalMapId localMapId = localMapData.mId;
         const RobotPose2D<double>& globalMapPose =
             localMapNodes.At(localMapId).mGlobalPose;
 
         /* Reconstruct a local map */
         this->ConstructMapFromScans(
-            globalMapPose, localMapData.mMap, scanNodes,
-            localMapData.mScanNodeIdMin, localMapData.mScanNodeIdMax);
+            globalMapPose, localMap.mMap, scanNodes,
+            localMap.mScanNodeIdMin, localMap.mScanNodeIdMax);
 
         /* Reset the precomputed grid maps */
-        localMapData.mPrecomputedMaps.clear();
-        localMapData.mPrecomputed = false;
+        localMap.mPrecomputedMaps.clear();
+        localMap.mPrecomputed = false;
     }
 
     /* Update the latest grid map with latest scans */
@@ -149,14 +148,16 @@ bool GridMapBuilder::UpdateGridMap(
 
     /* Create a new local map if necessary */
     if (createNewLocalMap) {
+        /* Retrieve the last local map */
+        auto& lastMap = this->mLocalMaps.rbegin()->second;
+
         /* The last local maps are marked as finished */
         if (this->mLocalMaps.size() > 0)
-            this->mLocalMaps.back().mFinished = true;
+            lastMap.mFinished = true;
 
         /* Determine the Id of the new local map */
         const LocalMapId localMapId = this->mLocalMaps.empty() ?
-            LocalMapId { 0 } :
-            LocalMapId { this->mLocalMaps.back().mId.mId + 1 };
+            LocalMapId { 0 } : LocalMapId { lastMap.mId.mId + 1 };
         /* Insert a local map node to the pose graph */
         localMapNodes.Append(localMapId, globalRobotPose);
 
@@ -166,8 +167,11 @@ bool GridMapBuilder::UpdateGridMap(
         /* Create a new local map */
         GridMapType newLocalMap {
             this->mResolution, this->mPatchSize, 0, 0, centerPos };
-        this->mLocalMaps.emplace_back(
-            localMapId, std::move(newLocalMap), scanNodeId);
+        this->mLocalMaps.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(localMapId),
+            std::forward_as_tuple(localMapId, std::move(newLocalMap),
+                                  scanNodeId));
 
         /* Reset the variables properly */
         this->mTravelDistLastLocalMap = 0.0;
@@ -175,7 +179,7 @@ bool GridMapBuilder::UpdateGridMap(
     }
 
     /* Local map to which the latest scan is added */
-    LocalMap& localMapData = this->mLocalMaps.back();
+    LocalMap& localMapData = this->mLocalMaps.rbegin()->second;
     GridMapType& localMap = localMapData.mMap;
 
     /* Local map pose in a world frame */
