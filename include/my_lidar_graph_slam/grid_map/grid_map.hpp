@@ -268,6 +268,11 @@ public:
                               Point2D<int>& mapSizeInGridCells,
                               Point2D<double>& mapSizeInMeters) const;
 
+    /* Compute the bounding box in a world coordinate frame */
+    void ComputeBoundingBox(const RobotPose2D<double>& globalPose,
+                            Point2D<double>& globalMinPos,
+                            Point2D<double>& globalMaxPos) const;
+
     /* Get the map resolution (grid cell size in meters) */
     inline double Resolution() const override
     { return this->mResolution; }
@@ -1033,6 +1038,31 @@ void GridMap<T>::ComputeActualMapSize(
 
     mapSizeInMeters.mX = mapSizeInGridCells.mX * this->mResolution;
     mapSizeInMeters.mY = mapSizeInGridCells.mY * this->mResolution;
+}
+
+/* Compute the bounding box in a world coordinate frame */
+template <typename T>
+void GridMap<T>::ComputeBoundingBox(
+    const RobotPose2D<double>& globalPose,
+    Point2D<double>& globalMinPos,
+    Point2D<double>& globalMaxPos) const
+{
+    const Point2D<double> rotatedMinPos =
+        Rotate(this->LocalMinPos(), globalPose.mTheta);
+    const Point2D<double> rotatedMaxPos =
+        Rotate(this->LocalMaxPos(), globalPose.mTheta);
+
+    const Point2D<double> cornerPos0 {
+        globalPose.mX + rotatedMinPos.mX,
+        globalPose.mY + rotatedMinPos.mY };
+    const Point2D<double> cornerPos1 {
+        globalPose.mX + rotatedMaxPos.mX,
+        globalPose.mY + rotatedMaxPos.mY };
+
+    globalMinPos.mX = std::min(cornerPos0.mX, cornerPos1.mX);
+    globalMinPos.mY = std::min(cornerPos0.mY, cornerPos1.mY);
+    globalMaxPos.mX = std::max(cornerPos0.mX, cornerPos1.mX);
+    globalMaxPos.mY = std::max(cornerPos0.mY, cornerPos1.mY);
 }
 
 } /* namespace MyLidarGraphSlam */
