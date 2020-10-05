@@ -11,8 +11,9 @@ namespace Mapping {
 /* Optimize a pose graph using the combination of
  * linear solver and Levenberg-Marquardt method */
 void PoseGraphOptimizerLM::Optimize(
-    std::vector<PoseGraph::Node>& poseGraphNodes,
-    const std::vector<PoseGraph::Edge>& poseGraphEdges)
+    LocalMapNodeMap& localMapNodes,
+    ScanNodeMap& scanNodes,
+    const std::vector<PoseGraphEdge>& poseGraphEdges)
 {
     double prevTotalError = std::numeric_limits<double>::max();
     double totalError = std::numeric_limits<double>::max();
@@ -20,11 +21,12 @@ void PoseGraphOptimizerLM::Optimize(
 
     /* Retrieve the number of nodes and edges
      * These remain constant during the optimization */
-    const int numOfNodes = static_cast<int>(poseGraphNodes.size());
+    const int numOfLocalMapNodes = static_cast<int>(localMapNodes.Size());
+    const int numOfScanNodes = static_cast<int>(scanNodes.Size());
     const int numOfEdges = static_cast<int>(poseGraphEdges.size());
 
     /* Total number of the variables in the linear system */
-    const int numOfVariables = 3 * numOfNodes;
+    const int numOfVariables = 3 * (numOfLocalMapNodes + numOfScanNodes);
     /* Total number of the non-zero elements in the sparse matrix */
     const std::size_t numOfNonzeroElements = 4 * (3 * 3) * numOfEdges;
 
@@ -40,11 +42,12 @@ void PoseGraphOptimizerLM::Optimize(
 
     while (true) {
         /* Perform one optimization step */
-        this->OptimizeStep(poseGraphNodes, poseGraphEdges,
+        this->OptimizeStep(localMapNodes, scanNodes, poseGraphEdges,
                            this->mMatA, this->mVecB,
                            this->mVecDelta, this->mMatATriplets);
         /* Compute the total error */
-        totalError = this->ComputeTotalError(poseGraphNodes, poseGraphEdges);
+        totalError = this->ComputeTotalError(
+            localMapNodes, scanNodes, poseGraphEdges);
 
         /* Stop the graph optimization if the number of iteration steps
          * exceeded the maximum or the total error converged */
@@ -66,15 +69,17 @@ void PoseGraphOptimizerLM::Optimize(
 
 /* Perform one optimization step and return the total error */
 void PoseGraphOptimizerLM::OptimizeStep(
-    std::vector<PoseGraph::Node>& poseGraphNodes,
-    const std::vector<PoseGraph::Edge>& poseGraphEdges,
+    LocalMapNodeMap& localMapNodes,
+    ScanNodeMap& scanNodes,
+    const std::vector<PoseGraphEdge>& poseGraphEdges,
     Eigen::SparseMatrix<double>& matA,
     Eigen::VectorXd& vecB,
     Eigen::VectorXd& vecDelta,
     std::vector<Eigen::Triplet<double>>& matATriplets)
 {
-    const int numOfNodes = static_cast<int>(poseGraphNodes.size());
-    const int numOfVariables = 3 * numOfNodes;
+    const int numOfLocalMapNodes = static_cast<int>(localMapNodes.Size());
+    const int numOfScanNodes = static_cast<int>(scanNodes.Size());
+    const int numOfVariables = 3 * (numOfLocalMapNodes + numOfScanNodes);
 
     /* Clear all vectors and matrices */
     matATriplets.clear();
@@ -83,18 +88,30 @@ void PoseGraphOptimizerLM::OptimizeStep(
     /* Setup the left-hand side sparse matrix H */
     for (const auto& edge : poseGraphEdges) {
         /* Retrieve the relative pose \bar{z}_{ij} from the edge */
-        const RobotPose2D<double>& edgeRelPose = edge.RelativePose();
+        const RobotPose2D<double>& edgeRelPose = edge.mRelativePose;
         /* Retrieve the information matrix \Lambda_{ij} of the edge */
-        const Eigen::Matrix3d& infoMat = edge.InformationMatrix();
+        const Eigen::Matrix3d& infoMat = edge.mInformationMat;
 
         /* Retrieve the poses of the start node and the end node */
-        const int startNodeIdx = edge.StartNodeIndex();
-        const int endNodeIdx = edge.EndNodeIndex();
+        const LocalMapId startNodeId = edge.mLocalMapNodeId;
+        const NodeId endNodeId = edge.mScanNodeId;
+
+        /* Get the iterators to the node */
+        const auto startNodeIt = localMapNodes.Nodes().find(startNodeId);
+        const auto endNodeIt = scanNodes.Nodes().find(endNodeId);
+
+        /* Compute the indices to the matrix elements */
+        const int offsetToStartNode =
+            std::distance(localMapNodes.Nodes().begin(), startNodeIt);
+        const int offsetToEndNode =
+            std::distance(scanNodes.Nodes().begin(), endNodeIt);
+        const int startNodeIdx = offsetToStartNode;
+        const int endNodeIdx = numOfLocalMapNodes + offsetToEndNode;
 
         const RobotPose2D<double>& startNodePose =
-            poseGraphNodes.at(startNodeIdx).Pose();
+            localMapNodes.At(startNodeId).mGlobalPose;
         const RobotPose2D<double>& endNodePose =
-            poseGraphNodes.at(endNodeIdx).Pose();
+            scanNodes.At(endNodeId).mGlobalPose;
 
         /* Compute Jacobian matrices of the error function */
         Eigen::Matrix3d startNodeJacobian;
@@ -205,15 +222,29 @@ void PoseGraphOptimizerLM::OptimizeStep(
         }
     }
 
-    /* Update the poses stored in pose graph */
-    for (int i = 0; i < numOfNodes; ++i) {
-        const RobotPose2D<double>& prevNodePose =
-            poseGraphNodes.at(i).Pose();
-        const RobotPose2D<double> newPose {
-            prevNodePose.mX + vecDelta(3 * i),
-            prevNodePose.mY + vecDelta(3 * i + 1),
-            prevNodePose.mTheta + vecDelta(3 * i + 2) };
-        poseGraphNodes.at(i).Pose() = newPose;
+    /* Update the local map poses stored in pose graph */
+    for (auto nodeIt = localMapNodes.begin();
+         nodeIt != localMapNodes.end(); ++nodeIt) {
+        const int nodeIdx = std::distance(localMapNodes.begin(), nodeIt);
+        const RobotPose2D<double>& prevNodePose = nodeIt->second.mGlobalPose;
+        const RobotPose2D<double> newNodePose {
+            prevNodePose.mX + vecDelta(3 * nodeIdx),
+            prevNodePose.mY + vecDelta(3 * nodeIdx + 1),
+            prevNodePose.mTheta + vecDelta(3 * nodeIdx + 2) };
+        nodeIt->second.mGlobalPose = newNodePose;
+    }
+
+    /* Update the scan node poses stored in the pose graph */
+    for (auto nodeIt = scanNodes.begin();
+         nodeIt != scanNodes.end(); ++nodeIt) {
+        const int offsetToNode = std::distance(scanNodes.begin(), nodeIt);
+        const int nodeIdx = numOfLocalMapNodes + offsetToNode;
+        const RobotPose2D<double>& prevNodePose = nodeIt->second.mGlobalPose;
+        const RobotPose2D<double> newNodePose {
+            prevNodePose.mX + vecDelta(3 * nodeIdx),
+            prevNodePose.mY + vecDelta(3 * nodeIdx + 1),
+            prevNodePose.mTheta + vecDelta(3 * nodeIdx + 2) };
+        nodeIt->second.mGlobalPose = newNodePose;
     }
 
     return;
@@ -300,26 +331,27 @@ void PoseGraphOptimizerLM::ComputeErrorFunction(
 
 /* Compute total error */
 double PoseGraphOptimizerLM::ComputeTotalError(
-    const std::vector<PoseGraph::Node>& poseGraphNodes,
-    const std::vector<PoseGraph::Edge>& poseGraphEdges) const
+    const LocalMapNodeMap& localMapNodes,
+    const ScanNodeMap& scanNodes,
+    const std::vector<PoseGraphEdge>& poseGraphEdges) const
 {
     double totalError = 0.0;
 
     /* Compute error function for each edge */
     for (const auto& edge : poseGraphEdges) {
         /* Retrieve the relative pose \bar{z}_{ij} from the edge */
-        const RobotPose2D<double>& edgeRelPose = edge.RelativePose();
+        const RobotPose2D<double>& edgeRelPose = edge.mRelativePose;
         /* Retrieve the information matrix \Lambda_{ij} of the edge */
-        const Eigen::Matrix3d& infoMat = edge.InformationMatrix();
+        const Eigen::Matrix3d& infoMat = edge.mInformationMat;
 
         /* Retrieve the poses of the start node and the end node */
-        const int startNodeIdx = edge.StartNodeIndex();
-        const int endNodeIdx = edge.EndNodeIndex();
+        const LocalMapId startNodeId = edge.mLocalMapNodeId;
+        const NodeId endNodeId = edge.mScanNodeId;
 
         const RobotPose2D<double>& startNodePose =
-            poseGraphNodes.at(startNodeIdx).Pose();
+            localMapNodes.At(startNodeId).mGlobalPose;
         const RobotPose2D<double>& endNodePose =
-            poseGraphNodes.at(endNodeIdx).Pose();
+            scanNodes.At(endNodeId).mGlobalPose;
 
         /* Compute the residual */
         Eigen::Vector3d errorVec;
@@ -339,7 +371,9 @@ double PoseGraphOptimizerLM::ComputeTotalError(
 
 /* Dump the pose graph error */
 void PoseGraphOptimizerLM::DumpError(
-    const std::shared_ptr<PoseGraph>& poseGraph) const
+    const LocalMapNodeMap& localMapNodes,
+    const ScanNodeMap& scanNodes,
+    const std::vector<PoseGraphEdge>& poseGraphEdges) const
 {
     auto* const pMetric = Metric::MetricManager::Instance();
     auto* const pErrorHistogram = pMetric->HistogramMetrics()("PoseGraphError");
@@ -348,26 +382,25 @@ void PoseGraphOptimizerLM::DumpError(
     pErrorHistogram->Reset();
 
     /* Compute error function for each edge */
-    for (const auto& edge : poseGraph->Edges()) {
+    for (const auto& edge : poseGraphEdges) {
         /* Retrieve the relative pose \bar{z}_{ij} from the edge */
-        const RobotPose2D<double>& edgeRelPose = edge.RelativePose();
+        const RobotPose2D<double>& edgeRelPose = edge.mRelativePose;
         /* Retrieve the information matrix \Lambda_{ij} of the edge */
-        const Eigen::Matrix3d& infoMat = edge.InformationMatrix();
+        const Eigen::Matrix3d& infoMat = edge.mInformationMat;
 
         /* Retrieve the poses of the start node and the end node */
-        const int startNodeIdx = edge.StartNodeIndex();
-        const int endNodeIdx = edge.EndNodeIndex();
+        const LocalMapId startNodeId = edge.mLocalMapNodeId;
+        const NodeId endNodeId = edge.mScanNodeId;
 
         const RobotPose2D<double>& startNodePose =
-            poseGraph->NodeAt(startNodeIdx).Pose();
+            localMapNodes.At(startNodeId).mGlobalPose;
         const RobotPose2D<double>& endNodePose =
-            poseGraph->NodeAt(endNodeIdx).Pose();
+            scanNodes.At(endNodeId).mGlobalPose;
 
         /* Compute the residual */
         Eigen::Vector3d errorVec;
         this->ComputeErrorFunction(startNodePose, endNodePose,
                                    edgeRelPose, errorVec);
-
         /* Compute the error value */
         const double errorVal = errorVec.transpose() * infoMat * errorVec;
         /* Add the error value to the error histogram */

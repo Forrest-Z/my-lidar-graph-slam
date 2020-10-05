@@ -45,11 +45,11 @@ public:
 
 public:
     /* Constructor */
-    PoseGraphOptimizerLM(SolverType solverType,
-                         int numOfIterationsMax,
-                         double errorTolerance,
-                         double initialLambda,
-                         LossFunctionPtr lossFunction) :
+    PoseGraphOptimizerLM(const SolverType solverType,
+                         const int numOfIterationsMax,
+                         const double errorTolerance,
+                         const double initialLambda,
+                         const LossFunctionPtr& lossFunction) :
         mSolverType(solverType),
         mNumOfIterationsMax(numOfIterationsMax),
         mErrorTolerance(errorTolerance),
@@ -61,46 +61,55 @@ public:
     /* Optimize a pose graph using the combination of
      * linear solver and Levenberg-Marquardt method */
     void Optimize(
-        std::vector<PoseGraph::Node>& poseGraphNodes,
-        const std::vector<PoseGraph::Edge>& poseGraphEdges) override;
+        LocalMapNodeMap& localMapNodes,
+        ScanNodeMap& scanNodes,
+        const std::vector<PoseGraphEdge>& poseGraphEdges) override;
 
     /* Compute error function */
-    void ComputeErrorFunction(const RobotPose2D<double>& startNodePose,
-                              const RobotPose2D<double>& endNodePose,
-                              const RobotPose2D<double>& edgeRelPose,
-                              Eigen::Vector3d& errorVec) const override;
+    void ComputeErrorFunction(
+        const RobotPose2D<double>& startNodePose,
+        const RobotPose2D<double>& endNodePose,
+        const RobotPose2D<double>& edgeRelPose,
+        Eigen::Vector3d& errorVec) const override;
 
 private:
     /* Perform one optimization step and return the total error */
-    void OptimizeStep(std::vector<PoseGraph::Node>& poseGraphNodes,
-                      const std::vector<PoseGraph::Edge>& poseGraphEdges,
-                      Eigen::SparseMatrix<double>& matA,
-                      Eigen::VectorXd& vecB,
-                      Eigen::VectorXd& vecDelta,
-                      std::vector<Eigen::Triplet<double>>& matATriplets);
+    void OptimizeStep(
+        LocalMapNodeMap& localMapNodes,
+        ScanNodeMap& scanNodes,
+        const std::vector<PoseGraphEdge>& poseGraphEdges,
+        Eigen::SparseMatrix<double>& matA,
+        Eigen::VectorXd& vecB,
+        Eigen::VectorXd& vecDelta,
+        std::vector<Eigen::Triplet<double>>& matATriplets);
 
     /* Compute Jacobian matrices of the error function with respect to the
      * starting pose and ending pose of the pose graph edge */
-    void ComputeErrorJacobians(const RobotPose2D<double>& startNodePose,
-                               const RobotPose2D<double>& endNodePose,
-                               Eigen::Matrix3d& startNodeErrorJacobian,
-                               Eigen::Matrix3d& endNodeErrorJacobian) const;
-    
+    void ComputeErrorJacobians(
+        const RobotPose2D<double>& startNodePose,
+        const RobotPose2D<double>& endNodePose,
+        Eigen::Matrix3d& startNodeErrorJacobian,
+        Eigen::Matrix3d& endNodeErrorJacobian) const;
+
     /* Compute total error */
     double ComputeTotalError(
-        const std::vector<PoseGraph::Node>& poseGraphNodes,
-        const std::vector<PoseGraph::Edge>& poseGraphEdges) const;
+        const LocalMapNodeMap& localMapNodes,
+        const ScanNodeMap& scanNodes,
+        const std::vector<PoseGraphEdge>& poseGraphEdges) const;
 
     /* Dump the pose graph error */
-    void DumpError(const std::shared_ptr<PoseGraph>& poseGraph) const;
+    void DumpError(
+        const LocalMapNodeMap& localMapNodes,
+        const ScanNodeMap& scanNodes,
+        const std::vector<PoseGraphEdge>& poseGraphEdges) const;
 
 private:
     /* Linear solver type */
-    SolverType                          mSolverType;
+    const SolverType                    mSolverType;
     /* Maximum number of the optimization iterations */
-    int                                 mNumOfIterationsMax;
+    const int                           mNumOfIterationsMax;
     /* Error tolerance to check the convergence */
-    double                              mErrorTolerance;
+    const double                        mErrorTolerance;
     /* Damping factor used in Levenberg-Marquardt method
      * The method is almost the same as Gauss-Newton method when small,
      * and is gradient descent method when large */
