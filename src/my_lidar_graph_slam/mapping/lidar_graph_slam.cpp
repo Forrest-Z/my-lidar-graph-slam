@@ -132,50 +132,58 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
-    std::map<int, NodePosition> poseGraphNodes;
-    std::map<int, LocalMapPosition> localMapPositions;
+    std::map<NodeId, ScanNodeData> scanNodes;
+    std::map<LocalMapId, LocalMapData> localMapNodes;
 
-    /* Set the pose graph nodes information */
-    for (const auto& node : this->mPoseGraph->Nodes()) {
-        NodePosition nodePosition { node.Index(), node.Pose() };
-        poseGraphNodes.insert(std::make_pair(
-            node.Index(), std::move(nodePosition)));
+    /* Setup the scan nodes information */
+    for (const auto& [scanNodeId, scanNode] : this->mPoseGraph->ScanNodes())
+        /* Append the scan node information */
+        scanNodes.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(scanNodeId),
+            std::forward_as_tuple(scanNodeId, scanNode.mGlobalPose));
+
+    /* Setup the local map nodes information */
+    for (const auto& [localMapId, localMapNode] :
+         this->mPoseGraph->LocalMapNodes()) {
+        const auto& localMap = this->mGridMapBuilder->LocalMapAt(localMapId);
+
+        /* Compute the bounding box of the local map in a world frame */
+        Point2D<double> globalMinPos;
+        Point2D<double> globalMaxPos;
+        localMap.mMap.ComputeBoundingBox(
+            localMapNode.mGlobalPose, globalMinPos, globalMaxPos);
+
+        /* Append the local map node information */
+        localMapNodes.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(localMapId),
+            std::forward_as_tuple(localMapId, globalMinPos, globalMaxPos,
+                                  localMap.mScanNodeIdMin,
+                                  localMap.mScanNodeIdMax,
+                                  localMap.mFinished));
     }
 
-    /* Set the positions of the local grid maps */
-    for (const auto& localMap : this->mGridMapBuilder->LocalMaps()) {
-        LocalMapPosition localMapPos {
-            localMap.mIdx,
-            localMap.mMap.MinPos(),
-            localMap.mMap.MaxPos(),
-            localMap.mPoseGraphNodeIdxMin,
-            localMap.mPoseGraphNodeIdxMax,
-            localMap.mFinished };
-        localMapPositions.insert(std::make_pair(
-            localMap.mIdx, std::move(localMapPos)));
-    }
+    const ScanNode& latestScanNode =
+        this->mPoseGraph->LatestScanNode();
+    const LocalMapNode& latestLocalMapNode =
+        this->mPoseGraph->LatestLocalMapNode();
+    const LocalMap& latestLocalMap =
+        this->mGridMapBuilder->LatestLocalMap();
 
-    /* Make sure that the index of the latest local map
-     * contains the latest pose graph node */
-    /* Latest local map is the last element of the local maps,
-     * and not the latest map, which is built from the latest several scans */
-    const int latestNodeIdx =
-        this->mPoseGraph->LatestNode().Index();
-    const int latestLocalMapIdx =
-        this->mGridMapBuilder->LocalMaps().back().mIdx;
-    const auto& latestLocalMap =
-        this->mGridMapBuilder->LocalMaps().back();
-
-    assert(latestNodeIdx >= latestLocalMap.mPoseGraphNodeIdxMin &&
-           latestNodeIdx <= latestLocalMap.mPoseGraphNodeIdxMax);
+    /* Make sure that the Id of the latest local map node stored in PoseGraph
+     * and the Id of the latest local map stored in GridMapBuilder are same */
+    Assert(latestLocalMapNode.mLocalMapId == latestLocalMap.mId);
+    /* Make sure that the latest local map contains the latest scan node */
+    Assert(latestScanNode.mLocalMapId == latestLocalMap.mId);
+    Assert(latestScanNode.mNodeId >= latestLocalMap.mScanNodeIdMin &&
+           latestScanNode.mNodeId <= latestLocalMap.mScanNodeIdMax);
 
     /* Return the necessary information for loop search */
     return LoopSearchHint {
-        std::move(poseGraphNodes),
-        std::move(localMapPositions),
+        std::move(scanNodes), std::move(localMapNodes),
         this->mGridMapBuilder->AccumTravelDist(),
-        latestNodeIdx,
-        latestLocalMapIdx };
+        latestScanNode.mNodeId, latestLocalMapNode.mLocalMapId };
 }
 
 /* Retrieve the necessary information for loop detection */
