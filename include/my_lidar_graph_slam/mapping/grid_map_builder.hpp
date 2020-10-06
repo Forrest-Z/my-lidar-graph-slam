@@ -178,7 +178,7 @@ public:
 
 private:
     /* Update the grid map (list of the local grid maps) */
-    bool UpdateGridMap(LocalMapNodeMap& localMapNodes,
+    void UpdateGridMap(const LocalMapNodeMap& localMapNodes,
                        const ScanNodeMap& scanNodes);
 
     /* Update the grid map with the latest scans */

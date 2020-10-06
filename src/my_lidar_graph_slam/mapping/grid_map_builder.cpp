@@ -134,83 +134,39 @@ void GridMapBuilder::ConstructGlobalMap(
 }
 
 /* Update the grid map (list of the local grid maps) */
-bool GridMapBuilder::UpdateGridMap(
-    LocalMapNodeMap& localMapNodes,
+void GridMapBuilder::UpdateGridMap(
+    const LocalMapNodeMap& localMapNodes,
     const ScanNodeMap& scanNodes)
 {
+    /* Retrieve the latest local map to which the latest scan is added */
+    auto& latestLocalMap = this->LatestLocalMap();
+    const auto& latestLocalMapNode = localMapNodes.LatestNode();
     /* Retrieve the latest scan node */
     const auto& latestScanNode = scanNodes.LatestNode();
-    /* Current robot pose (stored in the latest scan node) */
-    const RobotPose2D<double>& globalRobotPose = latestScanNode.mGlobalPose;
-    /* Current scan data (stored in the latest scan node) */
-    const auto& scanData = latestScanNode.mScanData;
-    /* Current scan node Id */
-    const NodeId scanNodeId = latestScanNode.mNodeId;
 
-    /* Calculate the relative robot pose since the last method call */
-    const RobotPose2D<double> relRobotPose = (this->mLocalMaps.size() == 0) ?
-        RobotPose2D<double>(0.0, 0.0, 0.0) :
-        InverseCompound(this->mLastRobotPose, globalRobotPose);
+    /* Make sure that their Ids are the same */
+    Assert(latestLocalMap.mId == latestLocalMapNode.mLocalMapId);
+    /* Make sure that the latest scan belongs to the latest local map */
+    Assert(latestLocalMap.mId == latestScanNode.mLocalMapId);
+    /* Make sure that we can insert the new scan into the latest local map */
+    Assert(!latestLocalMap.mFinished);
+    Assert(latestScanNode.mNodeId >= latestLocalMap.mScanNodeIdMin);
 
-    this->mLastRobotPose = globalRobotPose;
-
-    /* Update the accumulated travel distance */
-    this->mAccumTravelDist += Distance(relRobotPose);
-    /* Update the accumulated travel distance since the last grid map */
-    this->mTravelDistLastLocalMap += Distance(relRobotPose);
-
-    /* Determine whether to create a new local map */
-    const bool travelDistThreshold =
-        this->mTravelDistLastLocalMap >= this->mTravelDistThreshold;
-    const bool isFirstScan = this->mLocalMaps.size() == 0;
-    const bool createNewLocalMap = travelDistThreshold || isFirstScan;
-
-    /* Create a new local map if necessary */
-    if (createNewLocalMap) {
-        /* Retrieve the last local map */
-        auto& lastMap = this->mLocalMaps.rbegin()->second;
-
-        /* The last local maps are marked as finished */
-        if (this->mLocalMaps.size() > 0)
-            lastMap.mFinished = true;
-
-        /* Determine the Id of the new local map */
-        const LocalMapId localMapId = this->mLocalMaps.empty() ?
-            LocalMapId { 0 } : LocalMapId { lastMap.mId.mId + 1 };
-        /* Insert a local map node to the pose graph */
-        localMapNodes.Append(localMapId, globalRobotPose);
-
-        /* Current robot pose in a world frame is used as the
-         * origin of the local map coordinate */
-        const Point2D<double> centerPos { 0.0, 0.0 };
-        /* Create a new local map */
-        GridMapType newLocalMap {
-            this->mResolution, this->mPatchSize, 0, 0, centerPos };
-        this->mLocalMaps.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(localMapId),
-            std::forward_as_tuple(localMapId, std::move(newLocalMap),
-                                  scanNodeId));
-
-        /* Reset the variables properly */
-        this->mTravelDistLastLocalMap = 0.0;
-        this->mRobotPoseLastLocalMap = globalRobotPose;
-    }
-
-    /* Local map to which the latest scan is added */
-    LocalMap& localMapData = this->mLocalMaps.rbegin()->second;
-    GridMapType& localMap = localMapData.mMap;
-
-    /* Local map pose in a world frame */
-    const RobotPose2D<double>& globalMapPose =
-        localMapNodes.LatestNode().mGlobalPose;
+    /* Local grid map */
+    auto& localMap = latestLocalMap.mMap;
+    /* Local map pose in a world coordinate frame */
+    const RobotPose2D<double>& globalMapPose = latestLocalMapNode.mGlobalPose;
+    /* Scan pose in a world coordinate frame */
+    const RobotPose2D<double>& globalScanPose = latestScanNode.mGlobalPose;
+    /* Latest scan data */
+    const Sensor::ScanDataPtr<double>& scanData = latestScanNode.mScanData;
 
     /* Compute the scan points and bounding box */
     Point2D<double> localMinPos;
     Point2D<double> localMaxPos;
     std::vector<Point2D<double>> localHitPoints;
     this->ComputeBoundingBoxAndScanPointsMapLocal(
-        globalMapPose, globalRobotPose, scanData,
+        globalMapPose, globalScanPose, scanData,
         localMinPos, localMaxPos, localHitPoints);
 
     /* Expand the local map so that it can contain the latest scan */
@@ -219,8 +175,8 @@ bool GridMapBuilder::UpdateGridMap(
 
     /* Compute the sensor pose from the robot pose */
     const RobotPose2D<double> globalSensorPose =
-        Compound(globalRobotPose, scanData->RelativeSensorPose());
-    /* Compute the sensor pose in a local map coordinate */
+        Compound(globalScanPose, scanData->RelativeSensorPose());
+    /* Compute the sensor pose in a map-local coordinate frame */
     const RobotPose2D<double> localSensorPose =
         InverseCompound(globalMapPose, globalSensorPose);
     /* Calculate the grid cell index corresponding to the sensor pose */
@@ -250,11 +206,10 @@ bool GridMapBuilder::UpdateGridMap(
         localMap.Update(hitGridCellIdx, this->mProbHit);
     }
 
-    /* Update the index of the pose graph node */
-    localMapData.mScanNodeIdMax = scanNodeId;
+    /* Update the scan Id information of the local map */
+    latestLocalMap.mScanNodeIdMax = latestScanNode.mNodeId;
 
-    /* Return whether the new local map is created */
-    return createNewLocalMap;
+    return;
 }
 
 /* Update the grid map with the latest scans */
