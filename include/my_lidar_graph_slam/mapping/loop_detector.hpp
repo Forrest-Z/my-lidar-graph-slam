@@ -58,12 +58,12 @@ struct LoopDetectionResult final
 {
     /* Constructor */
     LoopDetectionResult(const RobotPose2D<double>& relativePose,
-                        const RobotPose2D<double>& startNodePose,
+                        const RobotPose2D<double>& localMapPose,
                         const LocalMapId localMapNodeId,
                         const NodeId scanNodeId,
                         const Eigen::Matrix3d& estimatedCovMat) :
         mRelativePose(relativePose),
-        mStartNodePose(startNodePose),
+        mLocalMapPose(localMapPose),
         mLocalMapNodeId(localMapNodeId),
         mScanNodeId(scanNodeId),
         mEstimatedCovMat(estimatedCovMat) { }
@@ -73,8 +73,8 @@ struct LoopDetectionResult final
 
     /* Actual relative pose between two nodes */
     const RobotPose2D<double> mRelativePose;
-    /* Pose of the start node in a global frame */
-    const RobotPose2D<double> mStartNodePose;
+    /* Pose of the start node (local grid map) in a global frame */
+    const RobotPose2D<double> mLocalMapPose;
     /* Id of the local map node */
     const LocalMapId          mLocalMapNodeId;
     /* Id of the scan node */
