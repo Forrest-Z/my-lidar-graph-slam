@@ -525,6 +525,9 @@ public:
                     const Eigen::Matrix3d& informationMat);
 
     /* Get the map of the local map nodes */
+    inline LocalMapNodeMap& LocalMapNodes()
+    { return this->mLocalMapNodes; }
+    /* Get the map of the local map nodes */
     inline const LocalMapNodeMap& LocalMapNodes() const
     { return this->mLocalMapNodes; }
 
@@ -542,6 +545,9 @@ public:
     inline const LocalMapNode& LatestLocalMapNode() const
     { return this->mLocalMapNodes.LatestNode(); }
 
+    /* Get the map of the scan nodes */
+    inline ScanNodeMap& ScanNodes()
+    { return this->mScanNodes; }
     /* Get the map of the scan nodes */
     inline const ScanNodeMap& ScanNodes() const
     { return this->mScanNodes; }
@@ -564,6 +570,9 @@ public:
     inline const ScanNode& LatestScanNode() const
     { return this->mScanNodes.LatestNode(); }
 
+    /* Get the vector of the pose graph edges */
+    inline std::vector<PoseGraphEdge>& Edges()
+    { return this->mEdges; }
     /* Get the vector of the pose graph edges */
     inline const std::vector<PoseGraphEdge>& Edges() const
     { return this->mEdges; }
