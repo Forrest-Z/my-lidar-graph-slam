@@ -73,8 +73,9 @@ public:
 
     /* Retrieve the full pose graph information */
     void GetPoseGraph(
-        std::vector<PoseGraph::Node>& poseGraphNodes,
-        std::vector<PoseGraph::Edge>& poseGraphEdges) const;
+        LocalMapNodeMap& localMapNodes,
+        ScanNodeMap& scanNodes,
+        std::vector<PoseGraphEdge>& poseGraphEdges) const;
     /* Retrieve the pose graph information */
     void GetPoseGraph(
         std::map<int, NodePosition>& poseGraphNodes,
