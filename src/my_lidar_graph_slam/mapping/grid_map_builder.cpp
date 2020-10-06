@@ -261,21 +261,20 @@ bool GridMapBuilder::UpdateGridMap(
 void GridMapBuilder::UpdateLatestMap(const ScanNodeMap& scanNodes)
 {
     /* Make sure that the pose graph is not empty */
-    Assert(!scanNodes.Nodes().empty());
+    Assert(!scanNodes.Empty());
 
     /* Get the iterator pointing to the scan nodes used for latest maps */
     const int numOfScansForMap =
         std::min(1, this->mNumOfScansForLatestMap);
-    const auto lastNodeIt = scanNodes.Nodes().rbegin();
+    const auto lastNodeIt = scanNodes.rbegin();
     const auto latestNodeIt = std::next(lastNodeIt, numOfScansForMap - 1);
 
-    /* Calculate the minimum and maximum scan node Id */
+    /* Validate the scan node Ids */
+    Assert(latestNodeIt->first <= lastNodeIt->first);
+
+    /* Update the minimum and maximum scan node Id */
     this->mLatestScanIdMin = latestNodeIt->first;
     this->mLatestScanIdMax = lastNodeIt->first;
-
-    /* Validate the scan node Ids */
-    Assert(this->mLatestScanIdMin <= this->mLatestScanIdMax);
-
     /* Update the pose of the latest map */
     this->mLatestMapPose = latestNodeIt->second.mGlobalPose;
 
