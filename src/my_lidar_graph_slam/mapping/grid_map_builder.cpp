@@ -133,6 +133,79 @@ void GridMapBuilder::ConstructGlobalMap(
     return;
 }
 
+/* Append a new local map */
+void GridMapBuilder::AppendLocalMap(
+    LocalMapNodeMap& localMapNodes,
+    std::vector<PoseGraphEdge>& poseGraphEdges,
+    const RobotPose2D<double>& scanPose,
+    const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+    const NodeId scanNodeId)
+{
+    /* The last local maps are marked as finished */
+    if (!this->mLocalMaps.empty())
+        this->LatestLocalMap().mFinished = true;
+
+    /* Create the odometry edge connecting the old local map and the new
+     * scan node if necessary */
+    if (!this->mLocalMaps.empty()) {
+        /* Retrieve the old local map */
+        const auto& oldLocalMap = this->LatestLocalMap();
+        const auto& oldLocalMapNode = localMapNodes.LatestNode();
+        /* Make sure that their Ids are the same */
+        Assert(oldLocalMap.mId == oldLocalMapNode.mLocalMapId);
+        /* Make sure that the old local map contains scan data older than
+         * the new scan data with the Id `scanNodeId` */
+        Assert(scanNodeId > oldLocalMap.mScanNodeIdMax);
+
+        /* Compute the map-local pose of the new scan */
+        const RobotPose2D<double> mapLocalScanPose =
+            NormalizeAngle(InverseCompound(
+                oldLocalMapNode.mGlobalPose, scanPose));
+
+        /* Covariance matrix represents the covariance of the scan pose in the
+         * map-local coordinate frame (not world coordinate frame) */
+        const Eigen::Matrix3d mapLocalCovarianceMat =
+            ConvertCovarianceFromWorldToLocal(
+                oldLocalMapNode.mGlobalPose, scanPoseCovarianceMatrix);
+        /* Compute an information matrix */
+        const Eigen::Matrix3d mapLocalInformationMat =
+            mapLocalCovarianceMat.inverse();
+
+        /* Append the odometry edge connecting the old local map and the new
+         * scan node */
+        poseGraphEdges.emplace_back(
+            oldLocalMapNode.mLocalMapId, scanNodeId,
+            EdgeType::InterLocalMap, ConstraintType::Odometry,
+            mapLocalScanPose, mapLocalInformationMat);
+    }
+
+    /* Determine the Id of the new local map */
+    const LocalMapId localMapId = localMapNodes.Empty() ?
+        LocalMapId { 0 } :
+        LocalMapId { localMapNodes.LatestNode().mLocalMapId.mId + 1 };
+    /* Insert a new local map node to the pose graph */
+    /* We use the pose (in a world coordinate frame) from the newly
+     * inserted scan node as the pose for a newly inserted local map */
+    localMapNodes.Append(localMapId, scanPose);
+
+    /* Current robot pose in a world frame is used as the
+        * origin of the local map coordinate */
+    const Point2D<double> centerPos { 0.0, 0.0 };
+    /* Create and insert a new local map */
+    GridMapType newLocalMap {
+        this->mResolution, this->mPatchSize, 0, 0, centerPos };
+    this->mLocalMaps.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(localMapId),
+        std::forward_as_tuple(localMapId, std::move(newLocalMap), scanNodeId));
+
+    /* Reset the variables properly */
+    this->mTravelDistLastLocalMap = 0.0;
+    this->mRobotPoseLastLocalMap = scanPose;
+
+    return;
+}
+
 /* Update the grid map (list of the local grid maps) */
 void GridMapBuilder::UpdateGridMap(
     const LocalMapNodeMap& localMapNodes,

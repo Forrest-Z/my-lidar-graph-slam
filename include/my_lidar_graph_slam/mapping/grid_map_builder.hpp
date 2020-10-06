@@ -177,6 +177,14 @@ public:
     inline NodeId LatestScanIdMax() const { return this->mLatestScanIdMax; }
 
 private:
+    /* Append a new local map */
+    void AppendLocalMap(
+        LocalMapNodeMap& localMapNodes,
+        std::vector<PoseGraphEdge>& poseGraphEdges,
+        const RobotPose2D<double>& scanPose,
+        const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+        const NodeId scanNodeId);
+
     /* Update the grid map (list of the local grid maps) */
     void UpdateGridMap(const LocalMapNodeMap& localMapNodes,
                        const ScanNodeMap& scanNodes);
