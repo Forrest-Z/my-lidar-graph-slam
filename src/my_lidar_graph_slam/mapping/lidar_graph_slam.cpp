@@ -266,25 +266,37 @@ void LidarGraphSlam::AppendLoopClosingEdges(
     /* Append new loop closing edges for each loop detection result */
     for (const auto& loopDetectionResult : loopDetectionResults) {
         /* Setup the pose graph edge parameters */
-        /* Relative pose must be normalized beforehand */
+        /* The angular component in the pose is normalized beforehand */
         const RobotPose2D<double> relativePose =
             NormalizeAngle(loopDetectionResult.mRelativePose);
 
         /* Covariance matrix represents the uncertainty of the scan matching */
-        /* Covariance matrix must be rotated since loop closing edge needs
-         * the covariance matrix in the local robot frame */
-        const Eigen::Matrix3d robotFrameCovMat =
-            ConvertCovarianceFromWorldToRobot(
-                loopDetectionResult.mStartNodePose,
-                loopDetectionResult.mEstimatedCovMat);
+        /* Covariance matrix should not be rotated since it already represents
+         * the covariance of the pose in the map-local coordinate frame and
+         * the pose of the local grid map is not changed during the loop
+         * detection (SLAM frontend just appends new nodes or edges and does
+         * not modify the already existing ones) */
+
         /* Compute a information matrix by inverting a covariance matrix */
         const Eigen::Matrix3d informationMat =
-            robotFrameCovMat.inverse();
+            loopDetectionResult.mEstimatedCovMat.inverse();
+
+        /* Retrieve the local map information */
+        const auto& localMap = this->mGridMapBuilder->LocalMapAt(
+            loopDetectionResult.mLocalMapNodeId);
+        /* Make sure that the local map is in finished state */
+        Assert(localMap.mFinished);
+        /* Make sure that the we are creating an edge that represents an
+         * inter-local grid map constraint, that is, the local map
+         * `localMap` does not contain the scan node `mScanNodeId` */
+        Assert(loopDetectionResult.mScanNodeId < localMap.mScanNodeIdMin ||
+               loopDetectionResult.mScanNodeId > localMap.mScanNodeIdMax);
 
         /* Append a new loop closing constraint */
         this->mPoseGraph->AppendEdge(
-            loopDetectionResult.mStartNodeIdx,
-            loopDetectionResult.mEndNodeIdx,
+            loopDetectionResult.mLocalMapNodeId,
+            loopDetectionResult.mScanNodeId,
+            EdgeType::InterLocalMap, ConstraintType::Loop,
             relativePose, informationMat);
     }
 }
