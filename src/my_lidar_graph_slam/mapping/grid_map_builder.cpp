@@ -294,8 +294,8 @@ void GridMapBuilder::UpdateAccumTravelDist(const ScanNodeMap& scanNodes)
 
     /* Retrieve the two iterators pointing to the first scan node and
      * the node following to the last scan node */
-    auto nodeIt = scanNodes.Nodes().begin();
-    auto endIt = scanNodes.Nodes().end();
+    auto nodeIt = scanNodes.begin();
+    auto endIt = scanNodes.end();
     auto nextIt = std::next(nodeIt);
 
     /* Return if the scan nodes are empty or only one scan node exists
