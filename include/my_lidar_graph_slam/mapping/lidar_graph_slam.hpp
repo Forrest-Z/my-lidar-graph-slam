@@ -97,9 +97,10 @@ public:
     LoopDetectionQueryVector GetLoopDetectionQueries(
         const LoopCandidateVector& loopCandidates) const;
 
-    /* Append a new pose graph node with an associated scan data */
-    void AppendNode(
-        const RobotPose2D<double>& nodePose,
+    /* Append a first node with an associated scan data and update the
+     * current local grid map and the latest map */
+    void AppendFirstNodeAndEdge(
+        const RobotPose2D<double>& initialScanPose,
         const Sensor::ScanDataPtr<double>& scanData);
 
     /* Append a new pose graph node and an odometry edge
