@@ -189,19 +189,19 @@ inline Eigen::Matrix3d RotateCovariance(
 }
 
 /* Convert a covariance matrix from world frame to robot frame */
-inline Eigen::Matrix3d ConvertCovarianceFromWorldToRobot(
-    const RobotPose2D<double>& robotPose,
+inline Eigen::Matrix3d ConvertCovarianceFromWorldToLocal(
+    const RobotPose2D<double>& poseToLocalFrame,
     const Eigen::Matrix3d& worldCovMat)
 {
-    return RotateCovariance(-robotPose.mTheta, worldCovMat);
+    return RotateCovariance(-poseToLocalFrame.mTheta, worldCovMat);
 }
 
-/* Convert a covariance matrix from robot frame to world frame */
-inline Eigen::Matrix3d ConvertCovarianceFromRobotToWorld(
-    const RobotPose2D<double>& robotPose,
-    const Eigen::Matrix3d& robotCovMat)
+/* Convert a covariance matrix from local frame to world frame */
+inline Eigen::Matrix3d ConvertCovarianceFromLocalToWorld(
+    const RobotPose2D<double>& poseToLocalFrame,
+    const Eigen::Matrix3d& localCovMat)
 {
-    return RotateCovariance(robotPose.mTheta, robotCovMat);
+    return RotateCovariance(poseToLocalFrame.mTheta, localCovMat);
 }
 
 /* Execute sliding window maximum problem */
