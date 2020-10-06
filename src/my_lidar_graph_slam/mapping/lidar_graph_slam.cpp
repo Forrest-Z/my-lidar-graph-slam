@@ -198,25 +198,23 @@ LoopDetectionQueryVector LidarGraphSlam::GetLoopDetectionQueries(
 
     /* Setup the data needed for loop detection */
     for (const auto& loopCandidate : loopCandidates) {
-        /* Retrieve the information for pose graph nodes consisting of
-         * poses, indices, and scan data, each of which is matched against
-         * the local grid map */
-        std::vector<PoseGraph::Node> nodes;
-        nodes.reserve(loopCandidate.mNodeIndices.size());
+        /* Retrieve the detailed information for scan nodes */
+        std::vector<ScanNode> scanNodes;
+        scanNodes.reserve(loopCandidate.mScanNodeIds.size());
 
-        for (const int& nodeIdx : loopCandidate.mNodeIndices)
-            nodes.push_back(this->mPoseGraph->NodeAt(nodeIdx));
+        for (const NodeId& nodeId : loopCandidate.mScanNodeIds)
+            scanNodes.push_back(this->mPoseGraph->ScanNodeAt(nodeId));
 
         /* Retrieve the information for the local grid map */
-        LocalMapInfo localMapInfo =
-            this->mGridMapBuilder->LocalMapAt(loopCandidate.mLocalMapIdx);
-        /* Retrieve the pose graph node that is inside the local grid map */
-        PoseGraph::Node localMapNode =
-            this->mPoseGraph->NodeAt(loopCandidate.mLocalMapNodeIdx);
+        LocalMap& localMap = this->mGridMapBuilder->LocalMapAt(
+            loopCandidate.mLocalMapId);
+        /* Retrieve the information for the local map node */
+        LocalMapNode& localMapNode = this->mPoseGraph->LocalMapNodeAt(
+            loopCandidate.mLocalMapId);
 
         /* Append the data needed for loop detection */
         loopDetectionQueries.emplace_back(
-            std::move(nodes), localMapInfo, localMapNode);
+            std::move(scanNodes), localMap, localMapNode);
     }
 
     return loopDetectionQueries;
