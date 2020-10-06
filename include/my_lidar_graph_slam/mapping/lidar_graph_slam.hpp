@@ -82,10 +82,14 @@ public:
         std::map<NodeId, ScanNodeData>& scanNodes,
         std::vector<EdgeData>& poseGraphEdges) const;
 
-    /* Retrieve the latest pose and the latest map */
-    void GetLatestPoseAndMap(
-        RobotPose2D<double>& latestPose,
-        GridMapType& latestMap) const;
+    /* Retrieve the latest data consisting of the pose from the last scan nodes
+     * (last robot pose in a global coordinate frame), the latest map obtained
+     * from the several recently acquired scans, and the pose of the latest map
+     * in a global coordinate frame */
+    void GetLatestData(
+        RobotPose2D<double>& lastScanPose,
+        GridMapType& latestMap,
+        RobotPose2D<double>& latestMapPose) const;
 
     /* Retrieve the necessary information for loop search */
     LoopSearchHint GetLoopSearchHint() const;

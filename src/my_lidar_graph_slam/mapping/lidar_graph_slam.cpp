@@ -111,17 +111,19 @@ void LidarGraphSlam::GetPoseGraph(
             edge.mEdgeType, edge.mConstraintType);
 }
 
-/* Retrieve the latest pose and the latest map */
-void LidarGraphSlam::GetLatestPoseAndMap(
-    RobotPose2D<double>& latestPose,
-    GridMapType& latestMap) const
+/* Retrieve the latest data */
+void LidarGraphSlam::GetLatestData(
+    RobotPose2D<double>& lastScanPose,
+    GridMapType& latestMap,
+    RobotPose2D<double>& latestMapPose) const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
-    /* Retrieve the latest pose from the pose graph */
-    latestPose = this->mPoseGraph->LatestNode().Pose();
-    /* Copy the latest map from the grid map builder */
+    /* Set the last pose from the pose graph in a world coordinate frame */
+    lastScanPose = this->mPoseGraph->LatestScanNode().mGlobalPose;
+    /* Set the latest grid map and its pose in a world coordinate frame */
     latestMap = this->mGridMapBuilder->LatestMap();
+    latestMapPose = this->mGridMapBuilder->LatestMapPose();
 }
 
 /* Retrieve the necessary information for loop search */
