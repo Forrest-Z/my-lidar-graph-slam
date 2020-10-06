@@ -45,6 +45,25 @@ GridMapBuilder::GridMapBuilder(
 {
 }
 
+/* Retrieve the latest local map information */
+LocalMap& GridMapBuilder::LatestLocalMap()
+{
+    /* Use the const version of the method */
+    const auto* pThis = static_cast<const GridMapBuilder*>(this);
+    return const_cast<LocalMap&>(pThis->LatestLocalMap());
+}
+
+/* Retrieve the latest local map information */
+const LocalMap& GridMapBuilder::LatestLocalMap() const
+{
+    /* Make sure that the local maps are not empty */
+    Assert(!this->mLocalMaps.empty());
+    /* The local map with the largest Id is the latest one */
+    auto latestNodeIt = this->mLocalMaps.rbegin();
+    /* Return the associated local map node */
+    return latestNodeIt->second;
+}
+
 /* Append the new scan data */
 bool GridMapBuilder::AppendScan(
     LocalMapNodeMap& localMapNodes,

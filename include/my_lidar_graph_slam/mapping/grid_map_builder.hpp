@@ -157,11 +157,9 @@ public:
     { return this->mLocalMaps.at(localMapId); }
 
     /* Retrieve the latest local map information */
-    inline LocalMap& LatestLocalMap()
-    { return this->mLocalMaps.rbegin()->second; }
+    LocalMap& LatestLocalMap();
     /* Retrieve the latest local map information */
-    inline const LocalMap& LatestLocalMap() const
-    { return this->mLocalMaps.rbegin()->second; }
+    const LocalMap& LatestLocalMap() const;
 
     /* Retrieve the grid map constructed from the latest scans */
     inline const GridMapType& LatestMap() const
