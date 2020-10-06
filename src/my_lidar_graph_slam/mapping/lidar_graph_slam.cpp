@@ -240,54 +240,20 @@ void LidarGraphSlam::AppendFirstNodeAndEdge(
         initialScanPose, covarianceMatrix, scanData);
 }
 
-/* Append a new pose graph node and an odometry edge
- * from a scan matching result */
-void LidarGraphSlam::AppendOdometryNodeAndEdge(
-    const Sensor::ScanDataPtr<double>& scanData,
-    const RobotPose2D<double>& edgeRelativePose,
-    const Eigen::Matrix3d& edgeCovarianceMatrix)
+/* Append a new pose graph node and an odometry edge, and update the
+ * current local grid map and the latest map */
+void LidarGraphSlam::AppendNodeAndEdge(
+    const RobotPose2D<double>& relativeScanPose,
+    const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+    const Sensor::ScanDataPtr<double>& scanData)
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
-
-    /* Setup two robot poses */
-    const RobotPose2D<double> startNodePose =
-        this->mPoseGraph->LatestNode().Pose();
-    /* Compute a new node pose using the latest node pose here,
-     * since the pose of the latest node (starting node of the odometry edge)
-     * might have been modified by the loop closure,
-     * which is performed in the SLAM backend */
-    const RobotPose2D<double> newNodePose =
-        Compound(startNodePose, edgeRelativePose);
-
-    /* Append the new pose graph node */
-    const int startNodeIdx =
-        this->mPoseGraph->LatestNode().Index();
-    const int endNodeIdx =
-        this->mPoseGraph->AppendNode(newNodePose, scanData);
-
-    /* Two pose graph node indices must be adjacent
-     * since the edge represents the odometry constraint */
-    assert(endNodeIdx == startNodeIdx + 1);
-
-    /* Setup the pose graph edge parameters */
-    /* Relative pose in the frame of the start node
-     * Angular component must be normalized from -pi to pi */
-    const RobotPose2D<double> edgeRelPose =
-        NormalizeAngle(edgeRelativePose);
-
-    /* Covariance matrix must be rotated beforehand since the matrix
-     * must represent the covariance in the node frame (not world frame) */
-    const Eigen::Matrix3d robotFrameCovMat =
-        ConvertCovarianceFromWorldToRobot(
-            startNodePose, edgeCovarianceMatrix);
-    /* Calculate a information matrix by inverting a covariance matrix
-     * obtained from the scan matching */
-    const Eigen::Matrix3d edgeInfoMat = robotFrameCovMat.inverse();
-
-    /* Append the new pose graph edge for odometric constraint */
-    this->mPoseGraph->AppendEdge(startNodeIdx, endNodeIdx,
-                                 edgeRelPose, edgeInfoMat);
+    /* Append a new scan data and create a new pose and an edge */
+    this->mGridMapBuilder->AppendScan(
+        this->mPoseGraph->LocalMapNodes(), this->mPoseGraph->ScanNodes(),
+        this->mPoseGraph->Edges(),
+        relativeScanPose, scanPoseCovarianceMatrix, scanData);
 }
 
 /* Append new loop closing edges */
