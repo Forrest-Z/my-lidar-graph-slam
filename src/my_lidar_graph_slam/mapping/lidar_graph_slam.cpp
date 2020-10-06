@@ -310,14 +310,12 @@ void LidarGraphSlam::UpdatePrecomputedGridMaps(
 
     /* Update the precomputed coarser grid maps if necessary */
     for (auto& loopDetectionQuery : loopDetectionQueries) {
-        auto& localMapInfo = loopDetectionQuery.mLocalMapInfo;
-        const int localMapIdx = localMapInfo.mIdx;
-        auto& oldLocalMapInfo = this->mGridMapBuilder->LocalMapAt(localMapIdx);
+        auto& localMap = loopDetectionQuery.mLocalMap;
+        auto& oldLocalMap = this->mGridMapBuilder->LocalMapAt(localMap.mId);
 
-        if (localMapInfo.mPrecomputed && !oldLocalMapInfo.mPrecomputed) {
-            oldLocalMapInfo.mPrecomputedMaps =
-                std::move(localMapInfo.mPrecomputedMaps);
-            oldLocalMapInfo.mPrecomputed = true;
+        if (localMap.mPrecomputed && !oldLocalMap.mPrecomputed) {
+            oldLocalMap.mPrecomputedMaps = std::move(localMap.mPrecomputedMaps);
+            oldLocalMap.mPrecomputed = true;
         }
     }
 }
