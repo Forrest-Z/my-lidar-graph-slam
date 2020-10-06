@@ -67,14 +67,22 @@ const LocalMap& GridMapBuilder::LatestLocalMap() const
 /* Append the new scan data */
 bool GridMapBuilder::AppendScan(
     LocalMapNodeMap& localMapNodes,
-    const ScanNodeMap& scanNodes)
+    ScanNodeMap& scanNodes,
+    std::vector<PoseGraphEdge>& poseGraphEdges,
+    const RobotPose2D<double>& relativeScanPose,
+    const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+    const Sensor::ScanDataPtr<double>& scanData)
 {
+    /* Update the pose graph and create a new local grid map if necessary */
+    const bool localMapInserted = this->UpdatePoseGraph(
+        localMapNodes, scanNodes, poseGraphEdges,
+        relativeScanPose, scanPoseCovarianceMatrix, scanData);
     /* Update the grid map */
-    const bool localMapCreated = this->UpdateGridMap(localMapNodes, scanNodes);
+    this->UpdateGridMap(localMapNodes, scanNodes);
     /* Update the grid map with latest scans */
     this->UpdateLatestMap(scanNodes);
     /* Return whether the new local map is created */
-    return localMapCreated;
+    return localMapInserted;
 }
 
 /* Re-create the local grid maps and latest map after the loop closure */

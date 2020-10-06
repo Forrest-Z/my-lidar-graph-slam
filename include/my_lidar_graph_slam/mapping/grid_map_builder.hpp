@@ -133,7 +133,11 @@ public:
 
     /* Append the new scan data */
     bool AppendScan(LocalMapNodeMap& localMapNodes,
-                    const ScanNodeMap& scanNodes);
+                    ScanNodeMap& scanNodes,
+                    std::vector<PoseGraphEdge>& poseGraphEdges,
+                    const RobotPose2D<double>& relativeScanPose,
+                    const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+                    const Sensor::ScanDataPtr<double>& scanData);
 
     /* Re-create the local grid maps and latest map after the loop closure */
     void AfterLoopClosure(const LocalMapNodeMap& localMapNodes,
