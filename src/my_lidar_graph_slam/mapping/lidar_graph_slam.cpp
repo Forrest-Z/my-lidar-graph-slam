@@ -66,24 +66,49 @@ void LidarGraphSlam::GetPoseGraph(
 
 /* Retrieve the pose graph information */
 void LidarGraphSlam::GetPoseGraph(
-    std::map<int, NodePosition>& poseGraphNodes,
-    std::vector<EdgeConnection>& poseGraphEdges) const
+    std::map<LocalMapId, LocalMapData>& localMapNodes,
+    std::map<NodeId, ScanNodeData>& scanNodes,
+    std::vector<EdgeData>& poseGraphEdges) const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
     poseGraphEdges.reserve(this->mPoseGraph->Edges().size());
 
-    /* Set the pose graph nodes information */
-    for (const auto& node : this->mPoseGraph->Nodes())
-        poseGraphNodes.insert(std::make_pair(
-            node.Index(), NodePosition(node.Index(), node.Pose())));
+    /* Setup the local map nodes information */
+    for (const auto& [localMapId, localMapNode]:
+         this->mPoseGraph->LocalMapNodes()) {
+        const auto& localMap = this->mGridMapBuilder->LocalMapAt(localMapId);
 
-    /* Set the pose graph edges information */
+        /* Compute the bounding box of the local map in a world frame */
+        Point2D<double> globalMinPos;
+        Point2D<double> globalMaxPos;
+        localMap.mMap.ComputeBoundingBox(
+            localMapNode.mGlobalPose, globalMinPos, globalMaxPos);
+
+        /* Append the local map node information */
+        localMapNodes.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(localMapId),
+            std::forward_as_tuple(localMapId, globalMinPos, globalMaxPos,
+                                  localMap.mScanNodeIdMin,
+                                  localMap.mScanNodeIdMax,
+                                  localMap.mFinished));
+    }
+
+    /* Setup the scan nodes information */
+    for (const auto& [scanNodeId, scanNode] : this->mPoseGraph->ScanNodes())
+        /* Append the scan node information */
+        scanNodes.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(scanNodeId),
+            std::forward_as_tuple(scanNodeId, scanNode.mGlobalPose));
+
+    /* Setup the pose graph edges information */
     for (const auto& edge : this->mPoseGraph->Edges())
         poseGraphEdges.emplace_back(
-            edge.StartNodeIndex(), edge.EndNodeIndex(),
-            edge.IsOdometricConstraint());
+            edge.mLocalMapNodeId, edge.mScanNodeId,
+            edge.mEdgeType, edge.mConstraintType);
 }
 
 /* Retrieve the latest pose and the latest map */
