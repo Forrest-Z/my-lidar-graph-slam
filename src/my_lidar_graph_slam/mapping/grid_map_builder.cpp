@@ -206,6 +206,92 @@ void GridMapBuilder::AppendLocalMap(
     return;
 }
 
+/* Update the pose graph, add a new scan node and create a new local grid
+ * map (and its corresponding new local map node) if necessary */
+bool GridMapBuilder::UpdatePoseGraph(
+    LocalMapNodeMap& localMapNodes,
+    ScanNodeMap& scanNodes,
+    std::vector<PoseGraphEdge>& poseGraphEdges,
+    const RobotPose2D<double>& relativeScanPose,
+    const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+    const Sensor::ScanDataPtr<double>& scanData)
+{
+    /* Id of the new scan node to be added */
+    const NodeId scanNodeId = scanNodes.Empty() ?
+        NodeId { 0 } : NodeId { scanNodes.LatestNode().mNodeId.mId + 1 };
+    /* Latest scan node pose in a world coordinate frame */
+    const RobotPose2D<double> prevScanPose = scanNodes.Empty() ?
+        RobotPose2D<double>(0.0, 0.0, 0.0) :
+        scanNodes.LatestNode().mGlobalPose;
+    /* Compute a new scan node pose using the latest node pose
+     * `prevScanNodePose` here, since the pose of the latest node
+     * (starting node of the new odometry edge) might have been modified
+     * by the loop closure, which is performed in the SLAM backend */
+    const RobotPose2D<double> scanPose =
+        Compound(prevScanPose, relativeScanPose);
+
+    /* Update the accumulated travel distance */
+    this->mAccumTravelDist += Distance(relativeScanPose);
+    /* Update the accumulated travel distance since the last grid map */
+    this->mTravelDistLastLocalMap += Distance(relativeScanPose);
+
+    /* Determine whether to create a new local map */
+    const bool travelDistThreshold =
+        this->mTravelDistLastLocalMap >= this->mTravelDistThreshold;
+    const bool isFirstScan = this->mLocalMaps.size() == 0;
+    const bool localMapInserted = travelDistThreshold || isFirstScan;
+
+    /* Create a new local map if necessary
+     * The pose (in a world coordinate frame) of the new local map is set to
+     * the robot pose `scanPose` when the scan data `scanData` is acquired */
+    if (localMapInserted)
+        this->AppendLocalMap(localMapNodes, poseGraphEdges,
+                             scanPose, scanPoseCovarianceMatrix, scanNodeId);
+
+    /* Make sure that the local maps are not empty for now */
+    Assert(!this->mLocalMaps.empty());
+    Assert(!localMapNodes.Empty());
+
+    /* Retrieve the Id of the latest local map */
+    const auto& latestLocalMap = this->LatestLocalMap();
+    const auto& latestLocalMapNode = localMapNodes.LatestNode();
+    /* Make sure that their Ids are the same */
+    Assert(latestLocalMap.mId == latestLocalMapNode.mLocalMapId);
+    /* Make sure that we can insert the new scan to the latest local map */
+    Assert(!latestLocalMap.mFinished);
+    Assert(scanNodeId >= latestLocalMap.mScanNodeIdMin);
+
+    /* Compute the map-local pose of the new scan */
+    /* Angular component is normalized from -pi to pi */
+    const RobotPose2D<double> mapLocalScanPose =
+        NormalizeAngle(InverseCompound(
+            latestLocalMapNode.mGlobalPose, scanPose));
+
+    /* Append the new scan node */
+    scanNodes.Append(scanNodeId, latestLocalMap.mId, mapLocalScanPose,
+                     scanData, scanPose);
+
+    /* Covariance matrix must be rotated beforehand since the matrix
+     * must represent the covariance in the map-local coordinate frame
+     * (not world coordinate frame) */
+    const Eigen::Matrix3d mapLocalCovarianceMat =
+        ConvertCovarianceFromWorldToLocal(
+            latestLocalMapNode.mGlobalPose, scanPoseCovarianceMatrix);
+    /* Calculate an information matrix by inverting a covariance matrix
+     * obtained from the scan matching */
+    const Eigen::Matrix3d mapLocalInformationMat =
+        mapLocalCovarianceMat.inverse();
+
+    /* Append the new pose graph edge connecting the latest grid map and the
+     * latest scan node */
+    poseGraphEdges.emplace_back(
+        latestLocalMapNode.mLocalMapId, scanNodeId,
+        EdgeType::IntraLocalMap, ConstraintType::Odometry,
+        mapLocalScanPose, mapLocalInformationMat);
+
+    return localMapInserted;
+}
+
 /* Update the grid map (list of the local grid maps) */
 void GridMapBuilder::UpdateGridMap(
     const LocalMapNodeMap& localMapNodes,

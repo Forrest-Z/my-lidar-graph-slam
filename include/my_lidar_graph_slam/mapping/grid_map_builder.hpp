@@ -185,6 +185,16 @@ private:
         const Eigen::Matrix3d& scanPoseCovarianceMatrix,
         const NodeId scanNodeId);
 
+    /* Update the pose graph, add a new scan node and create a new local grid
+     * map (and its corresponding new local map node) if necessary */
+    bool UpdatePoseGraph(
+        LocalMapNodeMap& localMapNodes,
+        ScanNodeMap& scanNodes,
+        std::vector<PoseGraphEdge>& poseGraphEdges,
+        const RobotPose2D<double>& relativeScanPose,
+        const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+        const Sensor::ScanDataPtr<double>& scanData);
+
     /* Update the grid map (list of the local grid maps) */
     void UpdateGridMap(const LocalMapNodeMap& localMapNodes,
                        const ScanNodeMap& scanNodes);
