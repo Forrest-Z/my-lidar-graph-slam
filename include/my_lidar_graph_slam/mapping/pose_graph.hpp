@@ -344,14 +344,11 @@ public:
     const ScanNode& LatestNode() const;
 
     /* Append a new scan node */
-    NodeId Append(const LocalMapId localMapId,
-                  const RobotPose2D<double>& localPose,
-                  const Sensor::ScanDataPtr<double>& scanData,
-                  const RobotPose2D<double>& globalPose);
-
-private:
-    /* Return an Id for a new scan node */
-    int NewId() const;
+    void Append(const NodeId nodeId,
+                const LocalMapId localMapId,
+                const RobotPose2D<double>& localPose,
+                const Sensor::ScanDataPtr<double>& scanData,
+                const RobotPose2D<double>& globalPose);
 
 private:
     /* Map of the scan nodes */
@@ -511,10 +508,11 @@ public:
                             const RobotPose2D<double>& globalPose);
 
     /* Append a new scan node and return a new node Id */
-    NodeId AppendScanNode(const LocalMapId localMapId,
-                          const RobotPose2D<double>& localPose,
-                          const Sensor::ScanDataPtr<double>& scanData,
-                          const RobotPose2D<double>& globalPose);
+    void AppendScanNode(const NodeId nodeId,
+                        const LocalMapId localMapId,
+                        const RobotPose2D<double>& localPose,
+                        const Sensor::ScanDataPtr<double>& scanData,
+                        const RobotPose2D<double>& globalPose);
 
     /* Append a new pose graph edge (constraint) */
     void AppendEdge(const LocalMapId localMapNodeId,

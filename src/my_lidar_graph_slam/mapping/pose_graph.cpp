@@ -110,28 +110,19 @@ const ScanNode& ScanNodeMap::LatestNode() const
 }
 
 /* Append a new scan node */
-NodeId ScanNodeMap::Append(
+void ScanNodeMap::Append(
+    const NodeId nodeId,
     const LocalMapId localMapId,
     const RobotPose2D<double>& localPose,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& globalPose)
 {
-    /* Determine an Id of a new scan node */
-    const NodeId nodeId { this->NewId() };
     /* Insert a new scan node */
     this->mNodes.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(nodeId),
         std::forward_as_tuple(nodeId, localMapId, localPose,
                               scanData, globalPose));
-    /* Return the new scan node Id */
-    return nodeId;
-}
-
-/* Return an Id for a new scan node */
-int ScanNodeMap::NewId() const
-{
-    return this->mNodes.empty() ? 0 : this->NodeIdMax().mId + 1;
 }
 
 /*
@@ -148,15 +139,16 @@ void PoseGraph::AppendLocalMapNode(
 }
 
 /* Append a new scan node and return a new node Id */
-NodeId PoseGraph::AppendScanNode(
+void PoseGraph::AppendScanNode(
+    const NodeId nodeId,
     const LocalMapId localMapId,
     const RobotPose2D<double>& localPose,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& globalPose)
 {
     /* Insert a new scan node */
-    return this->mScanNodes.Append(localMapId, localPose,
-                                   scanData, globalPose);
+    this->mScanNodes.Append(nodeId, localMapId, localPose,
+                            scanData, globalPose);
 }
 
 /* Append a new pose graph edge (constraint) */
