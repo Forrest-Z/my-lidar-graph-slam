@@ -320,18 +320,6 @@ void LidarGraphSlam::UpdatePrecomputedGridMaps(
     }
 }
 
-/* Update the grid map according to the modified pose graph */
-bool LidarGraphSlam::UpdateGridMap()
-{
-    /* Acquire the unique lock */
-    std::unique_lock uniqueLock { this->mMutex };
-    /* Update the grid map according to the modified pose graph */
-    const bool localMapCreated =
-        this->mGridMapBuilder->AppendScan(this->mPoseGraph);
-    /* Return whether the new local map is created */
-    return localMapCreated;
-}
-
 /* Update pose graph nodes and rebuild grid maps after loop closure */
 void LidarGraphSlam::AfterLoopClosure(
     const std::vector<PoseGraph::Node>& poseGraphNodes)

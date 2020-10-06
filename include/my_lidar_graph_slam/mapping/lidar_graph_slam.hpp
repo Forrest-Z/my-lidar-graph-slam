@@ -117,8 +117,6 @@ public:
     /* Update the coarser grid maps if modified in the loop detection process */
     void UpdatePrecomputedGridMaps(
         LoopDetectionQueryVector& loopDetectionQueries);
-    /* Update the grid map according to the modified pose graph */
-    bool UpdateGridMap();
 
     /* Rebuild grid maps after loop closure */
     void AfterLoopClosure(
