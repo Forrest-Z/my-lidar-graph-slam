@@ -198,7 +198,7 @@ private:
     /* Compute the bounding box of the scan and scan points in a local frame */
     void ComputeBoundingBoxAndScanPointsMapLocal(
         const RobotPose2D<double>& globalMapPose,
-        const RobotPose2D<double>& globalRobotPose,
+        const RobotPose2D<double>& globalScanPose,
         const Sensor::ScanDataPtr<double>& scanData,
         Point2D<double>& localMinPos,
         Point2D<double>& localMaxPos,

@@ -444,7 +444,7 @@ void GridMapBuilder::ConstructMapFromScans(
 /* Compute the bounding box of the scan and scan points in a local frame */
 void GridMapBuilder::ComputeBoundingBoxAndScanPointsMapLocal(
     const RobotPose2D<double>& globalMapPose,
-    const RobotPose2D<double>& globalRobotPose,
+    const RobotPose2D<double>& globalScanPose,
     const Sensor::ScanDataPtr<double>& scanData,
     Point2D<double>& localMinPos,
     Point2D<double>& localMaxPos,
@@ -452,7 +452,7 @@ void GridMapBuilder::ComputeBoundingBoxAndScanPointsMapLocal(
 {
     /* Compute the sensor pose from the robot pose */
     const RobotPose2D<double> globalSensorPose =
-        Compound(globalRobotPose, scanData->RelativeSensorPose());
+        Compound(globalScanPose, scanData->RelativeSensorPose());
     /* Compute the map local sensor pose */
     const RobotPose2D<double> localSensorPose =
         InverseCompound(globalMapPose, globalSensorPose);
