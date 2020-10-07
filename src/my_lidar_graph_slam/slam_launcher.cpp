@@ -981,12 +981,13 @@ int main(int argc, char** argv)
             continue;
 
         /* Get the pose graph information */
-        std::map<int, Mapping::NodePosition> poseGraphNodes;
-        std::vector<Mapping::EdgeConnection> poseGraphEdges;
-        pLidarGraphSlam->GetPoseGraph(poseGraphNodes, poseGraphEdges);
+        Mapping::LocalMapNodeMap localMapNodes;
+        std::map<Mapping::NodeId, Mapping::ScanNodeData> scanNodes;
+        std::vector<Mapping::EdgeData> poseGraphEdges;
+        pLidarGraphSlam->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
 
         /* Draw the current pose graph if necessary */
-        pGnuplotHelper->DrawPoseGraph(poseGraphNodes, poseGraphEdges);
+        pGnuplotHelper->DrawPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
     }
 
     /* Stop the SLAM backend */
@@ -995,28 +996,34 @@ int main(int argc, char** argv)
     IO::MapSaver* const pMapSaver = IO::MapSaver::Instance();
 
     /* Retrieve a latest map that contains latest scans */
-    int latestMapNodeIdxMin;
-    int latestMapNodeIdxMax;
-    Mapping::GridMapType latestMap = pLidarGraphSlam->GetLatestMap(
-        latestMapNodeIdxMin, latestMapNodeIdxMax);
+    RobotPose2D<double> latestMapPose;
+    Mapping::GridMapType latestMap;
+    Mapping::NodeId latestMapNodeIdMin { Mapping::NodeId::Invalid };
+    Mapping::NodeId latestMapNodeIdMax { Mapping::NodeId::Invalid };
+    pLidarGraphSlam->GetLatestMap(latestMapPose, latestMap,
+                                  latestMapNodeIdMin, latestMapNodeIdMax);
 
     /* Build a global map that contains all local grid maps */
-    int globalMapNodeIdxMin;
-    int globalMapNodeIdxMax;
-    Mapping::GridMapType globalMap = pLidarGraphSlam->GetGlobalMap(
-        globalMapNodeIdxMin, globalMapNodeIdxMax);
+    RobotPose2D<double> globalMapPose;
+    Mapping::GridMapType globalMap;
+    Mapping::NodeId globalMapNodeIdMin { Mapping::NodeId::Invalid };
+    Mapping::NodeId globalMapNodeIdMax { Mapping::NodeId::Invalid };
+    pLidarGraphSlam->GetGlobalMap(globalMapPose, globalMap,
+                                  globalMapNodeIdMin, globalMapNodeIdMax);
 
     /* Retrieve all pose graph nodes and edges */
-    std::vector<Mapping::PoseGraph::Node> poseGraphNodes;
-    std::vector<Mapping::PoseGraph::Edge> poseGraphEdges;
-    pLidarGraphSlam->GetPoseGraph(poseGraphNodes, poseGraphEdges);
+    Mapping::LocalMapNodeMap localMapNodes;
+    Mapping::ScanNodeMap scanNodes;
+    std::vector<Mapping::PoseGraphEdge> poseGraphEdges;
+    pLidarGraphSlam->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
 
     /* Save the global map, the pose graph, and the latest map */
-    pMapSaver->SaveMap(globalMap, poseGraphNodes,
+    pMapSaver->SaveMap(globalMapPose, globalMap, scanNodes,
                        outputFilePath, true, true);
-    pMapSaver->SavePoseGraph(poseGraphNodes, poseGraphEdges, outputFilePath);
-    pMapSaver->SaveLatestMap(latestMap, poseGraphNodes, true,
-                             latestMapNodeIdxMin, latestMapNodeIdxMax,
+    pMapSaver->SavePoseGraph(localMapNodes, scanNodes,
+                             poseGraphEdges, outputFilePath);
+    pMapSaver->SaveLatestMap(latestMapPose, latestMap, scanNodes, true,
+                             latestMapNodeIdMin, latestMapNodeIdMax,
                              true, outputFilePath);
 
     if (launcherSettings.mWaitForKey)
