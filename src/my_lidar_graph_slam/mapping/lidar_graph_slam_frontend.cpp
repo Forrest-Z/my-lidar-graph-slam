@@ -86,18 +86,19 @@ bool LidarGraphSlamFrontend::ProcessScan(
     if (this->mProcessCount == 0) {
         /* Set the initial pose for the first scan */
         RobotPose2D<double> estimatedPose = this->mInitialPose;
-        /* Append the new pose graph node */
-        pParent->AppendNode(estimatedPose, scanData);
+        /* Update the pose graph and grid map */
+        pParent->AppendFirstNodeAndEdge(estimatedPose, scanData);
     } else {
         /* Retrieve the latest pose and the latest map */
-        RobotPose2D<double> latestPose;
+        RobotPose2D<double> latestScanPose;
+        RobotPose2D<double> latestMapPose;
         GridMapType latestMap;
-        pParent->GetLatestPoseAndMap(latestPose, latestMap);
+        pParent->GetLatestData(latestScanPose, latestMap, latestMapPose);
 
         const RobotPose2D<double> relPoseFromLastMapUpdate =
             InverseCompound(this->mLastMapUpdateOdomPose, odomPose);
         const RobotPose2D<double> initialPose =
-            Compound(latestPose, relPoseFromLastMapUpdate);
+            Compound(latestScanPose, relPoseFromLastMapUpdate);
 
         /* Construct a new scan matching query */
         const ScanMatchingQuery queryInfo {
@@ -109,22 +110,25 @@ bool LidarGraphSlamFrontend::ProcessScan(
         /* Make sure that the solution is found */
         assert(matchingSummary.mPoseFound);
 
+        /* Compute the estimated pose in a world coordinate frame */
+        const RobotPose2D<double> globalEstimatedPose =
+            Compound(latestMapPose, matchingSummary.mEstimatedPose);
         /* Compute the relative pose between the latest node pose
-         * and the estimated pose, the former might have been modified by
-         * the loop closure in SLAM backend and thus the above variable
+         * `latestScanPose` and the estimated pose `globalEstimatedPose`,
+         * the former might have been modified by the loop closure
+         * in SLAM backend and thus the above variable `latestScanPose`
          * holds the old value before the loop closure */
-        const RobotPose2D<double> edgeRelativePose =
-            InverseCompound(latestPose, matchingSummary.mEstimatedPose);
+        const RobotPose2D<double> relativePose =
+            InverseCompound(latestScanPose, globalEstimatedPose);
 
-        /* Append a new pose graph node and odometry edge */
-        pParent->AppendOdometryNodeAndEdge(
-            scanData, edgeRelativePose,
-            matchingSummary.mEstimatedCovariance);
+        /* Convert the covariance matrix to world-coordinate frame */
+        const Eigen::Matrix3d covarianceMatrix =
+            ConvertCovarianceFromLocalToWorld(
+                latestMapPose, matchingSummary.mEstimatedCovariance);
+
+        /* Update the pose graph and grid map */
+        pParent->AppendNodeAndEdge(relativePose, covarianceMatrix, scanData);
     }
-
-    /* Integrate the scan data into the grid map and
-     * check if the new local map is created */
-    const bool localMapCreated = pParent->UpdateGridMap();
 
     /* Notify the worker thread for the SLAM backend
      * if the new local map is added to the entire grid map */
