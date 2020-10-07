@@ -78,6 +78,49 @@ void LidarGraphSlam::GetPoseGraph(
             poseGraphEdge.mRelativePose, poseGraphEdge.mInformationMat);
 }
 
+/* Retrieve the finished pose graph information */
+void LidarGraphSlam::GetPoseGraphFinished(
+    LocalMapNodeMap& localMapNodes,
+    ScanNodeMap& scanNodes,
+    std::vector<PoseGraphEdge>& poseGraphEdges) const
+{
+    /* Acquire the unique lock */
+    std::unique_lock uniqueLock { this->mMutex };
+
+    /* Get the iterator to the first unfinished local map */
+    const auto unfinishedMapIt = std::find_if(
+        this->mGridMapBuilder->LocalMaps().cbegin(),
+        this->mGridMapBuilder->LocalMaps().cend(),
+        [](const std::pair<LocalMapId, LocalMap>& localMapPair) {
+            return !localMapPair.second.mFinished; });
+
+    /* Local maps with Ids larger than `localMapIdMax` are removed */
+    const LocalMapId localMapIdMax = unfinishedMapIt->second.mId;
+    /* Scan nodes with Ids larger than `nodeIdMax` are removed */
+    const NodeId nodeIdMax = unfinishedMapIt->second.mScanNodeIdMin;
+
+    /* Copy the local map nodes */
+    for (const auto& [nodeId, mapNode] : this->mPoseGraph->LocalMapNodes())
+        if (mapNode.mLocalMapId < localMapIdMax)
+            localMapNodes.Append(nodeId, mapNode.mGlobalPose);
+
+    /* Copy the scan nodes */
+    for (const auto& [nodeId, scanNode] : this->mPoseGraph->ScanNodes())
+        if (scanNode.mLocalMapId < localMapIdMax &&
+            scanNode.mNodeId < nodeIdMax)
+            scanNodes.Append(nodeId, scanNode.mLocalMapId, scanNode.mLocalPose,
+                             scanNode.mScanData, scanNode.mGlobalPose);
+
+    /* Copy the pose graph edges */
+    for (const auto& poseGraphEdge : this->mPoseGraph->Edges())
+        if (poseGraphEdge.mLocalMapNodeId < localMapIdMax &&
+            poseGraphEdge.mScanNodeId < nodeIdMax)
+            poseGraphEdges.emplace_back(
+                poseGraphEdge.mLocalMapNodeId, poseGraphEdge.mScanNodeId,
+                poseGraphEdge.mEdgeType, poseGraphEdge.mConstraintType,
+                poseGraphEdge.mRelativePose, poseGraphEdge.mInformationMat);
+}
+
 /* Retrieve the pose graph information */
 void LidarGraphSlam::GetPoseGraph(
     LocalMapNodeMap& localMapNodes,

@@ -76,6 +76,11 @@ public:
         LocalMapNodeMap& localMapNodes,
         ScanNodeMap& scanNodes,
         std::vector<PoseGraphEdge>& poseGraphEdges) const;
+    /* Retrieve the finished pose graph information */
+    void GetPoseGraphFinished(
+        LocalMapNodeMap& localMapNodes,
+        ScanNodeMap& scanNodes,
+        std::vector<PoseGraphEdge>& poseGraphEdges) const;
     /* Retrieve the pose graph information */
     void GetPoseGraph(
         LocalMapNodeMap& localMapNodes,
