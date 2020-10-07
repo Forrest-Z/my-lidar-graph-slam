@@ -48,11 +48,11 @@ void LidarGraphSlamBackend::Run(
         /* Append loop closing constraints using the loop detection results */
         pParent->AppendLoopClosingEdges(loopDetectionResults);
 
-        /* Retrieve all pose graph nodes and edges */
+        /* Retrieve the finished pose graph nodes and edges */
         LocalMapNodeMap localMapNodes;
         ScanNodeMap scanNodes;
         std::vector<PoseGraphEdge> poseGraphEdges;
-        pParent->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
+        pParent->GetPoseGraphFinished(localMapNodes, scanNodes, poseGraphEdges);
 
         /* Perform pose graph optimization */
         this->mPoseGraphOptimizer->Optimize(
