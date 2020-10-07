@@ -100,9 +100,12 @@ bool LidarGraphSlamFrontend::ProcessScan(
         const RobotPose2D<double> initialPose =
             Compound(latestScanPose, relPoseFromLastMapUpdate);
 
+        /* Compute an initial pose in a map-local coordinate */
+        const RobotPose2D<double> mapLocalInitialPose =
+            InverseCompound(latestMapPose, initialPose);
         /* Construct a new scan matching query */
         const ScanMatchingQuery queryInfo {
-            std::move(latestMap), scanData, initialPose };
+            std::move(latestMap), scanData, mapLocalInitialPose };
         /* Perform scan matching against the grid map that contains
          * the latest scans and obtain the result */
         const ScanMatchingSummary matchingSummary =
