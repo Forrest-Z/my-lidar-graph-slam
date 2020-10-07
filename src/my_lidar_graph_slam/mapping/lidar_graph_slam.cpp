@@ -57,11 +57,25 @@ void LidarGraphSlam::GetPoseGraph(
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
-    /* Copy the local map nodes and scan nodes */
-    localMapNodes = this->mPoseGraph->LocalMapNodes();
-    scanNodes = this->mPoseGraph->ScanNodes();
+    localMapNodes.Clear();
+    scanNodes.Clear();
+    poseGraphEdges.clear();
+
+    /* Copy the local map nodes */
+    for (const auto& [nodeId, mapNode] : this->mPoseGraph->LocalMapNodes())
+        localMapNodes.Append(nodeId, mapNode.mGlobalPose);
+
+    /* Copy the scan nodes */
+    for (const auto& [nodeId, scanNode] : this->mPoseGraph->ScanNodes())
+        scanNodes.Append(nodeId, scanNode.mLocalMapId, scanNode.mLocalPose,
+                         scanNode.mScanData, scanNode.mGlobalPose);
+
     /* Copy the pose graph edges */
-    poseGraphEdges = this->mPoseGraph->Edges();
+    for (const auto& poseGraphEdge : this->mPoseGraph->Edges())
+        poseGraphEdges.emplace_back(
+            poseGraphEdge.mLocalMapNodeId, poseGraphEdge.mScanNodeId,
+            poseGraphEdge.mEdgeType, poseGraphEdge.mConstraintType,
+            poseGraphEdge.mRelativePose, poseGraphEdge.mInformationMat);
 }
 
 /* Retrieve the pose graph information */
