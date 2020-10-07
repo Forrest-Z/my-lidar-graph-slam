@@ -92,9 +92,10 @@ public:
     /* Get the maximum local map Id */
     LocalMapId NodeIdMax() const;
 
-    /* Get the map of the local map nodes */
-    inline const MapType& Nodes() const
-    { return this->mNodes; }
+    /* Get the internal map of the local map nodes */
+    inline MapType& Nodes() { return this->mNodes; }
+    /* Get the internal map of the local map nodes */
+    inline const MapType& Nodes() const { return this->mNodes; }
 
     /* Get an iterator to the first local map node */
     inline MapType::iterator begin() noexcept
@@ -144,6 +145,9 @@ public:
      * greater than or equal to the specified Id */
     inline MapType::const_iterator LowerBound(const LocalMapId nodeId) const
     { return this->mNodes.lower_bound(nodeId); }
+
+    /* Clear the local map nodes */
+    inline void Clear() { this->mNodes.clear(); }
 
     /* Check if the local map nodes are empty */
     inline bool Empty() const
@@ -267,9 +271,10 @@ public:
     /* Get the maximum scan node Id */
     NodeId NodeIdMax() const;
 
-    /* Get the map of the scan nodes */
-    inline const MapType& Nodes() const
-    { return this->mNodes; }
+    /* Get the internal map of the scan nodes */
+    inline MapType& Nodes() { return this->mNodes; }
+    /* Get the internal map of the scan nodes */
+    inline const MapType& Nodes() const { return this->mNodes; }
 
     /* Get an iterator to the first scan node */
     inline MapType::iterator begin() noexcept
@@ -319,6 +324,9 @@ public:
      * greater than or equal to the specified Id */
     inline MapType::const_iterator LowerBound(const NodeId nodeId) const
     { return this->mNodes.lower_bound(nodeId); }
+
+    /* Clear the local map nodes */
+    inline void Clear() { this->mNodes.clear(); }
 
     /* Check if the scan nodes are empty */
     inline bool Empty() const
