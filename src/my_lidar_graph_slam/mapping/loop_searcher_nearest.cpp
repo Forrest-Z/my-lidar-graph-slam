@@ -13,16 +13,20 @@ namespace Mapping {
 LoopCandidateVector LoopSearcherNearest::Search(
     const LoopSearchHint& searchHint)
 {
+    /* LoopSearcherNearest class selects the closest scan node
+     * and its corresponding local grid map from the current robot pose */
+    LoopCandidateVector loopCandidates;
+
     const auto& scanNodes = searchHint.mScanNodes;
     const auto& localMapNodes = searchHint.mLocalMapNodes;
 
-    /* Check that the local map nodes and scan nodes are not empty */
-    Assert(!scanNodes.empty());
-    Assert(!localMapNodes.empty());
+    /* Do not perform loop candidate search if empty */
+    if (scanNodes.empty() || localMapNodes.empty())
+        return loopCandidates;
 
-    /* Retrieve the pose of the current scan node */
+    /* Retrieve the pose of the scan node in the last finished local map */
     const RobotPose2D<double>& robotPose =
-        scanNodes.at(searchHint.mLatestScanNodeId).mGlobalPose;
+        scanNodes.at(searchHint.mLastFinishedScanId).mGlobalPose;
 
     /* Find the Id of the local grid map and the scan node
      * that may contain loop closure point */
@@ -37,7 +41,7 @@ LoopCandidateVector LoopSearcherNearest::Search(
     bool isFirstNode = true;
     RobotPose2D<double> prevPose;
 
-    /* Traverse all the local grid maps except the last unfinished one */
+    /* Traverse all finished local grid maps except the last one */
     const auto firstMapIt = localMapNodes.begin();
     const auto lastMapIt = std::prev(localMapNodes.end());
 
@@ -49,14 +53,9 @@ LoopCandidateVector LoopSearcherNearest::Search(
         /* Make sure that the local map is finished */
         Assert(localMapNode.mFinished);
 
-        /* Retrieve the Id range of the scan nodes in this local map */
-        const NodeId scanNodeIdMin = localMapNode.mScanNodeIdMin;
-        const NodeId scanNodeIdMax = localMapNode.mScanNodeIdMax;
-
         /* Retrieve two iterators pointing the scan nodes in this local map */
-        const auto firstIt = scanNodes.find(scanNodeIdMin);
-        const auto lastIt = scanNodes.find(scanNodeIdMax);
-
+        const auto firstIt = scanNodes.find(localMapNode.mScanNodeIdMin);
+        const auto lastIt = scanNodes.find(localMapNode.mScanNodeIdMax);
         /* Make sure that the iterators are valid */
         Assert(firstIt != scanNodes.end());
         Assert(lastIt != scanNodes.end());
@@ -93,39 +92,41 @@ LoopCandidateVector LoopSearcherNearest::Search(
     }
 
 Done:
-    /* LoopSearcherNearest class selects the closest scan node
-     * and its corresponding local grid map from the current robot pose */
-    LoopCandidateVector loopCandidates;
-
     /* Return an empty collection of candidates if not found */
     if (candidateMapId.mId == LocalMapId::Invalid ||
         candidateNodeId.mId == NodeId::Invalid)
         return loopCandidates;
 
     /* Set the scan nodes around the current scan node */
-    const auto& latestLocalMap =
-        localMapNodes.at(searchHint.mLatestLocalMapNodeId);
-    const auto firstNodeIt =
-        scanNodes.find(latestLocalMap.mScanNodeIdMin);
-    const auto lastNodeIt =
-        scanNodes.find(latestLocalMap.mScanNodeIdMax);
-    const auto latestNodeIt =
-        scanNodes.find(searchHint.mLatestScanNodeId);
+    const auto& lastFinishedMap =
+        localMapNodes.at(searchHint.mLastFinishedMapId);
+    const auto& firstScanIt =
+        scanNodes.find(lastFinishedMap.mScanNodeIdMin);
+    const auto& lastScanIt =
+        scanNodes.find(lastFinishedMap.mScanNodeIdMax);
+    const auto& lastFinishedScanIt =
+        scanNodes.find(searchHint.mLastFinishedScanId);
 
-    Assert(firstNodeIt != scanNodes.end());
-    Assert(lastNodeIt != scanNodes.end());
-    Assert(latestNodeIt != scanNodes.end());
+    /* Make sure that these iterators point to the valid elements */
+    Assert(firstScanIt != scanNodes.end());
+    Assert(lastScanIt != scanNodes.end());
+    Assert(lastFinishedScanIt != scanNodes.end());
+
+    /* Make sure that the scan node in the last finished local map
+     * `lastFinishedScanIt` is actually inside the last finished local map */
+    Assert(lastFinishedScanIt->first >= firstScanIt->first &&
+           lastFinishedScanIt->first <= lastScanIt->first);
 
     const int distToFirstCandidate = std::min(
-        static_cast<int>(std::distance(firstNodeIt, latestNodeIt)),
+        static_cast<int>(std::distance(firstScanIt, lastFinishedScanIt)),
         this->mNumOfCandidateNodes);
     const int distToLastCandidate = std::min(
-        static_cast<int>(std::distance(latestNodeIt, lastNodeIt)),
+        static_cast<int>(std::distance(lastFinishedScanIt, lastScanIt)),
         this->mNumOfCandidateNodes);
     const auto firstCandidateNodeIt =
-        std::prev(latestNodeIt, distToFirstCandidate);
+        std::prev(lastFinishedScanIt, distToFirstCandidate);
     const auto lastCandidateNodeIt =
-        std::next(latestNodeIt, distToLastCandidate);
+        std::next(lastFinishedScanIt, distToLastCandidate);
     const int numOfActualCandidateNodes =
         std::distance(firstCandidateNodeIt, lastCandidateNodeIt) + 1;
 
