@@ -174,58 +174,90 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
+    /* Get the iterator to the first unfinished local map */
+    const auto unfinishedMapIt = std::find_if(
+        this->mGridMapBuilder->LocalMaps().cbegin(),
+        this->mGridMapBuilder->LocalMaps().cend(),
+        [](const std::pair<LocalMapId, LocalMap>& localMapPair) {
+            return !localMapPair.second.mFinished; });
+
+    /* Local map in unfinished state should be found */
+    Assert(unfinishedMapIt != this->mGridMapBuilder->LocalMaps().end());
+
+    /* Local maps with Ids larger than `localMapIdMax` are ignored */
+    const LocalMapId localMapIdMax = unfinishedMapIt->first;
+    /* Scan nodes with Ids larger than `nodeIdMax` are ignored */
+    const NodeId nodeIdMax = unfinishedMapIt->second.mScanNodeIdMin;
+
     std::map<NodeId, ScanNodeData> scanNodes;
     std::map<LocalMapId, LocalMapData> localMapNodes;
 
     /* Setup the scan nodes information */
-    for (const auto& [scanNodeId, scanNode] : this->mPoseGraph->ScanNodes())
+    for (const auto& [nodeId, scanNode] : this->mPoseGraph->ScanNodes()) {
+        /* Ignore the scan node that belongs in the unfinished local map */
+        if (scanNode.mLocalMapId >= localMapIdMax ||
+            scanNode.mNodeId >= nodeIdMax)
+            break;
+
         /* Append the scan node information */
         scanNodes.emplace(
             std::piecewise_construct,
-            std::forward_as_tuple(scanNodeId),
-            std::forward_as_tuple(scanNodeId, scanNode.mGlobalPose));
+            std::forward_as_tuple(nodeId),
+            std::forward_as_tuple(nodeId, scanNode.mGlobalPose));
+    }
 
     /* Setup the local map nodes information */
-    for (const auto& [localMapId, localMapNode] :
-         this->mPoseGraph->LocalMapNodes()) {
-        const auto& localMap = this->mGridMapBuilder->LocalMapAt(localMapId);
+    for (const auto& [nodeId, mapNode] : this->mPoseGraph->LocalMapNodes()) {
+        /* Ignore the unfinished local map */
+        if (nodeId >= localMapIdMax)
+            break;
+
+        /* Retrieve the local map information */
+        const auto& localMap = this->mGridMapBuilder->LocalMapAt(nodeId);
 
         /* Compute the bounding box of the local map in a world frame */
         Point2D<double> globalMinPos;
         Point2D<double> globalMaxPos;
-        localMap.mMap.ComputeBoundingBox(
-            localMapNode.mGlobalPose, globalMinPos, globalMaxPos);
+        localMap.mMap.ComputeBoundingBox(mapNode.mGlobalPose,
+                                         globalMinPos, globalMaxPos);
 
         /* Append the local map node information */
         localMapNodes.emplace(
             std::piecewise_construct,
-            std::forward_as_tuple(localMapId),
-            std::forward_as_tuple(localMapId, globalMinPos, globalMaxPos,
+            std::forward_as_tuple(nodeId),
+            std::forward_as_tuple(nodeId, globalMinPos, globalMaxPos,
                                   localMap.mScanNodeIdMin,
                                   localMap.mScanNodeIdMax,
                                   localMap.mFinished));
     }
 
-    const ScanNode& latestScanNode =
-        this->mPoseGraph->LatestScanNode();
-    const LocalMapNode& latestLocalMapNode =
-        this->mPoseGraph->LatestLocalMapNode();
-    const LocalMap& latestLocalMap =
-        this->mGridMapBuilder->LatestLocalMap();
+    /* Return if there is no finished local map */
+    if (scanNodes.empty() || localMapNodes.empty())
+        return LoopSearchHint {
+            std::move(scanNodes), std::move(localMapNodes),
+            this->mGridMapBuilder->AccumTravelDist(),
+            NodeId(NodeId::Invalid), LocalMapId(LocalMapId::Invalid) };
 
-    /* Make sure that the Id of the latest local map node stored in PoseGraph
-     * and the Id of the latest local map stored in GridMapBuilder are same */
-    Assert(latestLocalMapNode.mLocalMapId == latestLocalMap.mId);
-    /* Make sure that the latest local map contains the latest scan node */
-    Assert(latestScanNode.mLocalMapId == latestLocalMap.mId);
-    Assert(latestScanNode.mNodeId >= latestLocalMap.mScanNodeIdMin &&
-           latestScanNode.mNodeId <= latestLocalMap.mScanNodeIdMax);
+    /* Retrieve the scan node in the last finished local map */
+    const auto& lastFinishedScanNode =
+        this->mPoseGraph->ScanNodeAt(scanNodes.rbegin()->first);
+    /* Retrieve the last finished local map */
+    const auto& lastFinishedMapNode =
+        this->mPoseGraph->LocalMapNodeAt(localMapNodes.rbegin()->first);
+    const auto& lastFinishedMap =
+        this->mGridMapBuilder->LocalMapAt(lastFinishedMapNode.mLocalMapId);
+
+    /* Make sure that `lastFinishedScanNode` belongs to the last finished
+     * local map `lastFinishedMap` */
+    Assert(lastFinishedScanNode.mLocalMapId == lastFinishedMap.mId);
+    Assert(lastFinishedScanNode.mNodeId >= lastFinishedMap.mScanNodeIdMin &&
+           lastFinishedScanNode.mNodeId <= lastFinishedMap.mScanNodeIdMax);
 
     /* Return the necessary information for loop search */
     return LoopSearchHint {
         std::move(scanNodes), std::move(localMapNodes),
         this->mGridMapBuilder->AccumTravelDist(),
-        latestScanNode.mNodeId, latestLocalMapNode.mLocalMapId };
+        lastFinishedScanNode.mNodeId, lastFinishedMapNode.mLocalMapId };
 }
 
 /* Retrieve the necessary information for loop detection */
