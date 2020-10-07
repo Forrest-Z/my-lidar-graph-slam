@@ -80,7 +80,7 @@ void LidarGraphSlam::GetPoseGraph(
 
 /* Retrieve the pose graph information */
 void LidarGraphSlam::GetPoseGraph(
-    std::map<LocalMapId, LocalMapData>& localMapNodes,
+    LocalMapNodeMap& localMapNodes,
     std::map<NodeId, ScanNodeData>& scanNodes,
     std::vector<EdgeData>& poseGraphEdges) const
 {
@@ -90,25 +90,10 @@ void LidarGraphSlam::GetPoseGraph(
     poseGraphEdges.reserve(this->mPoseGraph->Edges().size());
 
     /* Setup the local map nodes information */
-    for (const auto& [localMapId, localMapNode]:
-         this->mPoseGraph->LocalMapNodes()) {
-        const auto& localMap = this->mGridMapBuilder->LocalMapAt(localMapId);
-
-        /* Compute the bounding box of the local map in a world frame */
-        Point2D<double> globalMinPos;
-        Point2D<double> globalMaxPos;
-        localMap.mMap.ComputeBoundingBox(
-            localMapNode.mGlobalPose, globalMinPos, globalMaxPos);
-
+    for (const auto& [localMapId, localMapNode] :
+         this->mPoseGraph->LocalMapNodes())
         /* Append the local map node information */
-        localMapNodes.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(localMapId),
-            std::forward_as_tuple(localMapId, globalMinPos, globalMaxPos,
-                                  localMap.mScanNodeIdMin,
-                                  localMap.mScanNodeIdMax,
-                                  localMap.mFinished));
-    }
+        localMapNodes.Append(localMapId, localMapNode.mGlobalPose);
 
     /* Setup the scan nodes information */
     for (const auto& [scanNodeId, scanNode] : this->mPoseGraph->ScanNodes())
