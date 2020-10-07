@@ -344,6 +344,11 @@ void GridMapBuilder::UpdateGridMap(
     const RobotPose2D<double> globalSensorPose =
         Compound(globalScanPose, scanData->RelativeSensorPose());
     /* Compute the sensor pose in a map-local coordinate frame */
+    /* We can compute this using `latestScanNode.mLocalPose` and
+     * `scanData->RelativeSensorPose()` since the relative poses between
+     * the latest local map node and the scan nodes inside this local map are
+     * not changed; the latest local map is not finished and thus relative
+     * poses are not updated by the loop closure in SLAM backend */
     const RobotPose2D<double> localSensorPose =
         InverseCompound(globalMapPose, globalSensorPose);
     /* Calculate the grid cell index corresponding to the sensor pose */
