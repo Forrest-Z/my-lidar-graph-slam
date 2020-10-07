@@ -459,7 +459,7 @@ void LidarGraphSlam::AfterLoopClosure(
     }
 
     /* Make sure that the above edge is inter-local map odometry constraint */
-    Assert(odomEdgeIt->IsIntraLocalMap() &&
+    Assert(odomEdgeIt->IsInterLocalMap() &&
            odomEdgeIt->IsOdometryConstraint());
 
     /* Assume that the pose graph edges after the above edge represent
@@ -472,10 +472,15 @@ void LidarGraphSlam::AfterLoopClosure(
      * using the relative poses from the odometry edges */
     /* Relative poses between local map nodes and scan nodes inside these
      * local maps are kept */
-    for (auto edgeIt = odomEdgeIt.base();
+    for (auto edgeIt = std::prev(odomEdgeIt.base());
          edgeIt != this->mPoseGraph->Edges().end(); ++edgeIt) {
         /* Retrieve the odometry edge */
         const auto& odomEdge = *edgeIt;
+
+        /* Ignore if the edge represents the loop constraint */
+        if (!odomEdge.IsOdometryConstraint())
+            continue;
+
         /* Check what kind of node (local map or scan) should be updated */
         const bool updateScanNode =
             odomEdge.mLocalMapNodeId == lastLocalMapId &&
@@ -487,13 +492,7 @@ void LidarGraphSlam::AfterLoopClosure(
          * and there are no duplicate edges */
         Assert(updateLocalMapNode || updateScanNode);
 
-        /* Make sure that we are using the odometry edge */
-        Assert(odomEdge.IsOdometryConstraint());
-
         if (updateScanNode) {
-            /* Make sure that we are using the intra-local edge */
-            Assert(odomEdge.IsIntraLocalMap());
-
             /* Retrieve the starting node whose pose is already updated */
             const LocalMapNode& startNode =
                 this->mPoseGraph->LocalMapNodeAt(odomEdge.mLocalMapNodeId);
@@ -506,9 +505,6 @@ void LidarGraphSlam::AfterLoopClosure(
                 this->mPoseGraph->ScanNodeAt(odomEdge.mScanNodeId);
             endNode.mGlobalPose = endNodePose;
         } else if (updateLocalMapNode) {
-            /* Make sure that we are using the inter-local edge */
-            Assert(odomEdge.IsInterLocalMap());
-
             /* Retrieve the ending node whose pose is already updated */
             const ScanNode& endNode =
                 this->mPoseGraph->ScanNodeAt(odomEdge.mScanNodeId);
