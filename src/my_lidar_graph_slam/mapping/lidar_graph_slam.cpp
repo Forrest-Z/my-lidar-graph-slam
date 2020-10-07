@@ -336,58 +336,142 @@ void LidarGraphSlam::UpdatePrecomputedGridMaps(
 
 /* Update pose graph nodes and rebuild grid maps after loop closure */
 void LidarGraphSlam::AfterLoopClosure(
-    const std::vector<PoseGraph::Node>& poseGraphNodes)
+    const LocalMapNodeMap& localMapNodes,
+    const ScanNodeMap& scanNodes)
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
-    /* Update pose graph nodes using the results from the pose graph
-     * optimization, edges are not updated since they are constants */
-    for (std::size_t i = 0; i < poseGraphNodes.size(); ++i) {
-        /* Retrieve the old and new pose graph node */
-        auto& oldNode = this->mPoseGraph->NodeAt(i);
-        const auto& newNode = poseGraphNodes.at(i);
+    /* Update local map nodes using the results from the pose graph
+     * optimization (edges are not updated since they are constants) */
+    for (const auto& [localMapId, localMapNode] : localMapNodes) {
+        /* Retrieve the old local map node */
+        auto& oldLocalMapNode = this->mPoseGraph->LocalMapNodeAt(localMapId);
         /* Update the node pose */
-        oldNode.Pose() = newNode.Pose();
+        oldLocalMapNode.mGlobalPose = localMapNode.mGlobalPose;
     }
 
-    /* Retrieve the pose and index of the last node which is updated by the
-     * pose graph optimization */
-    const int optimizedLastNodeIdx = poseGraphNodes.back().Index();
-    RobotPose2D<double> nodePose = poseGraphNodes.back().Pose();
+    /* Update the scan nodes using the results from the pose graph */
+    for (const auto& [scanNodeId, scanNode] : scanNodes) {
+        /* Retrieve the old scan node */
+        auto& oldScanNode = this->mPoseGraph->ScanNodeAt(scanNodeId);
+        /* Update the node pose */
+        oldScanNode.mGlobalPose = scanNode.mGlobalPose;
+    }
 
-    /* Retrieve the odometry edge which has the above node as a starting node
-     * Nodes after the ending node of this edge is not optimized */
+    /* Retrieve the pose and Id of the last node which got updated by the
+     * pose graph optimization */
+    const auto& lastLocalMapNode = localMapNodes.LatestNode();
+    const auto& lastScanNode = scanNodes.LatestNode();
+    /* Retrieve the corresponding local map */
+    const auto& lastLocalMap = this->mGridMapBuilder->LocalMapAt(
+        lastLocalMapNode.mLocalMapId);
+
+    /* Check that only finished local grid maps are optimized */
+    /* We just check the last optimized local map `lastLocalMap`, local maps
+     * older than this map should be finished */
+    Assert(lastLocalMap.mFinished);
+    /* The following predicates indicate that the last optimized scan node
+     * `lastScanNode` belongs to the last optimized local map `lastLocalMap`
+     * and is the last scan of the `lastLocalMap`, which means that no scan
+     * that belongs to the unoptimized local grid map got optimized */
+    Assert(lastScanNode.mLocalMapId == lastLocalMap.mId);
+    Assert(lastScanNode.mNodeId == lastLocalMap.mScanNodeIdMax);
+
+    /* Retrieve the first edge that connects the last optimized local map
+     * `lastLocalMap` and the scan node after the last optimized scan node
+     * `lastScanNode`, which should be the inter-local grid map odometry
+     * constraint */
     const auto odomEdgeIt = std::find_if(
         this->mPoseGraph->Edges().crbegin(),
         this->mPoseGraph->Edges().crend(),
-        [optimizedLastNodeIdx](const PoseGraph::Edge& edge) {
-            return edge.StartNodeIndex() == optimizedLastNodeIdx; });
-    /* This odometry edge must be found */
-    assert(odomEdgeIt != this->mPoseGraph->Edges().rend());
-    /* Assume that the pose graph edges after the below index represent
+        [&lastLocalMap](const PoseGraphEdge& edge) {
+            return edge.mLocalMapNodeId == lastLocalMap.mId &&
+                   edge.mScanNodeId > lastLocalMap.mScanNodeIdMax; });
+
+    /* If the above edge is not found, then no new node has been added
+     * to the pose graph since the beginning of the loop closure and
+     * we do not need to correct pose graph */
+    if (odomEdgeIt == this->mPoseGraph->Edges().crend()) {
+        this->mGridMapBuilder->AfterLoopClosure(
+            this->mPoseGraph->LocalMapNodes(), this->mPoseGraph->ScanNodes());
+        return;
+    }
+
+    /* Make sure that the above edge is inter-local map odometry constraint */
+    Assert(odomEdgeIt->IsIntraLocalMap() &&
+           odomEdgeIt->IsOdometryConstraint());
+
+    /* Assume that the pose graph edges after the above edge represent
      * the odometry edges that are not considered in the last loop closure */
-    const std::size_t odomEdgeIdx = std::distance(
-        this->mPoseGraph->Edges().begin(), odomEdgeIt.base()) - 1;
+    LocalMapId lastLocalMapId = lastLocalMap.mId;
+    NodeId lastNodeId = lastLocalMap.mScanNodeIdMax;
 
     /* Update remaining pose graph nodes after the ending node of the above
      * odometry edge, which are added after the beginning of this loop closure
      * using the relative poses from the odometry edges */
-    for (std::size_t edgeIdx = odomEdgeIdx;
-         edgeIdx < this->mPoseGraph->Edges().size(); ++edgeIdx) {
+    /* Relative poses between local map nodes and scan nodes inside these
+     * local maps are kept */
+    for (auto edgeIt = odomEdgeIt.base();
+         edgeIt != this->mPoseGraph->Edges().end(); ++edgeIt) {
         /* Retrieve the odometry edge */
-        const auto& odomEdge = this->mPoseGraph->EdgeAt(edgeIdx);
-        /* Make sure that we are handling the odometry edge */
-        assert(odomEdge.IsOdometricConstraint());
-        /* Compute the new node pose */
-        nodePose = Compound(nodePose, odomEdge.RelativePose());
-        /* Update the node pose */
-        auto& odomNode = this->mPoseGraph->NodeAt(odomEdge.EndNodeIndex());
-        odomNode.Pose() = nodePose;
+        const auto& odomEdge = *edgeIt;
+        /* Check what kind of node (local map or scan) should be updated */
+        const bool updateScanNode =
+            odomEdge.mLocalMapNodeId == lastLocalMapId &&
+            odomEdge.mScanNodeId > lastNodeId;
+        const bool updateLocalMapNode =
+            odomEdge.mLocalMapNodeId > lastLocalMapId &&
+            odomEdge.mScanNodeId == lastNodeId;
+        /* Make sure that the pose graph edges are sorted in ascending order
+         * and there are no duplicate edges */
+        Assert(updateLocalMapNode || updateScanNode);
+
+        /* Make sure that we are using the odometry edge */
+        Assert(odomEdge.IsOdometryConstraint());
+
+        if (updateScanNode) {
+            /* Make sure that we are using the intra-local edge */
+            Assert(odomEdge.IsIntraLocalMap());
+
+            /* Retrieve the starting node whose pose is already updated */
+            const LocalMapNode& startNode =
+                this->mPoseGraph->LocalMapNodeAt(odomEdge.mLocalMapNodeId);
+            /* Compute the new node pose */
+            const RobotPose2D<double>& startNodePose = startNode.mGlobalPose;
+            const RobotPose2D<double> endNodePose =
+                Compound(startNodePose, odomEdge.mRelativePose);
+            /* Update the node pose */
+            ScanNode& endNode =
+                this->mPoseGraph->ScanNodeAt(odomEdge.mScanNodeId);
+            endNode.mGlobalPose = endNodePose;
+        } else if (updateLocalMapNode) {
+            /* Make sure that we are using the inter-local edge */
+            Assert(odomEdge.IsInterLocalMap());
+
+            /* Retrieve the ending node whose pose is already updated */
+            const ScanNode& endNode =
+                this->mPoseGraph->ScanNodeAt(odomEdge.mScanNodeId);
+            /* Compute the new node pose */
+            const RobotPose2D<double>& endNodePose = endNode.mGlobalPose;
+            const RobotPose2D<double> startNodePose =
+                MoveBackward(endNodePose, odomEdge.mRelativePose);
+            /* Update the node pose */
+            LocalMapNode& startNode =
+                this->mPoseGraph->LocalMapNodeAt(odomEdge.mLocalMapNodeId);
+            startNode.mGlobalPose = startNodePose;
+        }
+
+        /* Update the last processed edge information */
+        lastLocalMapId = odomEdge.mLocalMapNodeId;
+        lastNodeId = odomEdge.mScanNodeId;
     }
 
     /* Rebuild the grid maps */
-    this->mGridMapBuilder->AfterLoopClosure(this->mPoseGraph);
+    this->mGridMapBuilder->AfterLoopClosure(
+        this->mPoseGraph->LocalMapNodes(), this->mPoseGraph->ScanNodes());
+
+    return;
 }
 
 /* Retrieve a latest map that contains latest scans */

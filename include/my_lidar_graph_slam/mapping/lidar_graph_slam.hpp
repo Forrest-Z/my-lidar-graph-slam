@@ -120,7 +120,8 @@ public:
 
     /* Rebuild grid maps after loop closure */
     void AfterLoopClosure(
-        const std::vector<PoseGraph::Node>& poseGraphNodes);
+        const LocalMapNodeMap& localMapNodes,
+        const ScanNodeMap& scanNodes);
 
     /* Retrieve a latest map that contains latest scans */
     GridMapType GetLatestMap(int& poseGraphNodeIdxMin,
