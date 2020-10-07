@@ -28,27 +28,27 @@ struct LoopSearchHint final
         std::map<NodeId, ScanNodeData>&& scanNodes,
         std::map<LocalMapId, LocalMapData>&& localMapNodes,
         const double accumTravelDist,
-        const NodeId latestScanNodeId,
-        const LocalMapId latestLocalMapNodeId) :
+        const NodeId lastFinishedScanId,
+        const LocalMapId lastFinishedMapId) :
         mScanNodes(std::move(scanNodes)),
         mLocalMapNodes(std::move(localMapNodes)),
         mAccumTravelDist(accumTravelDist),
-        mLatestScanNodeId(latestScanNodeId),
-        mLatestLocalMapNodeId(latestLocalMapNodeId) { }
+        mLastFinishedScanId(lastFinishedScanId),
+        mLastFinishedMapId(lastFinishedMapId) { }
 
     /* Destructor */
     ~LoopSearchHint() = default;
 
-    /* Information about the scan nodes */
+    /* Information about the finished scan nodes */
     const std::map<NodeId, ScanNodeData>     mScanNodes;
-    /* Information about the local map nodes */
+    /* Information about the finished local map nodes */
     const std::map<LocalMapId, LocalMapData> mLocalMapNodes;
     /* Accumulated travel distance of the robot (current scan node) */
     const double                             mAccumTravelDist;
-    /* Id of the current scan node */
-    const NodeId                             mLatestScanNodeId;
-    /* Id of the local map that contains the current scan node */
-    const LocalMapId                         mLatestLocalMapNodeId;
+    /* Id of the scan node in the last finished local map */
+    const NodeId                             mLastFinishedScanId;
+    /* Id of the last finished local map */
+    const LocalMapId                         mLastFinishedMapId;
 };
 
 /*
