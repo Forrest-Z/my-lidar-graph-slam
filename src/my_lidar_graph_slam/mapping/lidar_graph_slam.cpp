@@ -475,16 +475,27 @@ void LidarGraphSlam::AfterLoopClosure(
 }
 
 /* Retrieve a latest map that contains latest scans */
-GridMapType LidarGraphSlam::GetLatestMap(
-    int& poseGraphNodeIdxMin, int& poseGraphNodeIdxMax) const
+void LidarGraphSlam::GetLatestMap(
+    RobotPose2D<double>& globalPose,
+    GridMapType& latestMap,
+    NodeId& scanNodeIdMin,
+    NodeId& scanNodeIdMax) const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
-    /* Set the index range of the pose graph node */
-    poseGraphNodeIdxMin = this->mGridMapBuilder->LatestScanIdxMin();
-    poseGraphNodeIdxMax = this->mGridMapBuilder->LatestScanIdxMax();
-    /* Return a latest map */
-    return this->mGridMapBuilder->LatestMap();
+
+    /* Set the pose of the latest map in a world coordinate frame */
+    globalPose = this->mGridMapBuilder->LatestMapPose();
+    /* Set the latest grid map */
+    latestMap = this->mGridMapBuilder->LatestMap();
+
+    /* Set the Id range of the scan node */
+    /* Scan data in the scan nodes within the range of `scanNodeIdMin` and
+     * `scanNodeIdMax` are used to create a latest grid map */
+    scanNodeIdMin = this->mGridMapBuilder->LatestScanIdMin();
+    scanNodeIdMax = this->mGridMapBuilder->LatestScanIdMax();
+
+    return;
 }
 
 /* Build a global map that contains all local grid maps acquired */
