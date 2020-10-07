@@ -7,6 +7,9 @@
 #include <map>
 #include <vector>
 
+#include <Eigen/Core>
+#include <Eigen/LU>
+
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
 
 namespace MyLidarGraphSlam {
