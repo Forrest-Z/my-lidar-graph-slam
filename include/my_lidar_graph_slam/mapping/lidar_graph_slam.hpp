@@ -129,8 +129,10 @@ public:
                       NodeId& scanNodeIdMin,
                       NodeId& scanNodeIdMax) const;
     /* Build a global map that contains all local grid maps acquired */
-    GridMapType GetGlobalMap(int& poseGraphNodeIdxMin,
-                             int& poseGraphNodeIdxMax) const;
+    void GetGlobalMap(RobotPose2D<double>& globalPose,
+                      GridMapType& globalMap,
+                      NodeId& scanNodeIdMin,
+                      NodeId& scanNodeIdMax) const;
 
     /* Start the SLAM backend */
     void StartBackend();

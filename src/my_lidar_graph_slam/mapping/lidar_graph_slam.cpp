@@ -499,16 +499,23 @@ void LidarGraphSlam::GetLatestMap(
 }
 
 /* Build a global map that contains all local grid maps acquired */
-GridMapType LidarGraphSlam::GetGlobalMap(
-    int& poseGraphNodeIdxMin, int& poseGraphNodeIdxMax) const
+void LidarGraphSlam::GetGlobalMap(
+    RobotPose2D<double>& globalPose,
+    GridMapType& globalMap,
+    NodeId& scanNodeIdMin,
+    NodeId& scanNodeIdMax) const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
-    /* Set the index range of the pose graph node */
-    poseGraphNodeIdxMin = this->mPoseGraph->Nodes().front().Index();
-    poseGraphNodeIdxMax = this->mPoseGraph->Nodes().back().Index();
-    /* Return a global map */
-    return this->mGridMapBuilder->ConstructGlobalMap(this->mPoseGraph);
+
+    /* Set the Id range of the scan node */
+    /* All scan data acquired are used to create a global map */
+    scanNodeIdMin = this->mPoseGraph->ScanNodes().NodeIdMin();
+    scanNodeIdMax = this->mPoseGraph->ScanNodes().NodeIdMax();
+
+    /* Return a new global map and its pose in a world coordinate frame */
+    this->mGridMapBuilder->ConstructGlobalMap(
+        this->mPoseGraph->ScanNodes(), globalPose, globalMap);
 }
 
 /* Start the SLAM backend */
