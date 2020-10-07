@@ -73,13 +73,13 @@ private:
     /* Time of the last map update */
     double                mLastMapUpdateTime;
     /* Map update threshold for accumulated travel distance */
-    double                mUpdateThresholdTravelDist;
+    const double          mUpdateThresholdTravelDist;
     /* Map update threshold for accumulated angle */
-    double                mUpdateThresholdAngle;
+    const double          mUpdateThresholdAngle;
     /* Map update threshold for the elapsed time since the last map update */
-    double                mUpdateThresholdTime;
+    const double          mUpdateThresholdTime;
     /* Frame interval for performing loop detection */
-    int                   mLoopDetectionInterval;
+    const int             mLoopDetectionInterval;
 };
 
 } /* namespace Mapping */
