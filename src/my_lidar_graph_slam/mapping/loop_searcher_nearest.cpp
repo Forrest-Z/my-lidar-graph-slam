@@ -27,8 +27,8 @@ LoopCandidateVector LoopSearcherNearest::Search(
     /* Find the Id of the local grid map and the scan node
      * that may contain loop closure point */
     double nodeDistMinSq = std::pow(this->mNodeDistThreshold, 2.0);
-    int candidateMapId = LocalMapId::Invalid;
-    int candidateNodeId = NodeId::Invalid;
+    LocalMapId candidateMapId { LocalMapId::Invalid };
+    NodeId candidateNodeId { NodeId::Invalid };
 
     /* Retrieve the accumulated travel distance of the robot */
     const double accumTravelDist = searchHint.mAccumTravelDist;
@@ -86,8 +86,8 @@ LoopCandidateVector LoopSearcherNearest::Search(
             /* Update the candidate map index and node index */
             if (nodeDistSq < nodeDistMinSq) {
                 nodeDistMinSq = nodeDistSq;
-                candidateMapId = localMapId.mId;
-                candidateNodeId = scanNodeId.mId;
+                candidateMapId = localMapId;
+                candidateNodeId = scanNodeId;
             }
         }
     }
@@ -98,8 +98,8 @@ Done:
     LoopCandidateVector loopCandidates;
 
     /* Return an empty collection of candidates if not found */
-    if (candidateMapId == LocalMapId::Invalid ||
-        candidateNodeId == NodeId::Invalid)
+    if (candidateMapId.mId == LocalMapId::Invalid ||
+        candidateNodeId.mId == NodeId::Invalid)
         return loopCandidates;
 
     /* Set the scan nodes around the current scan node */
@@ -130,7 +130,7 @@ Done:
         std::distance(firstCandidateNodeIt, lastCandidateNodeIt) + 1;
 
     std::vector<NodeId> nodeIds;
-    nodeIds.resize(numOfActualCandidateNodes);
+    nodeIds.reserve(numOfActualCandidateNodes);
 
     for (auto nodeIt = firstCandidateNodeIt;
          nodeIt != std::next(lastCandidateNodeIt); ++nodeIt)
