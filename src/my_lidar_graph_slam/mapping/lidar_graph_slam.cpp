@@ -296,7 +296,7 @@ LoopDetectionQueryVector LidarGraphSlam::GetLoopDetectionQueries(
 
 /* Append a first node with an associated scan data, and update the
  * current local grid map and the latest map */
-void LidarGraphSlam::AppendFirstNodeAndEdge(
+bool LidarGraphSlam::AppendFirstNodeAndEdge(
     const RobotPose2D<double>& initialScanPose,
     const Sensor::ScanDataPtr<double>& scanData)
 {
@@ -308,15 +308,17 @@ void LidarGraphSlam::AppendFirstNodeAndEdge(
     const Eigen::Matrix3d covarianceMatrix =
         Eigen::DiagonalMatrix<double, 3>(1e-9, 1e-9, 1e-9);
     /* Append a new scan data and create a new pose and an edge */
-    this->mGridMapBuilder->AppendScan(
+    const bool localMapInserted = this->mGridMapBuilder->AppendScan(
         this->mPoseGraph->LocalMapNodes(), this->mPoseGraph->ScanNodes(),
         this->mPoseGraph->Edges(),
         initialScanPose, covarianceMatrix, scanData);
+    /* Return whether the new local map is created */
+    return localMapInserted;
 }
 
 /* Append a new pose graph node and an odometry edge, and update the
  * current local grid map and the latest map */
-void LidarGraphSlam::AppendNodeAndEdge(
+bool LidarGraphSlam::AppendNodeAndEdge(
     const RobotPose2D<double>& relativeScanPose,
     const Eigen::Matrix3d& scanPoseCovarianceMatrix,
     const Sensor::ScanDataPtr<double>& scanData)
@@ -324,10 +326,12 @@ void LidarGraphSlam::AppendNodeAndEdge(
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
     /* Append a new scan data and create a new pose and an edge */
-    this->mGridMapBuilder->AppendScan(
+    const bool localMapInserted = this->mGridMapBuilder->AppendScan(
         this->mPoseGraph->LocalMapNodes(), this->mPoseGraph->ScanNodes(),
         this->mPoseGraph->Edges(),
         relativeScanPose, scanPoseCovarianceMatrix, scanData);
+    /* Return whether the new local map is created */
+    return localMapInserted;
 }
 
 /* Append new loop closing edges */

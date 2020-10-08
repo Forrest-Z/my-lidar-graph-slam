@@ -104,13 +104,13 @@ public:
 
     /* Append a first node with an associated scan data and update the
      * current local grid map and the latest map */
-    void AppendFirstNodeAndEdge(
+    bool AppendFirstNodeAndEdge(
         const RobotPose2D<double>& initialScanPose,
         const Sensor::ScanDataPtr<double>& scanData);
 
     /* Append a new pose graph node and an odometry edge, and update the
      * current local grid map and the latest map */
-    void AppendNodeAndEdge(
+    bool AppendNodeAndEdge(
         const RobotPose2D<double>& relativeScanPose,
         const Eigen::Matrix3d& edgeCovarianceMatrix,
         const Sensor::ScanDataPtr<double>& scanData);
