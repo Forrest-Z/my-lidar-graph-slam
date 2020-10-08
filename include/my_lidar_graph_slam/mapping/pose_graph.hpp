@@ -5,6 +5,9 @@
 #define MY_LIDAR_GRAPH_SLAM_MAPPING_POSE_GRAPH_HPP
 
 #include "my_lidar_graph_slam/pose.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_id.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_edge.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_node.hpp"
 #include "my_lidar_graph_slam/sensor/sensor_data.hpp"
 
 #include <map>
@@ -16,61 +19,6 @@
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
-
-/*
- * LocalMapId struct represents an Id value for a local grid map
- */
-struct LocalMapId final
-{
-    /* Constructor */
-    explicit LocalMapId(const int localMapId) : mId(localMapId) { }
-
-    /* Equality operator */
-    inline bool operator==(const LocalMapId& other) const
-    { return this->mId == other.mId; }
-    /* Inequality operator */
-    inline bool operator!=(const LocalMapId& other) const
-    { return !operator==(other); }
-
-    /* Less-than comparison operator (for std::map) */
-    inline bool operator<(const LocalMapId& other) const
-    { return this->mId < other.mId; }
-    /* Greater-than comparison operator */
-    inline bool operator>(const LocalMapId& other) const
-    { return this->mId > other.mId; }
-    /* Less-than or equal to comparison operator */
-    inline bool operator<=(const LocalMapId& other) const
-    { return this->mId <= other.mId; }
-    /* Greater-than or equal to comparison operator */
-    inline bool operator>=(const LocalMapId& other) const
-    { return this->mId >= other.mId; }
-
-    /* Invalid local map Id */
-    static constexpr const int Invalid = -1;
-
-    /* Local grid map Id */
-    int mId;
-};
-
-/*
- * LocalMapNode struct represents a pose graph node for a local grid map
- */
-struct LocalMapNode final
-{
-    /* Constructor */
-    LocalMapNode(const LocalMapId localMapId,
-                 const RobotPose2D<double>& globalPose) :
-        mLocalMapId(localMapId),
-        mGlobalPose(globalPose) { }
-
-    /* Destructor */
-    ~LocalMapNode() = default;
-
-    /* Local grid map Id */
-    const LocalMapId    mLocalMapId;
-    /* Node pose in a world frame */
-    RobotPose2D<double> mGlobalPose;
-};
 
 /*
  * LocalMapNodeMap class provides several helper methods to manipulate
@@ -179,76 +127,6 @@ public:
 private:
     /* Map of the local map nodes */
     MapType mNodes;
-};
-
-/*
- * NodeId struct represents an Id value for a pose graph node
- */
-struct NodeId final
-{
-    /* Constructor */
-    explicit NodeId(const int nodeId) : mId(nodeId) { }
-
-    /* Equality operator */
-    inline bool operator==(const NodeId& other) const
-    { return this->mId == other.mId; }
-    /* Inequality operator */
-    inline bool operator!=(const NodeId& other) const
-    { return !operator==(other); }
-
-    /* Less-than comparison operator (for std::map) */
-    inline bool operator<(const NodeId& other) const
-    { return this->mId < other.mId; }
-    /* Greater-than comparison operator */
-    inline bool operator>(const NodeId& other) const
-    { return this->mId > other.mId; }
-    /* Less-than or equal to comparison operator */
-    inline bool operator<=(const NodeId& other) const
-    { return this->mId <= other.mId; }
-    /* Greater-than or equal to comparison operator */
-    inline bool operator>=(const NodeId& other) const
-    { return this->mId >= other.mId; }
-
-    /* Invalid node Id */
-    static constexpr const int Invalid = -1;
-
-    /* Pose graph node Id */
-    int mId;
-};
-
-/*
- * ScanNode struct represents a pose graph node for a scan data
- * ScanNode belongs to a local grid map, inside of which the scan data
- * is acquired, and has a pose in a coordinate frame centered at the
- * origin of this local grid map
- */
-struct ScanNode final
-{
-    /* Constructor */
-    ScanNode(const NodeId nodeId,
-             const LocalMapId localMapId,
-             const RobotPose2D<double>& localPose,
-             const Sensor::ScanDataPtr<double>& scanData,
-             const RobotPose2D<double>& globalPose) :
-        mNodeId(nodeId),
-        mLocalMapId(localMapId),
-        mLocalPose(localPose),
-        mScanData(scanData),
-        mGlobalPose(globalPose) { }
-
-    /* Destructor */
-    ~ScanNode() = default;
-
-    /* Node Id */
-    const NodeId                      mNodeId;
-    /* Local grid map Id */
-    const LocalMapId                  mLocalMapId;
-    /* Node pose in a local frame */
-    const RobotPose2D<double>         mLocalPose;
-    /* Scan data */
-    const Sensor::ScanDataPtr<double> mScanData;
-    /* Node pose in a world frame */
-    RobotPose2D<double>               mGlobalPose;
 };
 
 /*
@@ -361,142 +239,6 @@ public:
 private:
     /* Map of the scan nodes */
     MapType mNodes;
-};
-
-/*
- * EdgeType enum represents whether a pose graph edge is an intra-local
- * grid map constraint or an inter-local grid map constraint
- */
-enum class EdgeType
-{
-    IntraLocalMap,
-    InterLocalMap,
-};
-
-/*
- * ConstraintType enum represents whether a pose graph edge is an odometry
- * constraint or a loop closing constraint
- */
-enum class ConstraintType
-{
-    Odometry,
-    Loop,
-};
-
-/*
- * PoseGraphEdge class represents pose graph edges (constraints)
- * connecting a local grid map node and a scan data node
- */
-struct PoseGraphEdge final
-{
-    /* Constructor */
-    PoseGraphEdge(const LocalMapId localMapNodeId,
-                  const NodeId scanNodeId,
-                  const EdgeType edgeType,
-                  const ConstraintType constraintType,
-                  const RobotPose2D<double>& relativePose,
-                  const Eigen::Matrix3d& informationMat) :
-        mLocalMapNodeId(localMapNodeId),
-        mScanNodeId(scanNodeId),
-        mEdgeType(edgeType),
-        mConstraintType(constraintType),
-        mRelativePose(relativePose),
-        mInformationMat(informationMat) { }
-
-    /* Destructor */
-    ~PoseGraphEdge() = default;
-
-    /* Return if this edge represents an intra-local grid map constraint,
-     * that is, the scan data with an Id `mScanNodeId` is acquired at its
-     * associated local grid map with an Id `mLocalMapNodeId` */
-    inline bool IsIntraLocalMap() const
-    { return this->mEdgeType == EdgeType::IntraLocalMap; }
-
-    /* Return if this edge represents an inter-local grid map constraint,
-     * that is, the scan data with an Id `mScanNodeId` is not acquired at
-     * its associated local grid map with an Id `mLocalMapNodeId` and
-     * the scan data `mScanNodeId` does not belong to the
-     * local grid map `mLocalMapNodeId` */
-    inline bool IsInterLocalMap() const
-    { return this->mEdgeType == EdgeType::InterLocalMap; }
-
-    /* Return if this edge represents an odometry constraint */
-    inline bool IsOdometryConstraint() const
-    { return this->mConstraintType == ConstraintType::Odometry; }
-
-    /* Return if this edge represents a loop closing constraint */
-    inline bool IsLoopClosingConstraint() const
-    { return this->mConstraintType == ConstraintType::Loop; }
-
-    /* Local grid map node Id */
-    const LocalMapId          mLocalMapNodeId;
-    /* Scan data node Id */
-    const NodeId              mScanNodeId;
-    /* Enumerator to represent whether this edge represents an intra-local
-     * grid map constraint or an inter-local grid map constraint */
-    const EdgeType            mEdgeType;
-    /* Enumerator to represent whether this edge represents an odometry
-     * constraint or a loop closing constraint */
-    const ConstraintType      mConstraintType;
-    /* Relative pose between two pose graph nodes */
-    const RobotPose2D<double> mRelativePose;
-    /* Information matrix (inverse of the covariance matrix) */
-    const Eigen::Matrix3d     mInformationMat;
-};
-
-/*
- * ScanNodeData struct represents the global pose and Id of the scan node,
- * which is intended for the use in rendering the current pose graph or
- * searching the loop closure candidate, where the corresponding scan data
- * of the scan node is not needed
- */
-struct ScanNodeData final
-{
-    /* Constructor */
-    ScanNodeData(const NodeId nodeId,
-                 const RobotPose2D<double>& globalPose) :
-        mNodeId(nodeId), mGlobalPose(globalPose) { }
-    /* Destructor */
-    ~ScanNodeData() = default;
-
-    /* Comparison (less than) operator */
-    inline bool operator<(const ScanNodeData& other) const
-    { return this->mNodeId < other.mNodeId; }
-
-    /* Node Id */
-    const NodeId              mNodeId;
-    /* Robot pose in a world coordinate */
-    const RobotPose2D<double> mGlobalPose;
-};
-
-/*
- * EdgeData struct represents the Ids of the two adjacent pose graph nodes
- * and the type (odometry or loop constraint, intra-local or inter-local),
- * which is intended for the use in rendering the current pose graph, where
- * the corresponding information matrix and the relative pose are not needed
- */
-struct EdgeData final
-{
-    /* Constructor */
-    EdgeData(const LocalMapId localMapNodeId,
-             const NodeId scanNodeId,
-             const EdgeType edgeType,
-             const ConstraintType constraintType) :
-        mLocalMapNodeId(localMapNodeId),
-        mScanNodeId(scanNodeId),
-        mEdgeType(edgeType),
-        mConstraintType(constraintType) { }
-    /* Destructor */
-    ~EdgeData() = default;
-
-    /* Local map node Id */
-    const LocalMapId     mLocalMapNodeId;
-    /* Scan data node Id */
-    const NodeId         mScanNodeId;
-    /* Edge type (intra-local or inter-local) */
-    const EdgeType       mEdgeType;
-    /* Constraint type (odometry or loop) */
-    const ConstraintType mConstraintType;
 };
 
 /*
