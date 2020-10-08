@@ -147,7 +147,7 @@ Point2D<T> Rotate(const Point2D<T>& lhs, const T theta)
 
 /* Print to an output stream */
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const Point2D<int>& rhs)
+std::ostream& operator<<(std::ostream& os, const Point2D<T>& rhs)
 {
     os << "[" << rhs.mX << ", " << rhs.mY << "]";
     return os;
