@@ -184,6 +184,14 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     /* Local map in unfinished state should be found */
     Assert(unfinishedMapIt != this->mGridMapBuilder->LocalMaps().end());
 
+    /* Return if there is no finished local grid map */
+    if (unfinishedMapIt == this->mGridMapBuilder->LocalMaps().begin())
+        return LoopSearchHint {
+            std::map<NodeId, ScanNodeData>(),
+            std::map<LocalMapId, LocalMapData>(),
+            this->mGridMapBuilder->AccumTravelDist(),
+            NodeId(NodeId::Invalid), LocalMapId(LocalMapId::Invalid) };
+
     /* Local maps with Ids larger than `localMapIdMax` are ignored */
     const LocalMapId localMapIdMax = unfinishedMapIt->first;
     /* Scan nodes with Ids larger than `nodeIdMax` are ignored */
@@ -230,13 +238,6 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
                                   localMap.mScanNodeIdMax,
                                   localMap.mFinished));
     }
-
-    /* Return if there is no finished local map */
-    if (scanNodes.empty() || localMapNodes.empty())
-        return LoopSearchHint {
-            std::move(scanNodes), std::move(localMapNodes),
-            this->mGridMapBuilder->AccumTravelDist(),
-            NodeId(NodeId::Invalid), LocalMapId(LocalMapId::Invalid) };
 
     /* Retrieve the scan node in the last finished local map */
     const auto& lastFinishedScanNode =
