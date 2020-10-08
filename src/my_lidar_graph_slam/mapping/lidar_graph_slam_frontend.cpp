@@ -130,14 +130,14 @@ bool LidarGraphSlamFrontend::ProcessScan(
                 latestMapPose, matchingSummary.mEstimatedCovariance);
 
         /* Update the pose graph and grid map */
-        pParent->AppendNodeAndEdge(relativePose, covarianceMatrix, scanData);
-    }
+        const bool localMapInserted = pParent->AppendNodeAndEdge(
+            relativePose, covarianceMatrix, scanData);
 
-    /* Notify the worker thread for the SLAM backend
-     * if the new local map is added to the entire grid map */
-    if (this->mProcessCount > this->mLoopDetectionInterval &&
-        this->mProcessCount % this->mLoopDetectionInterval == 0)
-        pParent->NotifyBackend();
+        /* Notify the worker thread for the SLAM backend if the new local map
+         * is added to the entire grid map */
+        if (localMapInserted)
+            pParent->NotifyBackend();
+    }
 
     /* Update miscellaneous parameters */
     this->mProcessCount += 1;
