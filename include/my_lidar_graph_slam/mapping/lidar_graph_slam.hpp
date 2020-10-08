@@ -138,6 +138,8 @@ public:
                       GridMapType& globalMap,
                       NodeId& scanNodeIdMin,
                       NodeId& scanNodeIdMax) const;
+    /* Retrieve a collection of local grid maps */
+    void GetLocalMaps(std::vector<LocalMap>& localMaps);
 
     /* Start the SLAM backend */
     void StartBackend();

@@ -578,6 +578,18 @@ void LidarGraphSlam::GetGlobalMap(
         this->mPoseGraph->ScanNodes(), globalPose, globalMap);
 }
 
+/* Retrieve a collection of local grid maps */
+void LidarGraphSlam::GetLocalMaps(
+    std::vector<LocalMap>& localMaps)
+{
+    /* Acquire the unique lock */
+    std::unique_lock uniqueLock { this->mMutex };
+
+    /* Return a collection of local grid maps */
+    for (const auto& [nodeId, mapNode] : this->mGridMapBuilder->LocalMaps())
+        localMaps.push_back(mapNode);
+}
+
 /* Start the SLAM backend */
 void LidarGraphSlam::StartBackend()
 {
