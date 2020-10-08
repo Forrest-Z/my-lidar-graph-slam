@@ -38,8 +38,7 @@ ScanMatchingSummary ScanMatcherGridSearch::OptimizePose(
         queryInfo.mMapLocalInitialPose;
 
     /* Optimize the robot pose by scan matching */
-    return this->OptimizePose(gridMap, scanData, mapLocalInitialPose,
-                              std::numeric_limits<double>::min());
+    return this->OptimizePose(gridMap, scanData, mapLocalInitialPose, 0.0);
 }
 
 /* Optimize the robot pose by scan matching */

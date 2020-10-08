@@ -43,9 +43,8 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     /* Optimize the robot pose by scan matching
      * Pass the minimum possible value as a score threshold to
      * search the entire window */
-    return this->OptimizePose(
-        gridMap, precompMap, scanData, mapLocalInitialPose,
-        std::numeric_limits<double>::min());
+    return this->OptimizePose(gridMap, precompMap, scanData,
+                              mapLocalInitialPose, 0.0);
 }
 
 /* Optimize the robot pose by scan matching */
