@@ -30,6 +30,9 @@ void LidarGraphSlamBackend::Run(
         const auto searchHint = pParent->GetLoopSearchHint();
         auto loopCandidates = this->mLoopSearcher->Search(searchHint);
 
+        if (loopCandidates.empty())
+            continue;
+
         /* Perform loop detection using candidates, each of which consists of
          * a collection of pose graph nodes and a local grid map */
         auto loopDetectionQueries =
