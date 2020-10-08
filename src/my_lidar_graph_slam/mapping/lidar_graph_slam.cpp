@@ -239,14 +239,17 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
                                   localMap.mFinished));
     }
 
-    /* Retrieve the scan node in the last finished local map */
-    const auto& lastFinishedScanNode =
-        this->mPoseGraph->ScanNodeAt(scanNodes.rbegin()->first);
     /* Retrieve the last finished local map */
     const auto& lastFinishedMapNode =
         this->mPoseGraph->LocalMapNodeAt(localMapNodes.rbegin()->first);
     const auto& lastFinishedMap =
         this->mGridMapBuilder->LocalMapAt(lastFinishedMapNode.mLocalMapId);
+    /* Retrieve the scan node in the last finished local map */
+    const NodeId scanNodeId {
+        (lastFinishedMap.mScanNodeIdMin.mId +
+         lastFinishedMap.mScanNodeIdMax.mId) / 2 };
+    const auto& lastFinishedScanNode =
+        this->mPoseGraph->ScanNodeAt(scanNodeId);
 
     /* Make sure that `lastFinishedScanNode` belongs to the last finished
      * local map `lastFinishedMap` */
