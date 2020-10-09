@@ -77,6 +77,16 @@ public:
         DataType&    mData;
     };
 
+    struct ConstIdDataPair
+    {
+        /* Constructor */
+        ConstIdDataPair(const IdType nodeId, const DataType& data) :
+            mId(nodeId), mData(data) { }
+
+        const IdType    mId;
+        const DataType& mData;
+    };
+
     class Iterator
     {
     public:
@@ -127,9 +137,9 @@ public:
     {
     public:
         /* Type declarations */
-        using value_type = const IdDataPair;
-        using reference = const IdDataPair&;
-        using pointer = std::unique_ptr<const IdDataPair>;
+        using value_type = ConstIdDataPair;
+        using reference = ConstIdDataPair&;
+        using pointer = std::unique_ptr<const ConstIdDataPair>;
         using difference_type = std::ptrdiff_t;
         using iterator_category = std::bidirectional_iterator_tag;
 
@@ -138,11 +148,11 @@ public:
             mMapIt(mapIt) { }
 
         /* Dereference operator */
-        inline const IdDataPair operator*() const
-        { return IdDataPair(this->mMapIt->first, this->mMapIt->second); }
+        inline ConstIdDataPair operator*() const
+        { return ConstIdDataPair(this->mMapIt->first, this->mMapIt->second); }
         /* Member access operator */
-        inline std::unique_ptr<const IdDataPair> operator->() const
-        { return std::make_unique<const IdDataPair>(this->operator*()); }
+        inline std::unique_ptr<const ConstIdDataPair> operator->() const
+        { return std::make_unique<const ConstIdDataPair>(this->operator*()); }
 
         /* Equality operator */
         inline bool operator==(const ConstIterator& other) const
