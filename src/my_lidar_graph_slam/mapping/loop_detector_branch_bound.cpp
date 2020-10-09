@@ -46,15 +46,13 @@ void LoopDetectorBranchBound::Detect(
         /* Make sure that the grid map is in finished state */
         Assert(localMap.mFinished);
 
-        /* Precompute the coarser local grid maps for efficiency */
-        if (!localMap.mPrecomputed) {
+        /* Precompute coarser grid maps */
+        if (!this->mPrecompMaps.contains(localMap.mId)) {
             /* Precompute multiple coarser grid maps */
-            std::map<int, ConstMapType> precompMaps =
+            std::vector<ConstMapType> precompMaps =
                 this->mScanMatcher->ComputeCoarserMaps(localMap.mMap);
-            /* Set the newly created grid map pyramid */
-            localMap.mPrecomputedMaps = std::move(precompMaps);
-            /* Mark the current local map as precomputed */
-            localMap.mPrecomputed = true;
+            /* Append the newly created grid map pyramid */
+            this->mPrecompMaps.Append(localMap.mId, std::move(precompMaps));
         }
 
         /* Perform loop detection for each node */
@@ -67,7 +65,7 @@ void LoopDetectorBranchBound::Detect(
             RobotPose2D<double> correspondingPose;
             Eigen::Matrix3d covarianceMatrix;
             const bool loopDetected = this->FindCorrespondingPose(
-                localMap.mMap, localMap.mPrecomputedMaps,
+                localMap.mMap, this->mPrecompMaps.at(localMap.mId).mMaps,
                 scanNode.mScanData, mapLocalScanPose,
                 correspondingPose, covarianceMatrix);
 
@@ -89,7 +87,7 @@ void LoopDetectorBranchBound::Detect(
  * from the local grid map */
 bool LoopDetectorBranchBound::FindCorrespondingPose(
     const GridMapType& localMap,
-    const std::map<int, ConstMapType>& precompMaps,
+    const std::vector<ConstMapType>& precompMaps,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& mapLocalScanPose,
     RobotPose2D<double>& correspondingPose,
