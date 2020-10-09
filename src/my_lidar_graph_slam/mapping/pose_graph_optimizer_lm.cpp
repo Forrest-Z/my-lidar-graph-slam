@@ -11,8 +11,8 @@ namespace Mapping {
 /* Optimize a pose graph using the combination of
  * linear solver and Levenberg-Marquardt method */
 void PoseGraphOptimizerLM::Optimize(
-    LocalMapNodeMap& localMapNodes,
-    ScanNodeMap& scanNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    IdMap<NodeId, ScanNode>& scanNodes,
     const std::vector<PoseGraphEdge>& poseGraphEdges)
 {
     double prevTotalError = std::numeric_limits<double>::max();
@@ -21,8 +21,8 @@ void PoseGraphOptimizerLM::Optimize(
 
     /* Retrieve the number of nodes and edges
      * These remain constant during the optimization */
-    const int numOfLocalMapNodes = static_cast<int>(localMapNodes.Size());
-    const int numOfScanNodes = static_cast<int>(scanNodes.Size());
+    const int numOfLocalMapNodes = static_cast<int>(localMapNodes.size());
+    const int numOfScanNodes = static_cast<int>(scanNodes.size());
     const int numOfEdges = static_cast<int>(poseGraphEdges.size());
 
     /* Total number of the variables in the linear system */
@@ -69,16 +69,16 @@ void PoseGraphOptimizerLM::Optimize(
 
 /* Perform one optimization step and return the total error */
 void PoseGraphOptimizerLM::OptimizeStep(
-    LocalMapNodeMap& localMapNodes,
-    ScanNodeMap& scanNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    IdMap<NodeId, ScanNode>& scanNodes,
     const std::vector<PoseGraphEdge>& poseGraphEdges,
     Eigen::SparseMatrix<double>& matA,
     Eigen::VectorXd& vecB,
     Eigen::VectorXd& vecDelta,
     std::vector<Eigen::Triplet<double>>& matATriplets)
 {
-    const int numOfLocalMapNodes = static_cast<int>(localMapNodes.Size());
-    const int numOfScanNodes = static_cast<int>(scanNodes.Size());
+    const int numOfLocalMapNodes = static_cast<int>(localMapNodes.size());
+    const int numOfScanNodes = static_cast<int>(scanNodes.size());
     const int numOfVariables = 3 * (numOfLocalMapNodes + numOfScanNodes);
 
     /* Clear all vectors and matrices */
@@ -97,21 +97,21 @@ void PoseGraphOptimizerLM::OptimizeStep(
         const NodeId endNodeId = edge.mScanNodeId;
 
         /* Get the iterators to the node */
-        const auto startNodeIt = localMapNodes.Nodes().find(startNodeId);
-        const auto endNodeIt = scanNodes.Nodes().find(endNodeId);
+        const auto startNodeIt = localMapNodes.find(startNodeId);
+        const auto endNodeIt = scanNodes.find(endNodeId);
 
         /* Compute the indices to the matrix elements */
         const int offsetToStartNode =
-            std::distance(localMapNodes.Nodes().begin(), startNodeIt);
+            std::distance(localMapNodes.begin(), startNodeIt);
         const int offsetToEndNode =
-            std::distance(scanNodes.Nodes().begin(), endNodeIt);
+            std::distance(scanNodes.begin(), endNodeIt);
         const int startNodeIdx = offsetToStartNode;
         const int endNodeIdx = numOfLocalMapNodes + offsetToEndNode;
 
         const RobotPose2D<double>& startNodePose =
-            localMapNodes.At(startNodeId).mGlobalPose;
+            localMapNodes.at(startNodeId).mGlobalPose;
         const RobotPose2D<double>& endNodePose =
-            scanNodes.At(endNodeId).mGlobalPose;
+            scanNodes.at(endNodeId).mGlobalPose;
 
         /* Compute Jacobian matrices of the error function */
         Eigen::Matrix3d startNodeJacobian;
@@ -226,12 +226,12 @@ void PoseGraphOptimizerLM::OptimizeStep(
     for (auto nodeIt = localMapNodes.begin();
          nodeIt != localMapNodes.end(); ++nodeIt) {
         const int nodeIdx = std::distance(localMapNodes.begin(), nodeIt);
-        const RobotPose2D<double>& prevNodePose = nodeIt->second.mGlobalPose;
+        const RobotPose2D<double>& prevNodePose = nodeIt->mData.mGlobalPose;
         const RobotPose2D<double> newNodePose {
             prevNodePose.mX + vecDelta(3 * nodeIdx),
             prevNodePose.mY + vecDelta(3 * nodeIdx + 1),
             prevNodePose.mTheta + vecDelta(3 * nodeIdx + 2) };
-        nodeIt->second.mGlobalPose = newNodePose;
+        nodeIt->mData.mGlobalPose = newNodePose;
     }
 
     /* Update the scan node poses stored in the pose graph */
@@ -239,12 +239,12 @@ void PoseGraphOptimizerLM::OptimizeStep(
          nodeIt != scanNodes.end(); ++nodeIt) {
         const int offsetToNode = std::distance(scanNodes.begin(), nodeIt);
         const int nodeIdx = numOfLocalMapNodes + offsetToNode;
-        const RobotPose2D<double>& prevNodePose = nodeIt->second.mGlobalPose;
+        const RobotPose2D<double>& prevNodePose = nodeIt->mData.mGlobalPose;
         const RobotPose2D<double> newNodePose {
             prevNodePose.mX + vecDelta(3 * nodeIdx),
             prevNodePose.mY + vecDelta(3 * nodeIdx + 1),
             prevNodePose.mTheta + vecDelta(3 * nodeIdx + 2) };
-        nodeIt->second.mGlobalPose = newNodePose;
+        nodeIt->mData.mGlobalPose = newNodePose;
     }
 
     return;
@@ -331,8 +331,8 @@ void PoseGraphOptimizerLM::ComputeErrorFunction(
 
 /* Compute total error */
 double PoseGraphOptimizerLM::ComputeTotalError(
-    const LocalMapNodeMap& localMapNodes,
-    const ScanNodeMap& scanNodes,
+    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes,
     const std::vector<PoseGraphEdge>& poseGraphEdges) const
 {
     double totalError = 0.0;
@@ -349,9 +349,9 @@ double PoseGraphOptimizerLM::ComputeTotalError(
         const NodeId endNodeId = edge.mScanNodeId;
 
         const RobotPose2D<double>& startNodePose =
-            localMapNodes.At(startNodeId).mGlobalPose;
+            localMapNodes.at(startNodeId).mGlobalPose;
         const RobotPose2D<double>& endNodePose =
-            scanNodes.At(endNodeId).mGlobalPose;
+            scanNodes.at(endNodeId).mGlobalPose;
 
         /* Compute the residual */
         Eigen::Vector3d errorVec;
@@ -371,8 +371,8 @@ double PoseGraphOptimizerLM::ComputeTotalError(
 
 /* Dump the pose graph error */
 void PoseGraphOptimizerLM::DumpError(
-    const LocalMapNodeMap& localMapNodes,
-    const ScanNodeMap& scanNodes,
+    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes,
     const std::vector<PoseGraphEdge>& poseGraphEdges) const
 {
     auto* const pMetric = Metric::MetricManager::Instance();
@@ -393,9 +393,9 @@ void PoseGraphOptimizerLM::DumpError(
         const NodeId endNodeId = edge.mScanNodeId;
 
         const RobotPose2D<double>& startNodePose =
-            localMapNodes.At(startNodeId).mGlobalPose;
+            localMapNodes.at(startNodeId).mGlobalPose;
         const RobotPose2D<double>& endNodePose =
-            scanNodes.At(endNodeId).mGlobalPose;
+            scanNodes.at(endNodeId).mGlobalPose;
 
         /* Compute the residual */
         Eigen::Vector3d errorVec;

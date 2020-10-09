@@ -61,8 +61,8 @@ public:
     /* Optimize a pose graph using the combination of
      * linear solver and Levenberg-Marquardt method */
     void Optimize(
-        LocalMapNodeMap& localMapNodes,
-        ScanNodeMap& scanNodes,
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        IdMap<NodeId, ScanNode>& scanNodes,
         const std::vector<PoseGraphEdge>& poseGraphEdges) override;
 
     /* Compute error function */
@@ -75,8 +75,8 @@ public:
 private:
     /* Perform one optimization step and return the total error */
     void OptimizeStep(
-        LocalMapNodeMap& localMapNodes,
-        ScanNodeMap& scanNodes,
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        IdMap<NodeId, ScanNode>& scanNodes,
         const std::vector<PoseGraphEdge>& poseGraphEdges,
         Eigen::SparseMatrix<double>& matA,
         Eigen::VectorXd& vecB,
@@ -93,14 +93,14 @@ private:
 
     /* Compute total error */
     double ComputeTotalError(
-        const LocalMapNodeMap& localMapNodes,
-        const ScanNodeMap& scanNodes,
+        const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        const IdMap<NodeId, ScanNode>& scanNodes,
         const std::vector<PoseGraphEdge>& poseGraphEdges) const;
 
     /* Dump the pose graph error */
     void DumpError(
-        const LocalMapNodeMap& localMapNodes,
-        const ScanNodeMap& scanNodes,
+        const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        const IdMap<NodeId, ScanNode>& scanNodes,
         const std::vector<PoseGraphEdge>& poseGraphEdges) const;
 
 private:
