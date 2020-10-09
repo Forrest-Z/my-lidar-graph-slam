@@ -300,6 +300,15 @@ public:
     { return Range<ConstIterator>(this->IteratorAt(beginId),
                                   this->IteratorAt(endId)); }
 
+    /* Create a range [beginIt, endIt) from a pair of iterators */
+    inline Range<Iterator> RangeFromIterator(
+        const Iterator& beginIt, const Iterator& endIt)
+    { return Range<Iterator>(beginIt, endIt); }
+    /* Create a range [beginIt, endIt) from a pair of iterators */
+    inline Range<ConstIterator> RangeFromIterator(
+        const ConstIterator& beginIt, const ConstIterator& endIt) const
+    { return Range<ConstIterator>(beginIt, endIt); }
+
     /* Get the minimum Id in this map */
     IdType IdMin() const;
     /* Get the maximum Id in this map */
