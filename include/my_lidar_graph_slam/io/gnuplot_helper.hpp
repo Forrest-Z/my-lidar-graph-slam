@@ -49,8 +49,10 @@ public:
 
     /* Draw the pose graph */
     void DrawPoseGraph(
-        const Mapping::LocalMapNodeMap& localMapNodes,
-        const std::map<Mapping::NodeId, Mapping::ScanNodeData>& scanNodes,
+        const Mapping::IdMap<Mapping::LocalMapId,
+            Mapping::LocalMapNode>& localMapNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNodeData>& scanNodes,
         const std::vector<Mapping::EdgeData>& poseGraphEdges) const;
 
 private:

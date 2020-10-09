@@ -20,8 +20,10 @@ GnuplotHelper::GnuplotHelper() :
 
 /* Draw the pose graph */
 void GnuplotHelper::DrawPoseGraph(
-    const Mapping::LocalMapNodeMap& localMapNodes,
-    const std::map<Mapping::NodeId, Mapping::ScanNodeData>& scanNodes,
+    const Mapping::IdMap<Mapping::LocalMapId,
+        Mapping::LocalMapNode>& localMapNodes,
+    const Mapping::IdMap<Mapping::NodeId,
+        Mapping::ScanNodeData>& scanNodes,
     const std::vector<Mapping::EdgeData>& poseGraphEdges) const
 {
     /* Setup pose graph edges for odometry constraints */
@@ -32,7 +34,7 @@ void GnuplotHelper::DrawPoseGraph(
             continue;
 
         const RobotPose2D<double>& startPose =
-            localMapNodes.At(edge.mLocalMapNodeId).mGlobalPose;
+            localMapNodes.at(edge.mLocalMapNodeId).mGlobalPose;
         const RobotPose2D<double>& endPose =
             scanNodes.at(edge.mScanNodeId).mGlobalPose;
 
@@ -51,7 +53,7 @@ void GnuplotHelper::DrawPoseGraph(
             continue;
 
         const RobotPose2D<double>& startPose =
-            localMapNodes.At(edge.mLocalMapNodeId).mGlobalPose;
+            localMapNodes.at(edge.mLocalMapNodeId).mGlobalPose;
         const RobotPose2D<double>& endPose =
             scanNodes.at(edge.mScanNodeId).mGlobalPose;
 
