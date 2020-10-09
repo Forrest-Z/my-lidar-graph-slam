@@ -36,7 +36,7 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
         queryInfo.mMapLocalInitialPose;
 
     /* Precompute the coarser grid maps */
-    const std::map<int, ConstMapType> precompMaps =
+    const std::vector<ConstMapType> precompMaps =
         this->ComputeCoarserMaps(gridMap);
 
     /* Optimize the robot pose by scan matching */
@@ -47,7 +47,7 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
 /* Optimize the robot pose by scan matching */
 ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
     const GridMapType& gridMap,
-    const std::map<int, ConstMapType>& precompMaps,
+    const std::vector<ConstMapType>& precompMaps,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& mapLocalInitialPose,
     const double normalizedScoreThreshold) const
@@ -162,11 +162,11 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
 }
 
 /* Precompute multiple coarser grid maps for scan matching */
-std::map<int, ConstMapType> ScanMatcherBranchBound::ComputeCoarserMaps(
+std::vector<ConstMapType> ScanMatcherBranchBound::ComputeCoarserMaps(
     const GridMapType& gridMap) const
 {
     /* Map with the tree height (key) and the coarser grid map (value) */
-    std::map<int, ConstMapType> precompMaps;
+    std::vector<ConstMapType> precompMaps;
     /* Create multiple coarser grid maps */
     PrecomputeGridMaps(gridMap, precompMaps, this->mNodeHeightMax);
     /* Return the grid map pyramid */
