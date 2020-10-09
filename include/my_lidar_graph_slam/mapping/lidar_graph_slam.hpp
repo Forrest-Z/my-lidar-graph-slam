@@ -119,10 +119,6 @@ public:
     void AppendLoopClosingEdges(
         const LoopDetectionResultVector& loopDetectionResults);
 
-    /* Update the coarser grid maps if modified in the loop detection process */
-    void UpdatePrecomputedGridMaps(
-        LoopDetectionQueryVector& loopDetectionQueries);
-
     /* Rebuild grid maps after loop closure */
     void AfterLoopClosure(
         const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
