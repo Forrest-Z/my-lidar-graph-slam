@@ -184,8 +184,8 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     /* Return if there is no finished local grid map */
     if (unfinishedMapIt == this->mGridMapBuilder->LocalMaps().begin())
         return LoopSearchHint {
-            std::map<NodeId, ScanNodeData>(),
-            std::map<LocalMapId, LocalMapData>(),
+            IdMap<NodeId, ScanNodeData>(),
+            IdMap<LocalMapId, LocalMapData>(),
             this->mGridMapBuilder->AccumTravelDist(),
             NodeId(NodeId::Invalid), LocalMapId(LocalMapId::Invalid) };
 
@@ -194,8 +194,8 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     /* Scan nodes with Ids larger than `nodeIdMax` are ignored */
     const NodeId nodeIdMax = unfinishedMapIt->mData.mScanNodeIdMin;
 
-    std::map<NodeId, ScanNodeData> scanNodes;
-    std::map<LocalMapId, LocalMapData> localMapNodes;
+    IdMap<NodeId, ScanNodeData> scanNodes;
+    IdMap<LocalMapId, LocalMapData> localMapNodes;
 
     /* Setup the scan nodes information */
     for (const auto& [nodeId, scanNode] : this->mPoseGraph->ScanNodes()) {
@@ -205,10 +205,7 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
             break;
 
         /* Append the scan node information */
-        scanNodes.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(nodeId),
-            std::forward_as_tuple(nodeId, scanNode.mGlobalPose));
+        scanNodes.Append(nodeId, scanNode.mGlobalPose);
     }
 
     /* Setup the local map nodes information */
@@ -227,18 +224,14 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
                                          globalMinPos, globalMaxPos);
 
         /* Append the local map node information */
-        localMapNodes.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(nodeId),
-            std::forward_as_tuple(nodeId, globalMinPos, globalMaxPos,
-                                  localMap.mScanNodeIdMin,
-                                  localMap.mScanNodeIdMax,
-                                  localMap.mFinished));
+        localMapNodes.Append(nodeId, globalMinPos, globalMaxPos,
+                             localMap.mScanNodeIdMin, localMap.mScanNodeIdMax,
+                             localMap.mFinished);
     }
 
     /* Retrieve the last finished local map */
     const auto& lastFinishedMapNode =
-        this->mPoseGraph->LocalMapNodes().at(localMapNodes.rbegin()->first);
+        this->mPoseGraph->LocalMapNodes().at(localMapNodes.IdMax());
     const auto& lastFinishedMap =
         this->mGridMapBuilder->LocalMapAt(lastFinishedMapNode.mLocalMapId);
     /* Retrieve the scan node in the last finished local map */

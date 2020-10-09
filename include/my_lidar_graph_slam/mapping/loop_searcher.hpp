@@ -11,7 +11,8 @@
 
 #include "my_lidar_graph_slam/pose.hpp"
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
-#include "my_lidar_graph_slam/mapping/pose_graph.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_id.hpp"
+#include "my_lidar_graph_slam/mapping/pose_graph_id_map.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -25,8 +26,8 @@ struct LoopSearchHint final
 {
     /* Constructor */
     LoopSearchHint(
-        std::map<NodeId, ScanNodeData>&& scanNodes,
-        std::map<LocalMapId, LocalMapData>&& localMapNodes,
+        IdMap<NodeId, ScanNodeData>&& scanNodes,
+        IdMap<LocalMapId, LocalMapData>&& localMapNodes,
         const double accumTravelDist,
         const NodeId lastFinishedScanId,
         const LocalMapId lastFinishedMapId) :
@@ -40,15 +41,15 @@ struct LoopSearchHint final
     ~LoopSearchHint() = default;
 
     /* Information about the finished scan nodes */
-    const std::map<NodeId, ScanNodeData>     mScanNodes;
+    const IdMap<NodeId, ScanNodeData>     mScanNodes;
     /* Information about the finished local map nodes */
-    const std::map<LocalMapId, LocalMapData> mLocalMapNodes;
+    const IdMap<LocalMapId, LocalMapData> mLocalMapNodes;
     /* Accumulated travel distance of the robot (current scan node) */
-    const double                             mAccumTravelDist;
+    const double                          mAccumTravelDist;
     /* Id of the scan node in the last finished local map */
-    const NodeId                             mLastFinishedScanId;
+    const NodeId                          mLastFinishedScanId;
     /* Id of the last finished local map */
-    const LocalMapId                         mLastFinishedMapId;
+    const LocalMapId                      mLastFinishedMapId;
 };
 
 /*
