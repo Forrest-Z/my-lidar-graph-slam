@@ -337,7 +337,7 @@ void IdMap<IdType, DataType>::Append(const IdType& id, Args&&... args)
     auto emplaceResult = this->mMap.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(id),
-        std::forward_as_tuple(std::forward<Args>(args)...));
+        std::forward_as_tuple(id, std::forward<Args>(args)...));
     Assert(emplaceResult.second);
 }
 
