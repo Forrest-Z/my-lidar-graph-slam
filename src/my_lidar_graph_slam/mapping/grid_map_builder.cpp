@@ -69,8 +69,8 @@ const LocalMap& GridMapBuilder::LatestLocalMap() const
 
 /* Append the new scan data */
 bool GridMapBuilder::AppendScan(
-    LocalMapNodeMap& localMapNodes,
-    ScanNodeMap& scanNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    IdMap<NodeId, ScanNode>& scanNodes,
     std::vector<PoseGraphEdge>& poseGraphEdges,
     const RobotPose2D<double>& relativeScanPose,
     const Eigen::Matrix3d& scanPoseCovarianceMatrix,
@@ -90,14 +90,14 @@ bool GridMapBuilder::AppendScan(
 
 /* Re-create the local grid maps and latest map after the loop closure */
 void GridMapBuilder::AfterLoopClosure(
-    const LocalMapNodeMap& localMapNodes,
-    const ScanNodeMap& scanNodes)
+    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes)
 {
     /* Update the all local grid maps */
     for (auto& [localMapId, localMap] : this->mLocalMaps) {
         /* Retrieve the local map Id and global pose */
         const RobotPose2D<double>& globalMapPose =
-            localMapNodes.At(localMapId).mGlobalPose;
+            localMapNodes.at(localMapId).mGlobalPose;
 
         /* Reconstruct a local map */
         this->ConstructMapFromScans(
@@ -118,16 +118,16 @@ void GridMapBuilder::AfterLoopClosure(
 
 /* Construct the global grid map */
 void GridMapBuilder::ConstructGlobalMap(
-    const ScanNodeMap& scanNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes,
     RobotPose2D<double>& globalMapPose,
     GridMapType& globalMap)
 {
     /* Use all acquired scan data to build a global map */
-    const NodeId scanNodeIdMin = scanNodes.NodeIdMin();
-    const NodeId scanNodeIdMax = scanNodes.NodeIdMax();
+    const NodeId scanNodeIdMin = scanNodes.IdMin();
+    const NodeId scanNodeIdMax = scanNodes.IdMax();
 
     /* World coordinate pose of the latest scan node is used as the map pose */
-    const RobotPose2D<double> mapPose = scanNodes.LatestNode().mGlobalPose;
+    const RobotPose2D<double> mapPose = scanNodes.Back().mGlobalPose;
     /* The above pose is the center of the local map coordinate */
     const Point2D<double> localCenterPos = Point2D<double>::Zero;
 
@@ -146,7 +146,7 @@ void GridMapBuilder::ConstructGlobalMap(
 
 /* Append a new local map */
 void GridMapBuilder::AppendLocalMap(
-    LocalMapNodeMap& localMapNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
     std::vector<PoseGraphEdge>& poseGraphEdges,
     const RobotPose2D<double>& scanPose,
     const Eigen::Matrix3d& scanPoseCovarianceMatrix,
@@ -161,7 +161,7 @@ void GridMapBuilder::AppendLocalMap(
     if (!this->mLocalMaps.empty()) {
         /* Retrieve the old local map */
         const auto& oldLocalMap = this->LatestLocalMap();
-        const auto& oldLocalMapNode = localMapNodes.LatestNode();
+        const auto& oldLocalMapNode = localMapNodes.Back();
         /* Make sure that their Ids are the same */
         Assert(oldLocalMap.mId == oldLocalMapNode.mLocalMapId);
         /* Make sure that the old local map contains scan data older than
@@ -191,9 +191,9 @@ void GridMapBuilder::AppendLocalMap(
     }
 
     /* Determine the Id of the new local map */
-    const LocalMapId localMapId = localMapNodes.Empty() ?
+    const LocalMapId localMapId = localMapNodes.empty() ?
         LocalMapId { 0 } :
-        LocalMapId { localMapNodes.LatestNode().mLocalMapId.mId + 1 };
+        LocalMapId { localMapNodes.Back().mLocalMapId.mId + 1 };
     /* Insert a new local map node to the pose graph */
     /* We use the pose (in a world coordinate frame) from the newly
      * inserted scan node as the pose for a newly inserted local map */
@@ -220,20 +220,20 @@ void GridMapBuilder::AppendLocalMap(
 /* Update the pose graph, add a new scan node and create a new local grid
  * map (and its corresponding new local map node) if necessary */
 bool GridMapBuilder::UpdatePoseGraph(
-    LocalMapNodeMap& localMapNodes,
-    ScanNodeMap& scanNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    IdMap<NodeId, ScanNode>& scanNodes,
     std::vector<PoseGraphEdge>& poseGraphEdges,
     const RobotPose2D<double>& relativeScanPose,
     const Eigen::Matrix3d& scanPoseCovarianceMatrix,
     const Sensor::ScanDataPtr<double>& scanData)
 {
     /* Id of the new scan node to be added */
-    const NodeId scanNodeId = scanNodes.Empty() ?
-        NodeId { 0 } : NodeId { scanNodes.LatestNode().mNodeId.mId + 1 };
+    const NodeId scanNodeId = scanNodes.empty() ?
+        NodeId { 0 } : NodeId { scanNodes.Back().mNodeId.mId + 1 };
     /* Latest scan node pose in a world coordinate frame */
-    const RobotPose2D<double> prevScanPose = scanNodes.Empty() ?
+    const RobotPose2D<double> prevScanPose = scanNodes.empty() ?
         RobotPose2D<double>(0.0, 0.0, 0.0) :
-        scanNodes.LatestNode().mGlobalPose;
+        scanNodes.Back().mGlobalPose;
     /* Compute a new scan node pose using the latest node pose
      * `prevScanNodePose` here, since the pose of the latest node
      * (starting node of the new odometry edge) might have been modified
@@ -261,11 +261,11 @@ bool GridMapBuilder::UpdatePoseGraph(
 
     /* Make sure that the local maps are not empty for now */
     Assert(!this->mLocalMaps.empty());
-    Assert(!localMapNodes.Empty());
+    Assert(!localMapNodes.empty());
 
     /* Retrieve the Id of the latest local map */
     const auto& latestLocalMap = this->LatestLocalMap();
-    const auto& latestLocalMapNode = localMapNodes.LatestNode();
+    const auto& latestLocalMapNode = localMapNodes.Back();
     /* Make sure that their Ids are the same */
     Assert(latestLocalMap.mId == latestLocalMapNode.mLocalMapId);
     /* Make sure that we can insert the new scan to the latest local map */
@@ -305,14 +305,14 @@ bool GridMapBuilder::UpdatePoseGraph(
 
 /* Update the grid map (list of the local grid maps) */
 void GridMapBuilder::UpdateGridMap(
-    const LocalMapNodeMap& localMapNodes,
-    const ScanNodeMap& scanNodes)
+    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes)
 {
     /* Retrieve the latest local map to which the latest scan is added */
     auto& latestLocalMap = this->LatestLocalMap();
-    const auto& latestLocalMapNode = localMapNodes.LatestNode();
+    const auto& latestLocalMapNode = localMapNodes.Back();
     /* Retrieve the latest scan node */
-    const auto& latestScanNode = scanNodes.LatestNode();
+    const auto& latestScanNode = scanNodes.Back();
 
     /* Make sure that their Ids are the same */
     Assert(latestLocalMap.mId == latestLocalMapNode.mLocalMapId);
@@ -388,10 +388,11 @@ void GridMapBuilder::UpdateGridMap(
 }
 
 /* Update the grid map with the latest scans */
-void GridMapBuilder::UpdateLatestMap(const ScanNodeMap& scanNodes)
+void GridMapBuilder::UpdateLatestMap(
+    const IdMap<NodeId, ScanNode>& scanNodes)
 {
     /* Make sure that the pose graph is not empty */
-    Assert(!scanNodes.Empty());
+    Assert(!scanNodes.empty());
 
     /* Get the iterator pointing to the scan nodes used for latest maps */
     const int numOfScansForMap =
@@ -400,13 +401,13 @@ void GridMapBuilder::UpdateLatestMap(const ScanNodeMap& scanNodes)
     const auto latestNodeIt = std::next(lastNodeIt, numOfScansForMap - 1);
 
     /* Validate the scan node Ids */
-    Assert(latestNodeIt->first <= lastNodeIt->first);
+    Assert(latestNodeIt->mId <= lastNodeIt->mId);
 
     /* Update the minimum and maximum scan node Id */
-    this->mLatestScanIdMin = latestNodeIt->first;
-    this->mLatestScanIdMax = lastNodeIt->first;
+    this->mLatestScanIdMin = latestNodeIt->mId;
+    this->mLatestScanIdMax = lastNodeIt->mId;
     /* Update the pose of the latest map */
-    this->mLatestMapPose = latestNodeIt->second.mGlobalPose;
+    this->mLatestMapPose = latestNodeIt->mData.mGlobalPose;
 
     /* Update the latest map */
     this->ConstructMapFromScans(
@@ -417,7 +418,8 @@ void GridMapBuilder::UpdateLatestMap(const ScanNodeMap& scanNodes)
 }
 
 /* Update the accumulated travel distance after the loop closure */
-void GridMapBuilder::UpdateAccumTravelDist(const ScanNodeMap& scanNodes)
+void GridMapBuilder::UpdateAccumTravelDist(
+    const IdMap<NodeId, ScanNode>& scanNodes)
 {
     /* Reset the accumulated travel distance */
     this->mAccumTravelDist = 0.0;
@@ -435,8 +437,8 @@ void GridMapBuilder::UpdateAccumTravelDist(const ScanNodeMap& scanNodes)
 
     /* Accumulate the travel distance using pose graph nodes */
     for (; nextIt != endIt; ++nodeIt, ++nextIt) {
-        const RobotPose2D<double>& nodePose = nodeIt->second.mGlobalPose;
-        const RobotPose2D<double>& nextNodePose = nextIt->second.mGlobalPose;
+        const RobotPose2D<double>& nodePose = nodeIt->mData.mGlobalPose;
+        const RobotPose2D<double>& nextNodePose = nextIt->mData.mGlobalPose;
         this->mAccumTravelDist += Distance(nodePose, nextNodePose);
     }
 }
@@ -445,13 +447,13 @@ void GridMapBuilder::UpdateAccumTravelDist(const ScanNodeMap& scanNodes)
 void GridMapBuilder::ConstructMapFromScans(
     const RobotPose2D<double>& globalMapPose,
     GridMapType& gridMap,
-    const ScanNodeMap& scanNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes,
     const NodeId scanNodeIdMin,
     const NodeId scanNodeIdMax) const
 {
     /* Get the iterators to the scan nodes */
-    auto firstNodeIt = scanNodes.LowerBound(scanNodeIdMin);
-    auto lastNodeIt = scanNodes.UpperBound(scanNodeIdMax);
+    auto firstNodeIt = scanNodes.lower_bound(scanNodeIdMin);
+    auto lastNodeIt = scanNodes.upper_bound(scanNodeIdMax);
 
     /* Make sure that at least one scan data is used to build a map
      * Otherwise the bounding box below is not updated and causes a overflow */
@@ -466,8 +468,8 @@ void GridMapBuilder::ConstructMapFromScans(
 
     for (auto nodeIt = firstNodeIt; nodeIt != lastNodeIt; ++nodeIt) {
         /* Retrieve the pose and scan data in the scan node */
-        const NodeId scanNodeId = nodeIt->first;
-        const auto& scanNode = nodeIt->second;
+        const NodeId scanNodeId = nodeIt->mId;
+        const auto& scanNode = nodeIt->mData;
         const RobotPose2D<double>& globalNodePose = scanNode.mGlobalPose;
         const auto& scanData = scanNode.mScanData;
 
@@ -524,8 +526,8 @@ void GridMapBuilder::ConstructMapFromScans(
      * Reuse the same iterators as above since the pose graph is constant */
     for (auto nodeIt = firstNodeIt; nodeIt != lastNodeIt; ++nodeIt) {
         /* Retrieve the pose and scan data in the scan node */
-        const NodeId scanNodeId = nodeIt->first;
-        const auto& scanNode = nodeIt->second;
+        const NodeId scanNodeId = nodeIt->mId;
+        const auto& scanNode = nodeIt->mData;
         const RobotPose2D<double>& globalNodePose = scanNode.mGlobalPose;
         const auto& scanData = scanNode.mScanData;
 

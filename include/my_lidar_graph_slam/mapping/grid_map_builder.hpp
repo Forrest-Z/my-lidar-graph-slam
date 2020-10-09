@@ -132,20 +132,22 @@ public:
     ~GridMapBuilder() = default;
 
     /* Append the new scan data */
-    bool AppendScan(LocalMapNodeMap& localMapNodes,
-                    ScanNodeMap& scanNodes,
-                    std::vector<PoseGraphEdge>& poseGraphEdges,
-                    const RobotPose2D<double>& relativeScanPose,
-                    const Eigen::Matrix3d& scanPoseCovarianceMatrix,
-                    const Sensor::ScanDataPtr<double>& scanData);
+    bool AppendScan(
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        IdMap<NodeId, ScanNode>& scanNodes,
+        std::vector<PoseGraphEdge>& poseGraphEdges,
+        const RobotPose2D<double>& relativeScanPose,
+        const Eigen::Matrix3d& scanPoseCovarianceMatrix,
+        const Sensor::ScanDataPtr<double>& scanData);
 
     /* Re-create the local grid maps and latest map after the loop closure */
-    void AfterLoopClosure(const LocalMapNodeMap& localMapNodes,
-                          const ScanNodeMap& scanNodes);
+    void AfterLoopClosure(
+        const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        const IdMap<NodeId, ScanNode>& scanNodes);
 
     /* Construct the global map */
     void ConstructGlobalMap(
-        const ScanNodeMap& scanNodes,
+        const IdMap<NodeId, ScanNode>& scanNodes,
         RobotPose2D<double>& globalMapPose,
         GridMapType& globalMap);
 
@@ -183,7 +185,7 @@ public:
 private:
     /* Append a new local map */
     void AppendLocalMap(
-        LocalMapNodeMap& localMapNodes,
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
         std::vector<PoseGraphEdge>& poseGraphEdges,
         const RobotPose2D<double>& scanPose,
         const Eigen::Matrix3d& scanPoseCovarianceMatrix,
@@ -192,28 +194,29 @@ private:
     /* Update the pose graph, add a new scan node and create a new local grid
      * map (and its corresponding new local map node) if necessary */
     bool UpdatePoseGraph(
-        LocalMapNodeMap& localMapNodes,
-        ScanNodeMap& scanNodes,
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        IdMap<NodeId, ScanNode>& scanNodes,
         std::vector<PoseGraphEdge>& poseGraphEdges,
         const RobotPose2D<double>& relativeScanPose,
         const Eigen::Matrix3d& scanPoseCovarianceMatrix,
         const Sensor::ScanDataPtr<double>& scanData);
 
     /* Update the grid map (list of the local grid maps) */
-    void UpdateGridMap(const LocalMapNodeMap& localMapNodes,
-                       const ScanNodeMap& scanNodes);
+    void UpdateGridMap(
+        const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        const IdMap<NodeId, ScanNode>& scanNodes);
 
     /* Update the grid map with the latest scans */
-    void UpdateLatestMap(const ScanNodeMap& scanNodes);
+    void UpdateLatestMap(const IdMap<NodeId, ScanNode>& scanNodes);
 
     /* Update the accumulated travel distance after the loop closure */
-    void UpdateAccumTravelDist(const ScanNodeMap& scanNodes);
+    void UpdateAccumTravelDist(const IdMap<NodeId, ScanNode>& scanNodes);
 
     /* Construct the grid map from the specified scans */
     void ConstructMapFromScans(
         const RobotPose2D<double>& globalMapPose,
         GridMapType& gridMap,
-        const ScanNodeMap& scanNodes,
+        const IdMap<NodeId, ScanNode>& scanNodes,
         const NodeId scanNodeIdMin,
         const NodeId scanNodeIdMax) const;
 
