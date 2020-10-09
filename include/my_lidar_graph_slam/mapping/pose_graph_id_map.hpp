@@ -106,17 +106,17 @@ public:
         { return !operator==(other); }
 
         /* Increment operator */
-        inline Iterator operator++(int) const
+        inline Iterator operator++(int)
         { return Iterator(this->mMapIt++); }
         /* Decrement operator */
-        inline Iterator operator--(int) const
+        inline Iterator operator--(int)
         { return Iterator(this->mMapIt--); }
 
         /* Increment operator */
-        inline Iterator& operator++() const
+        inline Iterator& operator++()
         { ++this->mMapIt; return *this; }
         /* Decrement operator */
-        inline Iterator& operator--() const
+        inline Iterator& operator--()
         { --this->mMapIt; return *this; }
 
     private:
@@ -152,17 +152,17 @@ public:
         { return !operator==(other); }
 
         /* Increment operator */
-        inline ConstIterator operator++(int) const
+        inline ConstIterator operator++(int)
         { return ConstIterator(this->mMapIt++); }
         /* Decrement operator */
-        inline ConstIterator operator--(int) const
+        inline ConstIterator operator--(int)
         { return ConstIterator(this->mMapIt--); }
 
         /* Increment operator */
-        inline ConstIterator& operator++() const
+        inline ConstIterator& operator++()
         { ++this->mMapIt; return *this; }
         /* Decrement operator */
-        inline ConstIterator& operator--() const
+        inline ConstIterator& operator--()
         { --this->mMapIt; return *this; }
 
     private:
