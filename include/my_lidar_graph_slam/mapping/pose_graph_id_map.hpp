@@ -290,13 +290,13 @@ public:
     { return ConstReverseIterator(this->IteratorAt(id)); }
 
     /* Create a range from a pair of Ids */
-    Range<Iterator> RangeFromId(const IdType& beginId,
-                                const IdType& endId)
+    inline Range<Iterator> RangeFromId(
+        const IdType& beginId, const IdType& endId)
     { return Range<Iterator>(this->IteratorAt(beginId),
                              this->IteratorAt(endId)); }
     /* Create a range [beginId, endId) from a pair of Ids */
-    Range<ConstIterator> RangeFromId(const IdType& beginId,
-                                     const IdType& endId) const
+    inline Range<ConstIterator> RangeFromId(
+        const IdType& beginId, const IdType& endId) const
     { return Range<ConstIterator>(this->IteratorAt(beginId),
                                   this->IteratorAt(endId)); }
 
