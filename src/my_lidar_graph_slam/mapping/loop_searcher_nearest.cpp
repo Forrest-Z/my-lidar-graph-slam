@@ -13,16 +13,8 @@ namespace Mapping {
 LoopCandidateVector LoopSearcherNearest::Search(
     const LoopSearchHint& searchHint)
 {
-    /* LoopSearcherNearest class selects the closest scan node
-     * and its corresponding local grid map from the current robot pose */
-    LoopCandidateVector loopCandidates;
-
     const auto& scanNodes = searchHint.mScanNodes;
     const auto& localMapNodes = searchHint.mLocalMapNodes;
-
-    /* Do not perform loop candidate search if empty */
-    if (scanNodes.empty() || localMapNodes.empty())
-        return loopCandidates;
 
     /* Retrieve the pose of the scan node in the last finished local map */
     const RobotPose2D<double>& robotPose =
@@ -44,12 +36,10 @@ LoopCandidateVector LoopSearcherNearest::Search(
     /* Traverse all finished local grid maps except the last one */
     const auto firstMapIt = localMapNodes.begin();
     const auto lastMapIt = std::prev(localMapNodes.end());
+    const auto mapRange = localMapNodes.RangeFromIterator(
+        firstMapIt, lastMapIt);
 
-    for (auto mapIt = firstMapIt; mapIt != lastMapIt; ++mapIt) {
-        /* Retrieve the local map node */
-        const auto& localMapId = mapIt->first;
-        const auto& localMapNode = mapIt->second;
-
+    for (const auto& [localMapId, localMapNode] : mapRange) {
         /* Make sure that the local map is finished */
         Assert(localMapNode.mFinished);
 
@@ -60,11 +50,10 @@ LoopCandidateVector LoopSearcherNearest::Search(
         Assert(firstIt != scanNodes.end());
         Assert(lastIt != scanNodes.end());
 
-        for (auto nodeIt = firstIt; nodeIt != std::next(lastIt); ++nodeIt) {
-            /* Retrieve the scan node */
-            const auto& scanNodeId = nodeIt->first;
-            const auto& scanNode = nodeIt->second;
+        const auto scanRange = scanNodes.RangeFromIterator(
+            firstIt, std::next(lastIt));
 
+        for (const auto& [scanNodeId, scanNode] : scanRange) {
             /* Retrieve the global pose of the scan node */
             const RobotPose2D<double>& nodePose = scanNode.mGlobalPose;
 
@@ -95,7 +84,7 @@ Done:
     /* Return an empty collection of candidates if not found */
     if (candidateMapId.mId == LocalMapId::Invalid ||
         candidateNodeId.mId == NodeId::Invalid)
-        return loopCandidates;
+        return LoopCandidateVector { };
 
     /* Set the scan nodes around the current scan node */
     const auto& lastFinishedMap =
@@ -114,8 +103,8 @@ Done:
 
     /* Make sure that the scan node in the last finished local map
      * `lastFinishedScanIt` is actually inside the last finished local map */
-    Assert(lastFinishedScanIt->first >= firstScanIt->first &&
-           lastFinishedScanIt->first <= lastScanIt->first);
+    Assert(lastFinishedScanIt->mId >= firstScanIt->mId &&
+           lastFinishedScanIt->mId <= lastScanIt->mId);
 
     const int distToFirstCandidate = std::min(
         static_cast<int>(std::distance(firstScanIt, lastFinishedScanIt)),
@@ -130,12 +119,18 @@ Done:
     const int numOfActualCandidateNodes =
         std::distance(firstCandidateNodeIt, lastCandidateNodeIt) + 1;
 
+    const auto candidateNodeRange = scanNodes.RangeFromIterator(
+        firstCandidateNodeIt, std::next(lastCandidateNodeIt));
+
     std::vector<NodeId> nodeIds;
     nodeIds.reserve(numOfActualCandidateNodes);
 
-    for (auto nodeIt = firstCandidateNodeIt;
-         nodeIt != std::next(lastCandidateNodeIt); ++nodeIt)
-        nodeIds.push_back(nodeIt->first);
+    for (const auto& [scanNodeId, scanNode] : candidateNodeRange)
+        nodeIds.push_back(scanNodeId);
+
+    /* LoopSearcherNearest class selects the closest scan node
+     * and its corresponding local grid map from the current robot pose */
+    LoopCandidateVector loopCandidates;
 
     /* Set the loop candidate information */
     loopCandidates.emplace_back(std::move(nodeIds), candidateMapId);
