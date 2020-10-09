@@ -37,13 +37,10 @@ void LidarGraphSlamBackend::Run(
          * a collection of pose graph nodes and a local grid map */
         auto loopDetectionQueries =
             pParent->GetLoopDetectionQueries(loopCandidates);
-        LoopDetectionResultVector loopDetectionResults;
 
+        LoopDetectionResultVector loopDetectionResults;
         this->mLoopDetector->Detect(
             loopDetectionQueries, loopDetectionResults);
-
-        /* Update the local grid maps if modified in the loop detection */
-        pParent->UpdatePrecomputedGridMaps(loopDetectionQueries);
 
         if (loopDetectionResults.empty())
             continue;
