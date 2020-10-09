@@ -103,10 +103,6 @@ void GridMapBuilder::AfterLoopClosure(
         this->ConstructMapFromScans(
             globalMapPose, localMap.mMap, scanNodes,
             localMap.mScanNodeIdMin, localMap.mScanNodeIdMax);
-
-        /* Reset the precomputed grid maps */
-        localMap.mPrecomputedMaps.clear();
-        localMap.mPrecomputed = false;
     }
 
     /* Update the latest grid map with latest scans */
