@@ -100,23 +100,28 @@ public:
     bool SaveMap(
         const RobotPose2D<double>& globalMapPose,
         const Mapping::GridMapType& globalMap,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const std::string& fileName,
         const bool drawTrajectory,
         const bool saveMetadata) const;
 
     /* Save the pose graph as JSON format */
     bool SavePoseGraph(
-        const Mapping::LocalMapNodeMap& localMapNodes,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::LocalMapId,
+            Mapping::LocalMapNode>& localMapNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const std::vector<Mapping::PoseGraphEdge>& poseGraphEdges,
         const std::string& fileName) const;
 
     /* Save local maps individually */
     bool SaveLocalMaps(
         const std::vector<Mapping::LocalMap>& localMaps,
-        const Mapping::LocalMapNodeMap& localMapNodes,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::LocalMapId,
+            Mapping::LocalMapNode>& localMapNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const bool drawTrajectory,
         const bool saveMetadata,
         const std::string& fileName) const;
@@ -125,7 +130,8 @@ public:
     bool SaveLatestMap(
         const RobotPose2D<double>& globalMapPose,
         const Mapping::GridMapType& latestMap,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const bool drawTrajectory,
         const Mapping::NodeId scanNodeIdMin,
         const Mapping::NodeId scanNodeIdMax,
@@ -136,7 +142,8 @@ public:
     bool SaveLocalMapAndScan(
         const RobotPose2D<double>& globalMapPose,
         const Mapping::LocalMap& localMap,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const RobotPose2D<double>& globalScanPose,
         const ScanPtr& scanData,
         const bool drawTrajectory,
@@ -147,7 +154,8 @@ public:
     bool SaveLatestMapAndScan(
         const RobotPose2D<double>& globalMapPose,
         const Mapping::GridMapType& latestMap,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const RobotPose2D<double>& globalScanPose,
         const ScanPtr& scanData,
         const bool drawTrajectory,
@@ -160,7 +168,8 @@ public:
     bool SavePrecomputedGridMaps(
         const RobotPose2D<double>& globalMapPose,
         const Mapping::LocalMap& localMap,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const std::string& fileName) const;
 
 private:
@@ -176,7 +185,8 @@ private:
         const boost::gil::rgb8_view_t& mapImageView,
         const RobotPose2D<double>& globalGridMapPose,
         const Mapping::GridMapType& gridMap,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const Point2D<int>& gridCellIdxMin,
         const Point2D<int>& gridCellIdxMax,
         const Mapping::NodeId scanNodeIdMin,
@@ -196,7 +206,8 @@ private:
     bool SaveMapCore(
         const RobotPose2D<double>& globalGridMapPose,
         const Mapping::GridMapType& gridMap,
-        const Mapping::ScanNodeMap& scanNodes,
+        const Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNode>& scanNodes,
         const Options& saveOptions) const;
 
     /* Save the map metadata as JSON format */
