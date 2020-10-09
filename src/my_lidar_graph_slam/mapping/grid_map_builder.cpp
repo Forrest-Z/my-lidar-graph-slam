@@ -90,24 +90,9 @@ bool GridMapBuilder::AppendScan(
 
 /* Re-create the local grid maps and latest map after the loop closure */
 void GridMapBuilder::AfterLoopClosure(
-    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    const IdMap<LocalMapId, LocalMapNode>& /* localMapNodes */,
     const IdMap<NodeId, ScanNode>& scanNodes)
 {
-    /* Update the all local grid maps */
-    for (auto& [localMapId, localMap] : this->mLocalMaps) {
-        /* Retrieve the local map Id and global pose */
-        const RobotPose2D<double>& globalMapPose =
-            localMapNodes.at(localMapId).mGlobalPose;
-
-        /* Reconstruct a local map */
-        this->ConstructMapFromScans(
-            globalMapPose, localMap.mMap, scanNodes,
-            localMap.mScanNodeIdMin, localMap.mScanNodeIdMax);
-    }
-
-    /* Update the latest grid map with latest scans */
-    this->UpdateLatestMap(scanNodes);
-
     /* Update the accumulated travel distance */
     this->UpdateAccumTravelDist(scanNodes);
 }
