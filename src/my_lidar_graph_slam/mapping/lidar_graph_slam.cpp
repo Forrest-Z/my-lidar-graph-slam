@@ -50,15 +50,15 @@ int LidarGraphSlam::ProcessCount() const
 
 /* Retrieve the full pose graph information */
 void LidarGraphSlam::GetPoseGraph(
-    LocalMapNodeMap& localMapNodes,
-    ScanNodeMap& scanNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    IdMap<NodeId, ScanNode>& scanNodes,
     std::vector<PoseGraphEdge>& poseGraphEdges) const
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
-    localMapNodes.Clear();
-    scanNodes.Clear();
+    localMapNodes.clear();
+    scanNodes.clear();
     poseGraphEdges.clear();
 
     /* Copy the local map nodes */
@@ -80,8 +80,8 @@ void LidarGraphSlam::GetPoseGraph(
 
 /* Retrieve the finished pose graph information */
 void LidarGraphSlam::GetPoseGraphFinished(
-    LocalMapNodeMap& localMapNodes,
-    ScanNodeMap& scanNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    IdMap<NodeId, ScanNode>& scanNodes,
     std::vector<PoseGraphEdge>& poseGraphEdges) const
 {
     /* Acquire the unique lock */
@@ -123,8 +123,8 @@ void LidarGraphSlam::GetPoseGraphFinished(
 
 /* Retrieve the pose graph information */
 void LidarGraphSlam::GetPoseGraph(
-    LocalMapNodeMap& localMapNodes,
-    std::map<NodeId, ScanNodeData>& scanNodes,
+    IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    IdMap<NodeId, ScanNodeData>& scanNodes,
     std::vector<EdgeData>& poseGraphEdges) const
 {
     /* Acquire the unique lock */
@@ -141,10 +141,7 @@ void LidarGraphSlam::GetPoseGraph(
     /* Setup the scan nodes information */
     for (const auto& [scanNodeId, scanNode] : this->mPoseGraph->ScanNodes())
         /* Append the scan node information */
-        scanNodes.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(scanNodeId),
-            std::forward_as_tuple(scanNodeId, scanNode.mGlobalPose));
+        scanNodes.Append(scanNodeId, scanNode.mGlobalPose);
 
     /* Setup the pose graph edges information */
     for (const auto& edge : this->mPoseGraph->Edges())
@@ -162,7 +159,7 @@ void LidarGraphSlam::GetLatestData(
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
     /* Set the last pose from the pose graph in a world coordinate frame */
-    lastScanPose = this->mPoseGraph->LatestScanNode().mGlobalPose;
+    lastScanPose = this->mPoseGraph->ScanNodes().Back().mGlobalPose;
     /* Set the latest grid map and its pose in a world coordinate frame */
     latestMap = this->mGridMapBuilder->LatestMap();
     latestMapPose = this->mGridMapBuilder->LatestMapPose();
@@ -241,7 +238,7 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
 
     /* Retrieve the last finished local map */
     const auto& lastFinishedMapNode =
-        this->mPoseGraph->LocalMapNodeAt(localMapNodes.rbegin()->first);
+        this->mPoseGraph->LocalMapNodes().at(localMapNodes.rbegin()->first);
     const auto& lastFinishedMap =
         this->mGridMapBuilder->LocalMapAt(lastFinishedMapNode.mLocalMapId);
     /* Retrieve the scan node in the last finished local map */
@@ -249,7 +246,7 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
         (lastFinishedMap.mScanNodeIdMin.mId +
          lastFinishedMap.mScanNodeIdMax.mId) / 2 };
     const auto& lastFinishedScanNode =
-        this->mPoseGraph->ScanNodeAt(scanNodeId);
+        this->mPoseGraph->ScanNodes().at(scanNodeId);
 
     /* Make sure that `lastFinishedScanNode` belongs to the last finished
      * local map `lastFinishedMap` */
@@ -281,13 +278,13 @@ LoopDetectionQueryVector LidarGraphSlam::GetLoopDetectionQueries(
         scanNodes.reserve(loopCandidate.mScanNodeIds.size());
 
         for (const NodeId& nodeId : loopCandidate.mScanNodeIds)
-            scanNodes.push_back(this->mPoseGraph->ScanNodeAt(nodeId));
+            scanNodes.push_back(this->mPoseGraph->ScanNodes().at(nodeId));
 
         /* Retrieve the information for the local grid map */
         LocalMap& localMap = this->mGridMapBuilder->LocalMapAt(
             loopCandidate.mLocalMapId);
         /* Retrieve the information for the local map node */
-        LocalMapNode& localMapNode = this->mPoseGraph->LocalMapNodeAt(
+        LocalMapNode& localMapNode = this->mPoseGraph->LocalMapNodes().at(
             loopCandidate.mLocalMapId);
 
         /* Append the data needed for loop detection */
@@ -375,7 +372,7 @@ void LidarGraphSlam::AppendLoopClosingEdges(
                loopDetectionResult.mScanNodeId > localMap.mScanNodeIdMax);
 
         /* Append a new loop closing constraint */
-        this->mPoseGraph->AppendEdge(
+        this->mPoseGraph->Edges().emplace_back(
             loopDetectionResult.mLocalMapNodeId,
             loopDetectionResult.mScanNodeId,
             EdgeType::InterLocalMap, ConstraintType::Loop,
@@ -404,8 +401,8 @@ void LidarGraphSlam::UpdatePrecomputedGridMaps(
 
 /* Update pose graph nodes and rebuild grid maps after loop closure */
 void LidarGraphSlam::AfterLoopClosure(
-    const LocalMapNodeMap& localMapNodes,
-    const ScanNodeMap& scanNodes)
+    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes)
 {
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
@@ -414,7 +411,7 @@ void LidarGraphSlam::AfterLoopClosure(
      * optimization (edges are not updated since they are constants) */
     for (const auto& [localMapId, localMapNode] : localMapNodes) {
         /* Retrieve the old local map node */
-        auto& oldLocalMapNode = this->mPoseGraph->LocalMapNodeAt(localMapId);
+        auto& oldLocalMapNode = this->mPoseGraph->LocalMapNodes().at(localMapId);
         /* Update the node pose */
         oldLocalMapNode.mGlobalPose = localMapNode.mGlobalPose;
     }
@@ -422,15 +419,15 @@ void LidarGraphSlam::AfterLoopClosure(
     /* Update the scan nodes using the results from the pose graph */
     for (const auto& [scanNodeId, scanNode] : scanNodes) {
         /* Retrieve the old scan node */
-        auto& oldScanNode = this->mPoseGraph->ScanNodeAt(scanNodeId);
+        auto& oldScanNode = this->mPoseGraph->ScanNodes().at(scanNodeId);
         /* Update the node pose */
         oldScanNode.mGlobalPose = scanNode.mGlobalPose;
     }
 
     /* Retrieve the pose and Id of the last node which got updated by the
      * pose graph optimization */
-    const auto& lastLocalMapNode = localMapNodes.LatestNode();
-    const auto& lastScanNode = scanNodes.LatestNode();
+    const auto& lastLocalMapNode = localMapNodes.Back();
+    const auto& lastScanNode = scanNodes.Back();
     /* Retrieve the corresponding local map */
     const auto& lastLocalMap = this->mGridMapBuilder->LocalMapAt(
         lastLocalMapNode.mLocalMapId);
@@ -503,26 +500,26 @@ void LidarGraphSlam::AfterLoopClosure(
         if (updateScanNode) {
             /* Retrieve the starting node whose pose is already updated */
             const LocalMapNode& startNode =
-                this->mPoseGraph->LocalMapNodeAt(odomEdge.mLocalMapNodeId);
+                this->mPoseGraph->LocalMapNodes().at(odomEdge.mLocalMapNodeId);
             /* Compute the new node pose */
             const RobotPose2D<double>& startNodePose = startNode.mGlobalPose;
             const RobotPose2D<double> endNodePose =
                 Compound(startNodePose, odomEdge.mRelativePose);
             /* Update the node pose */
             ScanNode& endNode =
-                this->mPoseGraph->ScanNodeAt(odomEdge.mScanNodeId);
+                this->mPoseGraph->ScanNodes().at(odomEdge.mScanNodeId);
             endNode.mGlobalPose = endNodePose;
         } else if (updateLocalMapNode) {
             /* Retrieve the ending node whose pose is already updated */
             const ScanNode& endNode =
-                this->mPoseGraph->ScanNodeAt(odomEdge.mScanNodeId);
+                this->mPoseGraph->ScanNodes().at(odomEdge.mScanNodeId);
             /* Compute the new node pose */
             const RobotPose2D<double>& endNodePose = endNode.mGlobalPose;
             const RobotPose2D<double> startNodePose =
                 MoveBackward(endNodePose, odomEdge.mRelativePose);
             /* Update the node pose */
             LocalMapNode& startNode =
-                this->mPoseGraph->LocalMapNodeAt(odomEdge.mLocalMapNodeId);
+                this->mPoseGraph->LocalMapNodes().at(odomEdge.mLocalMapNodeId);
             startNode.mGlobalPose = startNodePose;
         }
 
@@ -574,8 +571,8 @@ void LidarGraphSlam::GetGlobalMap(
 
     /* Set the Id range of the scan node */
     /* All scan data acquired are used to create a global map */
-    scanNodeIdMin = this->mPoseGraph->ScanNodes().NodeIdMin();
-    scanNodeIdMax = this->mPoseGraph->ScanNodes().NodeIdMax();
+    scanNodeIdMin = this->mPoseGraph->ScanNodes().IdMin();
+    scanNodeIdMax = this->mPoseGraph->ScanNodes().IdMax();
 
     /* Return a new global map and its pose in a world coordinate frame */
     this->mGridMapBuilder->ConstructGlobalMap(

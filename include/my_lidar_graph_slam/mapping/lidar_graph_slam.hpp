@@ -73,18 +73,18 @@ public:
 
     /* Retrieve the full pose graph information */
     void GetPoseGraph(
-        LocalMapNodeMap& localMapNodes,
-        ScanNodeMap& scanNodes,
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        IdMap<NodeId, ScanNode>& scanNodes,
         std::vector<PoseGraphEdge>& poseGraphEdges) const;
     /* Retrieve the finished pose graph information */
     void GetPoseGraphFinished(
-        LocalMapNodeMap& localMapNodes,
-        ScanNodeMap& scanNodes,
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        IdMap<NodeId, ScanNode>& scanNodes,
         std::vector<PoseGraphEdge>& poseGraphEdges) const;
     /* Retrieve the pose graph information */
     void GetPoseGraph(
-        LocalMapNodeMap& localMapNodes,
-        std::map<NodeId, ScanNodeData>& scanNodes,
+        IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        IdMap<NodeId, ScanNodeData>& scanNodes,
         std::vector<EdgeData>& poseGraphEdges) const;
 
     /* Retrieve the latest data consisting of the pose from the last scan nodes
@@ -125,8 +125,8 @@ public:
 
     /* Rebuild grid maps after loop closure */
     void AfterLoopClosure(
-        const LocalMapNodeMap& localMapNodes,
-        const ScanNodeMap& scanNodes);
+        const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+        const IdMap<NodeId, ScanNode>& scanNodes);
 
     /* Retrieve a latest map that contains latest scans */
     void GetLatestMap(RobotPose2D<double>& globalPose,
