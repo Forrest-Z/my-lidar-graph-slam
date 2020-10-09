@@ -300,9 +300,9 @@ public:
     /* Get the first element with the minimum Id */
     const DataType& Front() const;
     /* Get the last element with the maximum Id */
-    DataType& Last();
+    DataType& Back();
     /* Get the last element with the maximum Id */
-    const DataType& Last() const;
+    const DataType& Back() const;
 
 private:
     /* Actual map container */
@@ -393,7 +393,7 @@ const DataType& IdMap<IdType, DataType>::Front() const
 
 /* Get the last element with the largest Id */
 template <typename IdType, typename DataType>
-DataType& IdMap<IdType, DataType>::Last()
+DataType& IdMap<IdType, DataType>::Back()
 {
     /* Make sure that the map is not empty */
     Assert(!this->empty());
@@ -403,7 +403,7 @@ DataType& IdMap<IdType, DataType>::Last()
 
 /* Get the last element with the largest Id */
 template <typename IdType, typename DataType>
-const DataType& IdMap<IdType, DataType>::Last() const
+const DataType& IdMap<IdType, DataType>::Back() const
 {
     /* Make sure that the map is not empty */
     Assert(!this->empty());
