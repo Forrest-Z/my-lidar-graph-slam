@@ -47,18 +47,13 @@ void LoopDetectorRealTimeCorrelative::Detect(
         Assert(localMap.mFinished);
 
         /* Precompute a low-resolution grid map */
-        if (!localMap.mPrecomputed) {
-            /* Precompute a coarser grid map */
+        if (!this->mPrecompMaps.contains(localMap.mId)) {
+            /* Precompute coarser grid maps */
             ConstMapType precompMap =
                 this->mScanMatcher->ComputeCoarserMap(localMap.mMap);
             /* Append the newly created grid map */
-            localMap.mPrecomputedMaps.emplace(0, std::move(precompMap));
-            /* Mark the current local map as precomputed */
-            localMap.mPrecomputed = true;
+            this->mPrecompMaps.Append(localMap.mId, std::move(precompMap));
         }
-
-        /* The local grid map should have only one precomputed grid map */
-        Assert(localMap.mPrecomputedMaps.size() == 1);
 
         /* Perform loop detection for each node */
         for (const auto& scanNode : scanNodes) {
@@ -70,7 +65,7 @@ void LoopDetectorRealTimeCorrelative::Detect(
             RobotPose2D<double> correspondingPose;
             Eigen::Matrix3d covarianceMatrix;
             const bool loopDetected = this->FindCorrespondingPose(
-                localMap.mMap, localMap.mPrecomputedMaps,
+                localMap.mMap, this->mPrecompMaps.at(localMap.mId).mMap,
                 scanNode.mScanData, mapLocalScanPose,
                 correspondingPose, covarianceMatrix);
 
@@ -92,16 +87,12 @@ void LoopDetectorRealTimeCorrelative::Detect(
  * from a local grid map */
 bool LoopDetectorRealTimeCorrelative::FindCorrespondingPose(
     const GridMapType& localMap,
-    const std::map<int, ConstMapType>& precompMaps,
+    const ConstMapType& precompMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& mapLocalScanPose,
     RobotPose2D<double>& correspondingPose,
     Eigen::Matrix3d& estimatedCovMat) const
 {
-    /* Retrieve the precomputed low-resolution grid map */
-    Assert(precompMaps.size() == 1);
-    const ConstMapType& precompMap = precompMaps.at(0);
-
     /* Just call the scan matcher to find a corresponding pose */
     const auto matchingSummary = this->mScanMatcher->OptimizePose(
         localMap, precompMap, scanData,
