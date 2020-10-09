@@ -1020,15 +1020,19 @@ int main(int argc, char** argv)
         Mapping::ScanNode> scanNodes;
     std::vector<Mapping::PoseGraphEdge> poseGraphEdges;
     pLidarGraphSlam->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
+    const Mapping::NodeId scanNodeIdMin = scanNodes.IdMin();
+    const Mapping::NodeId scanNodeIdMax = scanNodes.IdMax();
 
     /* Save the global map, the pose graph, and the latest map */
-    pMapSaver->SaveMap(globalMapPose, globalMap, scanNodes,
-                       outputFilePath, true, true);
-    pMapSaver->SavePoseGraph(localMapNodes, scanNodes,
-                             poseGraphEdges, outputFilePath);
-    pMapSaver->SaveLatestMap(latestMapPose, latestMap, scanNodes, true,
-                             latestMapNodeIdMin, latestMapNodeIdMax,
-                             true, outputFilePath);
+    pMapSaver->SaveMap(
+        globalMapPose, globalMap, true, &scanNodes,
+        &scanNodeIdMin, &scanNodeIdMax, true, outputFilePath);
+    pMapSaver->SavePoseGraph(
+        localMapNodes, scanNodes, poseGraphEdges, outputFilePath);
+    pMapSaver->SaveLatestMapAndScan(
+        latestMapPose, latestMap, true, &scanNodes,
+        &latestMapNodeIdMin, &latestMapNodeIdMax,
+        false, nullptr, true, outputFilePath);
 
     if (launcherSettings.mWaitForKey)
         std::getchar();
