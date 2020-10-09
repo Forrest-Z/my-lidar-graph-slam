@@ -52,8 +52,8 @@ void LidarGraphSlamBackend::Run(
         pParent->AppendLoopClosingEdges(loopDetectionResults);
 
         /* Retrieve the finished pose graph nodes and edges */
-        LocalMapNodeMap localMapNodes;
-        ScanNodeMap scanNodes;
+        IdMap<LocalMapId, LocalMapNode> localMapNodes;
+        IdMap<NodeId, ScanNode> scanNodes;
         std::vector<PoseGraphEdge> poseGraphEdges;
         pParent->GetPoseGraphFinished(localMapNodes, scanNodes, poseGraphEdges);
 
