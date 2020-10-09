@@ -31,34 +31,32 @@ MapSaver* MapSaver::Instance()
 
 /* Save the entire map */
 bool MapSaver::SaveMap(
-    const RobotPose2D<double>& globalMapPose,
-    const Mapping::GridMapType& globalMap,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
-    const std::string& fileName,
+    const RobotPose2D<double>& gridMapPose,
+    const Mapping::GridMapType& gridMap,
     const bool drawTrajectory,
-    const bool saveMetadata) const
+    const IdMap<NodeId, ScanNode>* pScanNodes,
+    const NodeId* pNodeIdMin,
+    const NodeId* pNodeIdMax,
+    const bool saveMetadata,
+    const std::string& fileName) const
 {
-    Assert(!scanNodes.empty());
-
-    Options saveOptions {
-        drawTrajectory, scanNodes.IdMin(), scanNodes.IdMax(),
-        false, RobotPose2D<double>(0.0, 0.0, 0.0), nullptr,
-        saveMetadata, fileName };
+    auto mapDrawOptions = std::make_unique<GridMapDrawOptions>(
+        gridMapPose, gridMap);
+    auto trajectoryDrawOptions = drawTrajectory ?
+        std::make_unique<TrajectoryDrawOptions>(
+            *pScanNodes, *pNodeIdMin, *pNodeIdMax) : nullptr;
 
     /* Global map accommodates all local grid maps acquired */
     /* Save the map image and metadata */
-    return this->SaveMapCore(globalMapPose, globalMap,
-                             scanNodes, saveOptions);
+    return this->SaveMapCore(mapDrawOptions, trajectoryDrawOptions,
+                             nullptr, saveMetadata, fileName);
 }
 
 /* Save the pose graph as JSON format */
 bool MapSaver::SavePoseGraph(
-    const Mapping::IdMap<Mapping::LocalMapId,
-        Mapping::LocalMapNode>& localMapNodes,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
-    const std::vector<Mapping::PoseGraphEdge>& poseGraphEdges,
+    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes,
+    const std::vector<PoseGraphEdge>& poseGraphEdges,
     const std::string& fileName) const
 {
     pt::ptree jsonPoseGraph;
@@ -156,12 +154,10 @@ bool MapSaver::SavePoseGraph(
 
 /* Save local maps individually */
 bool MapSaver::SaveLocalMaps(
-    const std::vector<Mapping::LocalMap>& localMaps,
-    const Mapping::IdMap<Mapping::LocalMapId,
-        Mapping::LocalMapNode>& localMapNodes,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
+    const IdMap<LocalMapId, Mapping::LocalMap>& localMaps,
+    const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
     const bool drawTrajectory,
+    const IdMap<NodeId, ScanNode>* pScanNodes,
     const bool saveMetadata,
     const std::string& fileName) const
 {
@@ -171,111 +167,87 @@ bool MapSaver::SaveLocalMaps(
 
     /* Save local maps individually as PNG images */
     for (const auto& localMap : localMaps) {
-        /* Retrieve the local map Id */
-        const Mapping::LocalMapId localMapId = localMap.mId;
         /* Retrieve the local map node */
-        const auto& localMapNode = localMapNodes.at(localMapId);
-        /* Retrieve the global pose of the local map */
-        const RobotPose2D<double>& globalPose = localMapNode.mGlobalPose;
+        const auto& localMapNode = localMapNodes.at(localMap.mId);
         /* Determine the file name */
         const std::string localMapFileName =
-            fileName + "-local-map-" + std::to_string(localMapId.mId);
+            fileName + "-local-map-" + std::to_string(localMap.mId.mId);
 
-        Options saveOptions {
-            drawTrajectory, localMap.mScanNodeIdMin, localMap.mScanNodeIdMax,
-            false, RobotPose2D<double>(0.0, 0.0, 0.0), nullptr,
-            saveMetadata, localMapFileName };
+        auto mapDrawOptions = std::make_unique<GridMapDrawOptions>(
+            localMapNode.mGlobalPose, localMap.mData.mMap);
+        auto trajectoryDrawOptions = drawTrajectory ?
+            std::make_unique<TrajectoryDrawOptions>(
+                *pScanNodes, localMap.mData.mScanNodeIdMin,
+                localMap.mData.mScanNodeIdMax) : nullptr;
 
         /* Save the map image and metadata */
-        if (!this->SaveMapCore(globalPose, localMap.mMap,
-                               scanNodes, saveOptions))
+        if (!this->SaveMapCore(mapDrawOptions, trajectoryDrawOptions,
+                               nullptr, saveMetadata, localMapFileName))
             return false;
     }
 
     return true;
 }
 
-/* Save the grid map constructed from the latest scans */
-bool MapSaver::SaveLatestMap(
-    const RobotPose2D<double>& globalMapPose,
-    const Mapping::GridMapType& latestMap,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
+/* Save the map and the scan */
+bool MapSaver::SaveLocalMapAndScan(
+    const RobotPose2D<double>& localMapPose,
+    const Mapping::LocalMap& localMap,
     const bool drawTrajectory,
-    const Mapping::NodeId scanNodeIdMin,
-    const Mapping::NodeId scanNodeIdMax,
+    const IdMap<NodeId, ScanNode>* pScanNodes,
+    const bool drawScan,
+    const ScanNode* pScanNode,
     const bool saveMetadata,
     const std::string& fileName) const
 {
-    Options saveOptions {
-        drawTrajectory, scanNodeIdMin, scanNodeIdMax,
-        false, RobotPose2D<double>(0.0, 0.0, 0.0), nullptr,
-        saveMetadata, fileName + "-latest-map" };
-
-    /* Save the map image and metadata */
-    return this->SaveMapCore(globalMapPose, latestMap,
-                             scanNodes, saveOptions);
-}
-
-/* Save the map and the scan */
-bool MapSaver::SaveLocalMapAndScan(
-    const RobotPose2D<double>& globalMapPose,
-    const Mapping::LocalMap& localMap,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
-    const RobotPose2D<double>& globalScanPose,
-    const ScanPtr& scanData,
-    bool drawTrajectory,
-    bool saveMetadata,
-    const std::string& fileName) const
-{
-    Options saveOptions {
-        drawTrajectory, localMap.mScanNodeIdMin, localMap.mScanNodeIdMax,
-        true, globalScanPose, scanData,
-        saveMetadata, fileName };
+    auto mapDrawOptions = std::make_unique<GridMapDrawOptions>(
+        localMapPose, localMap.mMap);
+    auto trajectoryDrawOptions = drawTrajectory ?
+        std::make_unique<TrajectoryDrawOptions>(
+            *pScanNodes, localMap.mScanNodeIdMin,
+            localMap.mScanNodeIdMax) : nullptr;
+    auto scanDrawOptions = drawScan ?
+        std::make_unique<ScanDrawOptions>(*pScanNode) : nullptr;
 
     /* Save the map image */
-    return this->SaveMapCore(globalMapPose, localMap.mMap,
-                             scanNodes, saveOptions);
+    return this->SaveMapCore(mapDrawOptions, trajectoryDrawOptions,
+                             scanDrawOptions, saveMetadata, fileName);
 }
 
 /* Save the latest map and the scan */
 bool MapSaver::SaveLatestMapAndScan(
-    const RobotPose2D<double>& globalMapPose,
+    const RobotPose2D<double>& latestMapPose,
     const Mapping::GridMapType& latestMap,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
-    const RobotPose2D<double>& globalScanPose,
-    const ScanPtr& scanData,
     const bool drawTrajectory,
-    const Mapping::NodeId scanNodeIdMin,
-    const Mapping::NodeId scanNodeIdMax,
+    const IdMap<NodeId, ScanNode>* pScanNodes,
+    const NodeId* pNodeIdMin,
+    const NodeId* pNodeIdMax,
+    const bool drawScan,
+    const ScanNode* pScanNode,
     const bool saveMetadata,
     const std::string& fileName) const
 {
-    Options saveOptions {
-        drawTrajectory, scanNodeIdMin, scanNodeIdMax,
-        true, globalScanPose, scanData,
-        saveMetadata, fileName + "-latest-map" };
+    auto mapDrawOptions = std::make_unique<GridMapDrawOptions>(
+        latestMapPose, latestMap);
+    auto trajectoryDrawOptions = drawTrajectory ?
+        std::make_unique<TrajectoryDrawOptions>(
+            *pScanNodes, *pNodeIdMin, *pNodeIdMax) : nullptr;
+    auto scanDrawOptions = drawScan ?
+        std::make_unique<ScanDrawOptions>(*pScanNode) : nullptr;
+    const std::string latestMapFileName = fileName + "-latest-map";
 
     /* Save the map image */
-    return this->SaveMapCore(globalMapPose, latestMap,
-                             scanNodes, saveOptions);
+    return this->SaveMapCore(mapDrawOptions, trajectoryDrawOptions,
+                             scanDrawOptions, saveMetadata, latestMapFileName);
 }
 
 /* Save precomputed grid maps stored in a local grid map */
 bool MapSaver::SavePrecomputedGridMaps(
-    const RobotPose2D<double>& globalMapPose,
+    const RobotPose2D<double>& localMapPose,
     const Mapping::LocalMap& localMap,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
+    const bool saveMetadata,
     const std::string& fileName) const
 {
-    Options saveOptions {
-        false, Mapping::NodeId(0), Mapping::NodeId(0),
-        false, RobotPose2D<double>(0.0, 0.0, 0.0), nullptr,
-        false, fileName };
-
     const auto& precompMaps = localMap.mPrecomputedMaps;
 
     /* Convert the precomputed grid map and save */
@@ -300,10 +272,13 @@ bool MapSaver::SavePrecomputedGridMaps(
 
         /* Save the map image */
         const int winSize = 1 << nodeHeight;
-        saveOptions.mFileName = fileName + "-" + std::to_string(winSize);
+        const std::string precompMapFileName =
+            fileName + "-" + std::to_string(winSize);
+        auto mapDrawOptions = std::make_unique<GridMapDrawOptions>(
+            localMapPose, gridMap);
 
-        if (!this->SaveMapCore(globalMapPose, gridMap,
-                               scanNodes, saveOptions))
+        if (!this->SaveMapCore(mapDrawOptions, nullptr, nullptr,
+                               saveMetadata, precompMapFileName))
             return false;
     }
 
@@ -357,12 +332,11 @@ void MapSaver::DrawTrajectory(
     const gil::rgb8_view_t& mapImageView,
     const RobotPose2D<double>& globalGridMapPose,
     const Mapping::GridMapType& gridMap,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
+    const IdMap<NodeId, ScanNode>& scanNodes,
     const Point2D<int>& gridCellIdxMin,
     const Point2D<int>& gridCellIdxMax,
-    const Mapping::NodeId scanNodeIdMin,
-    const Mapping::NodeId scanNodeIdMax) const
+    const NodeId scanNodeIdMin,
+    const NodeId scanNodeIdMax) const
 {
     /* Make sure that the scan node Ids are with in the valid value range */
     Assert(scanNodeIdMax >= scanNodeIdMin);
@@ -468,12 +442,15 @@ void MapSaver::DrawScan(
 
 /* Save the map image and metadata */
 bool MapSaver::SaveMapCore(
-    const RobotPose2D<double>& globalGridMapPose,
-    const Mapping::GridMapType& gridMap,
-    const Mapping::IdMap<Mapping::NodeId,
-        Mapping::ScanNode>& scanNodes,
-    const Options& saveOptions) const
+    const std::unique_ptr<GridMapDrawOptions>& pMapDrawOptions,
+    const std::unique_ptr<TrajectoryDrawOptions>& pTrajectoryDrawOptions,
+    const std::unique_ptr<ScanDrawOptions>& pScanDrawOptions,
+    const bool saveMetadata,
+    const std::string& fileName) const
 {
+    /* Current implementation requires the grid map */
+    Assert(pMapDrawOptions != nullptr);
+
     /* Compute the map size to be written to the image */
     Point2D<int> patchIdxMin;
     Point2D<int> patchIdxMax;
@@ -482,10 +459,9 @@ bool MapSaver::SaveMapCore(
     Point2D<int> mapSizeInPatches;
     Point2D<int> mapSizeInGridCells;
     Point2D<double> mapSizeInMeters;
-    gridMap.ComputeActualMapSize(patchIdxMin, patchIdxMax,
-                                 gridCellIdxMin, gridCellIdxMax,
-                                 mapSizeInPatches, mapSizeInGridCells,
-                                 mapSizeInMeters);
+    pMapDrawOptions->mGridMap.ComputeActualMapSize(
+        patchIdxMin, patchIdxMax, gridCellIdxMin, gridCellIdxMax,
+        mapSizeInPatches, mapSizeInGridCells, mapSizeInMeters);
 
     /* Initialize the image */
     gil::rgb8_image_t mapImage { mapSizeInGridCells.mX,
@@ -494,27 +470,28 @@ bool MapSaver::SaveMapCore(
     gil::fill_pixels(mapImageView, gil::rgb8_pixel_t(192, 192, 192));
 
     /* Draw the grid cells to the image */
-    this->DrawMap(mapImageView, gridMap,
+    this->DrawMap(mapImageView, pMapDrawOptions->mGridMap,
                   patchIdxMin, mapSizeInPatches);
 
     /* Draw the trajectory (pose graph nodes) of the robot */
-    if (saveOptions.mDrawTrajectory)
-        this->DrawTrajectory(mapImageView, globalGridMapPose, gridMap,
-                             scanNodes, gridCellIdxMin, gridCellIdxMax,
-                             saveOptions.mScanNodeIdMin,
-                             saveOptions.mScanNodeIdMax);
+    if (pTrajectoryDrawOptions != nullptr)
+        this->DrawTrajectory(
+            mapImageView, pMapDrawOptions->mPose, pMapDrawOptions->mGridMap,
+            pTrajectoryDrawOptions->mScanNodes, gridCellIdxMin, gridCellIdxMax,
+            pTrajectoryDrawOptions->mIdMin, pTrajectoryDrawOptions->mIdMax);
 
     /* Draw the scans to the image */
-    if (saveOptions.mDrawScans)
-        this->DrawScan(mapImageView, globalGridMapPose, gridMap,
-                       gridCellIdxMin, gridCellIdxMax,
-                       saveOptions.mGlobalScanPose,
-                       saveOptions.mScanData);
+    if (pScanDrawOptions != nullptr)
+        this->DrawScan(
+            mapImageView, pMapDrawOptions->mPose, pMapDrawOptions->mGridMap,
+            gridCellIdxMin, gridCellIdxMax,
+            pScanDrawOptions->mScanNode.mGlobalPose,
+            pScanDrawOptions->mScanNode.mScanData);
 
     /* Save the map as PNG image
      * Image should be flipped upside down */
     try {
-        const std::string pngFileName = saveOptions.mFileName + ".png";
+        const std::string pngFileName = fileName + ".png";
 #if BOOST_VERSION <= 106700
         gil::png_write_view(pngFileName,
                             gil::flipped_up_down_view(mapImageView));
@@ -529,18 +506,18 @@ bool MapSaver::SaveMapCore(
         return false;
     }
 
-    if (!saveOptions.mSaveMetadata)
+    if (!saveMetadata)
         return true;
 
     /* Save the map metadata as JSON format */
     try {
-        const std::string metadataFileName = saveOptions.mFileName + ".json";
+        const std::string metadataFileName = fileName + ".json";
         this->SaveMapMetadata(
-            globalGridMapPose, gridMap.Resolution(), gridMap.PatchSize(),
+            pMapDrawOptions->mPose, pMapDrawOptions->mGridMap.Resolution(),
+            pMapDrawOptions->mGridMap.PatchSize(),
             mapSizeInPatches, mapSizeInGridCells, mapSizeInMeters,
-            gridMap.LocalMinPos(), gridMap.LocalMaxPos(),
-            saveOptions.mScanNodeIdMin,
-            saveOptions.mScanNodeIdMax,
+            pMapDrawOptions->mGridMap.LocalMinPos(),
+            pMapDrawOptions->mGridMap.LocalMaxPos(),
             metadataFileName);
     } catch (const pt::json_parser_error& e) {
         std::cerr << "boost::property_tree::json_parser_error occurred: "
@@ -563,8 +540,6 @@ void MapSaver::SaveMapMetadata(
     const Point2D<double>& mapSizeInMeters,
     const Point2D<double>& localMinPos,
     const Point2D<double>& localMaxPos,
-    const Mapping::NodeId scanNodeIdMin,
-    const Mapping::NodeId scanNodeIdMax,
     const std::string& fileName) const
 {
     pt::ptree jsonMetadata;
@@ -587,9 +562,6 @@ void MapSaver::SaveMapMetadata(
     jsonMetadata.put("Map.LocalMinPos.Y", localMinPos.mY);
     jsonMetadata.put("Map.LocalMaxPos.X", localMaxPos.mX);
     jsonMetadata.put("Map.LocalMaxPos.Y", localMaxPos.mY);
-
-    jsonMetadata.put("Map.ScanNodeIdMin", scanNodeIdMin.mId);
-    jsonMetadata.put("Map.ScanNodeIdMax", scanNodeIdMax.mId);
 
     /* Save the map metadata as JSON format */
     pt::write_json(fileName, jsonMetadata);
