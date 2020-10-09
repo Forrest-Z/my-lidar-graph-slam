@@ -981,8 +981,10 @@ int main(int argc, char** argv)
             continue;
 
         /* Get the pose graph information */
-        Mapping::LocalMapNodeMap localMapNodes;
-        std::map<Mapping::NodeId, Mapping::ScanNodeData> scanNodes;
+        Mapping::IdMap<Mapping::LocalMapId,
+            Mapping::LocalMapNode> localMapNodes;
+        Mapping::IdMap<Mapping::NodeId,
+            Mapping::ScanNodeData> scanNodes;
         std::vector<Mapping::EdgeData> poseGraphEdges;
         pLidarGraphSlam->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
 
@@ -1012,8 +1014,10 @@ int main(int argc, char** argv)
                                   globalMapNodeIdMin, globalMapNodeIdMax);
 
     /* Retrieve all pose graph nodes and edges */
-    Mapping::LocalMapNodeMap localMapNodes;
-    Mapping::ScanNodeMap scanNodes;
+    Mapping::IdMap<Mapping::LocalMapId,
+        Mapping::LocalMapNode> localMapNodes;
+    Mapping::IdMap<Mapping::NodeId,
+        Mapping::ScanNode> scanNodes;
     std::vector<Mapping::PoseGraphEdge> poseGraphEdges;
     pLidarGraphSlam->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
 
