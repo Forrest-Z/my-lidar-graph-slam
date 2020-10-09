@@ -243,15 +243,16 @@ bool MapSaver::SaveLatestMapAndScan(
 
 /* Save precomputed grid maps stored in a local grid map */
 bool MapSaver::SavePrecomputedGridMaps(
-    const RobotPose2D<double>& localMapPose,
-    const Mapping::LocalMap& localMap,
+    const RobotPose2D<double>& mapPose,
+    const std::vector<Mapping::ConstMapType>& precompMaps,
     const bool saveMetadata,
     const std::string& fileName) const
 {
-    const auto& precompMaps = localMap.mPrecomputedMaps;
-
     /* Convert the precomputed grid map and save */
-    for (const auto& [nodeHeight, precompMap] : precompMaps) {
+    for (std::size_t i = 0; i < precompMaps.size(); ++i) {
+        /* Retrieve the coarser grid map */
+        const auto& precompMap = precompMaps[i];
+
         /* Create the occupancy grid map */
         Mapping::GridMapType gridMap =
             Mapping::GridMapType::CreateSameSizeMap(precompMap);
@@ -271,11 +272,10 @@ bool MapSaver::SavePrecomputedGridMaps(
         }
 
         /* Save the map image */
-        const int winSize = 1 << nodeHeight;
         const std::string precompMapFileName =
-            fileName + "-" + std::to_string(winSize);
+            fileName + "-" + std::to_string(i);
         auto mapDrawOptions = std::make_unique<GridMapDrawOptions>(
-            localMapPose, gridMap);
+            mapPose, gridMap);
 
         if (!this->SaveMapCore(mapDrawOptions, nullptr, nullptr,
                                saveMetadata, precompMapFileName))

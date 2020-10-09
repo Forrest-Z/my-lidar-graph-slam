@@ -177,8 +177,8 @@ public:
 
     /* Save precomputed grid maps stored in a local grid map */
     bool SavePrecomputedGridMaps(
-        const RobotPose2D<double>& globalMapPose,
-        const Mapping::LocalMap& localMap,
+        const RobotPose2D<double>& mapPose,
+        const std::vector<Mapping::ConstMapType>& precompMaps,
         const bool saveMetadata,
         const std::string& fileName) const;
 
