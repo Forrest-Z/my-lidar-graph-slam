@@ -61,10 +61,8 @@ const LocalMap& GridMapBuilder::LatestLocalMap() const
 {
     /* Make sure that the local maps are not empty */
     Assert(!this->mLocalMaps.empty());
-    /* The local map with the largest Id is the latest one */
-    auto latestNodeIt = this->mLocalMaps.rbegin();
-    /* Return the associated local map node */
-    return latestNodeIt->second;
+    /* Return the local map with the largest Id since it is the latest one */
+    return this->mLocalMaps.Back();
 }
 
 /* Append the new scan data */
@@ -186,10 +184,7 @@ void GridMapBuilder::AppendLocalMap(
     /* Create and insert a new local map */
     GridMapType newLocalMap {
         this->mResolution, this->mPatchSize, 0, 0, centerPos };
-    this->mLocalMaps.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(localMapId),
-        std::forward_as_tuple(localMapId, std::move(newLocalMap), scanNodeId));
+    this->mLocalMaps.Append(localMapId, std::move(newLocalMap), scanNodeId);
 
     /* Reset the variables properly */
     this->mTravelDistLastLocalMap = 0.0;

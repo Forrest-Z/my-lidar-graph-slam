@@ -146,7 +146,7 @@ public:
         GridMapType& globalMap);
 
     /* Retrieve the local grid maps */
-    inline const std::map<LocalMapId, LocalMap>& LocalMaps() const
+    inline const IdMap<LocalMapId, LocalMap>& LocalMaps() const
     { return this->mLocalMaps; }
 
     /* Retrieve the local map information of the specified index */
@@ -231,42 +231,42 @@ private:
 
 private:
     /* Map resolution (in meters) */
-    const double                   mResolution;
+    const double                mResolution;
     /* Patch size (in the number of grid cells) */
-    const int                      mPatchSize;
+    const int                   mPatchSize;
     /* Vector of the local grid maps */
-    std::map<LocalMapId, LocalMap> mLocalMaps;
+    IdMap<LocalMapId, LocalMap> mLocalMaps;
     /* Grid map constructed from the latest scans
      * Used for scan matching and updated when a new scan data is available */
-    GridMapType                    mLatestMap;
+    GridMapType                 mLatestMap;
     /* Latest map pose in a world frame */
-    RobotPose2D<double>            mLatestMapPose;
+    RobotPose2D<double>         mLatestMapPose;
     /* Accumulated travel distance */
-    double                         mAccumTravelDist;
+    double                      mAccumTravelDist;
     /* The number of scans used to construct the latest map */
-    const int                      mNumOfScansForLatestMap;
+    const int                   mNumOfScansForLatestMap;
     /* The minimum Id of the latest scan nodes */
-    NodeId                         mLatestScanIdMin;
+    NodeId                      mLatestScanIdMin;
     /* The maximum Id of the latest scan nodes */
-    NodeId                         mLatestScanIdMax;
+    NodeId                      mLatestScanIdMax;
     /* Last robot pose in a world frame */
-    RobotPose2D<double>            mLastRobotPose;
+    RobotPose2D<double>         mLastRobotPose;
     /* Accumulated travel distance since the last local grid map is created */
-    double                         mTravelDistLastLocalMap;
+    double                      mTravelDistLastLocalMap;
     /* Robot pose in a world frame when the last local grid map is created */
-    RobotPose2D<double>            mRobotPoseLastLocalMap;
+    RobotPose2D<double>         mRobotPoseLastLocalMap;
     /* Travel distance threshold for creating a new local grid map */
-    const double                   mTravelDistThreshold;
+    const double                mTravelDistThreshold;
     /* Minimum range of the laser scan that is considered valid */
-    const double                   mUsableRangeMin;
+    const double                mUsableRangeMin;
     /* Maximum range of the laser scan that is considered valid */
-    const double                   mUsableRangeMax;
+    const double                mUsableRangeMax;
     /* Occupancy probability value for hit grid cell
      * Used for calculating the probability value with Binary Bayes Filter */
-    const double                   mProbHit;
+    const double                mProbHit;
     /* Occupancy probability value for missed grid cell
      * Used for calculating the probability value with Binary Bayes Filter */
-    const double                   mProbMiss;
+    const double                mProbMiss;
 };
 
 /*

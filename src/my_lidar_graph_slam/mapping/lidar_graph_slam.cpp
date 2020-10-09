@@ -91,13 +91,13 @@ void LidarGraphSlam::GetPoseGraphFinished(
     const auto unfinishedMapIt = std::find_if(
         this->mGridMapBuilder->LocalMaps().cbegin(),
         this->mGridMapBuilder->LocalMaps().cend(),
-        [](const std::pair<LocalMapId, LocalMap>& localMapPair) {
-            return !localMapPair.second.mFinished; });
+        [](const IdMap<LocalMapId, LocalMap>::ConstIdDataPair& localMapPair) {
+            return !localMapPair.mData.mFinished; });
 
     /* Local maps with Ids larger than `localMapIdMax` are removed */
-    const LocalMapId localMapIdMax = unfinishedMapIt->second.mId;
+    const LocalMapId localMapIdMax = unfinishedMapIt->mId;
     /* Scan nodes with Ids larger than `nodeIdMax` are removed */
-    const NodeId nodeIdMax = unfinishedMapIt->second.mScanNodeIdMin;
+    const NodeId nodeIdMax = unfinishedMapIt->mData.mScanNodeIdMin;
 
     /* Copy the local map nodes */
     for (const auto& [nodeId, mapNode] : this->mPoseGraph->LocalMapNodes())
@@ -175,8 +175,8 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     const auto unfinishedMapIt = std::find_if(
         this->mGridMapBuilder->LocalMaps().cbegin(),
         this->mGridMapBuilder->LocalMaps().cend(),
-        [](const std::pair<LocalMapId, LocalMap>& localMapPair) {
-            return !localMapPair.second.mFinished; });
+        [](const IdMap<LocalMapId, LocalMap>::ConstIdDataPair& localMapPair) {
+            return !localMapPair.mData.mFinished; });
 
     /* Local map in unfinished state should be found */
     Assert(unfinishedMapIt != this->mGridMapBuilder->LocalMaps().end());
@@ -190,9 +190,9 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
             NodeId(NodeId::Invalid), LocalMapId(LocalMapId::Invalid) };
 
     /* Local maps with Ids larger than `localMapIdMax` are ignored */
-    const LocalMapId localMapIdMax = unfinishedMapIt->first;
+    const LocalMapId localMapIdMax = unfinishedMapIt->mId;
     /* Scan nodes with Ids larger than `nodeIdMax` are ignored */
-    const NodeId nodeIdMax = unfinishedMapIt->second.mScanNodeIdMin;
+    const NodeId nodeIdMax = unfinishedMapIt->mData.mScanNodeIdMin;
 
     std::map<NodeId, ScanNodeData> scanNodes;
     std::map<LocalMapId, LocalMapData> localMapNodes;
