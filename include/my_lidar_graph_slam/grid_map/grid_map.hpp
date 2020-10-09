@@ -307,6 +307,13 @@ public:
         this->mNumOfGridCellsX, this->mNumOfGridCellsY); }
 
 private:
+    /* Get the active area of this grid map */
+    void ComputeActiveArea(Point2D<int>& patchIdxMin,
+                           Point2D<int>& patchIdxMax,
+                           Point2D<int>& gridCellIdxMin,
+                           Point2D<int>& gridCellIdxMax) const;
+
+private:
     /* Map resolution (grid cell size in meters) */
     double                      mResolution;
     /* Size of the patch (in number of grid cells) */
@@ -997,35 +1004,9 @@ void GridMap<T>::ComputeActualMapSize(
     Point2D<int>& mapSizeInGridCells,
     Point2D<double>& mapSizeInMeters) const
 {
-    /* Get the range of the patch index (bounding box)
-     * [patchIdxMin.mX, patchIdxMax.mX], [patchIdxMin.mY, patchIdxMax.mY] */
-    patchIdxMin.mX = std::numeric_limits<int>::max();
-    patchIdxMin.mY = std::numeric_limits<int>::max();
-    patchIdxMax.mX = std::numeric_limits<int>::min();
-    patchIdxMax.mY = std::numeric_limits<int>::min();
-
-    for (int y = 0; y < this->mNumOfPatchesY; ++y) {
-        for (int x = 0; x < this->mNumOfPatchesX; ++x) {
-            if (!this->PatchIsAllocated(x, y))
-                continue;
-
-            patchIdxMin.mX = std::min(patchIdxMin.mX, x);
-            patchIdxMin.mY = std::min(patchIdxMin.mY, y);
-            patchIdxMax.mX = std::max(patchIdxMax.mX, x);
-            patchIdxMax.mY = std::max(patchIdxMax.mY, y);
-        }
-    }
-
-    /* Convert the patch index ranges to grid cell index ranges */
-    Point2D<int> gridCellIdxTmp;
-    this->PatchIndexToGridCellIndexRange(
-        patchIdxMin, gridCellIdxMin, gridCellIdxTmp);
-    this->PatchIndexToGridCellIndexRange(
-        patchIdxMax, gridCellIdxTmp, gridCellIdxMax);
-
-    /* Correct the maximum grid patch index */
-    patchIdxMax.mX += 1;
-    patchIdxMax.mY += 1;
+    /* Compute the active area of this grid map */
+    this->ComputeActiveArea(patchIdxMin, patchIdxMax,
+                            gridCellIdxMin, gridCellIdxMax);
 
     /* Compute the actual map size */
     mapSizeInPatches.mX = patchIdxMax.mX - patchIdxMin.mX;
@@ -1063,6 +1044,45 @@ void GridMap<T>::ComputeBoundingBox(
     globalMinPos.mY = std::min(cornerPos0.mY, cornerPos1.mY);
     globalMaxPos.mX = std::max(cornerPos0.mX, cornerPos1.mX);
     globalMaxPos.mY = std::max(cornerPos0.mY, cornerPos1.mY);
+}
+
+/* Get the active area of this grid map */
+template <typename T>
+void GridMap<T>::ComputeActiveArea(
+    Point2D<int>& patchIdxMin,
+    Point2D<int>& patchIdxMax,
+    Point2D<int>& gridCellIdxMin,
+    Point2D<int>& gridCellIdxMax) const
+{
+    /* Get the range of the patch index (bounding box)
+     * [patchIdxMin.mX, patchIdxMax.mX], [patchIdxMin.mY, patchIdxMax.mY] */
+    patchIdxMin.mX = std::numeric_limits<int>::max();
+    patchIdxMin.mY = std::numeric_limits<int>::max();
+    patchIdxMax.mX = std::numeric_limits<int>::min();
+    patchIdxMax.mY = std::numeric_limits<int>::min();
+
+    for (int y = 0; y < this->mNumOfPatchesY; ++y) {
+        for (int x = 0; x < this->mNumOfPatchesX; ++x) {
+            if (!this->PatchIsAllocated(x, y))
+                continue;
+
+            patchIdxMin.mX = std::min(patchIdxMin.mX, x);
+            patchIdxMin.mY = std::min(patchIdxMin.mY, y);
+            patchIdxMax.mX = std::max(patchIdxMax.mX, x);
+            patchIdxMax.mY = std::max(patchIdxMax.mY, y);
+        }
+    }
+
+    /* Convert the patch index ranges to grid cell index ranges */
+    Point2D<int> gridCellIdxTmp;
+    this->PatchIndexToGridCellIndexRange(
+        patchIdxMin, gridCellIdxMin, gridCellIdxTmp);
+    this->PatchIndexToGridCellIndexRange(
+        patchIdxMax, gridCellIdxTmp, gridCellIdxMax);
+
+    /* Correct the maximum grid patch index */
+    patchIdxMax.mX += 1;
+    patchIdxMax.mY += 1;
 }
 
 } /* namespace MyLidarGraphSlam */
