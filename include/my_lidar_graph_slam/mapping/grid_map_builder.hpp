@@ -78,8 +78,7 @@ struct LocalMap final
         mMap(std::move(gridMap)),
         mScanNodeIdMin(scanNodeId),
         mScanNodeIdMax(scanNodeId),
-        mFinished(false),
-        mPrecomputed(false) { }
+        mFinished(false) { }
 
     /* Destructor */
     ~LocalMap() = default;
@@ -94,22 +93,17 @@ struct LocalMap final
     LocalMap& operator=(LocalMap&&) noexcept = default;
 
     /* Local map Id */
-    const LocalMapId            mId;
+    const LocalMapId mId;
     /* Local grid map consisting of the sequence of the scan data
      * from `mScanNodeIdMin` to `mScanNodeIdMax` */
-    GridMapType                 mMap;
+    GridMapType      mMap;
     /* Minimum scan node Id */
-    NodeId                      mScanNodeIdMin;
+    NodeId           mScanNodeIdMin;
     /* Maximum scan node Id */
-    NodeId                      mScanNodeIdMax;
+    NodeId           mScanNodeIdMax;
     /* Flags to represent whether this local map is finished and will not
      * be changed (no more scan data is added) */
-    bool                        mFinished;
-    /* Flags to represent whether the coarser grid maps for a loop detection
-     * are precomputed */
-    bool                        mPrecomputed;
-    /* Map of precomputed grid maps for a loop detection */
-    std::map<int, ConstMapType> mPrecomputedMaps;
+    bool             mFinished;
 };
 
 /*
