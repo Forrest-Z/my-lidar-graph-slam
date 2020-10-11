@@ -28,6 +28,10 @@ void LidarGraphSlamBackend::Run(
 
         /* Find loop candidates */
         const auto searchHint = pParent->GetLoopSearchHint();
+
+        if (searchHint.mLocalMapNodes.empty() || searchHint.mScanNodes.empty())
+            continue;
+
         auto loopCandidates = this->mLoopSearcher->Search(searchHint);
 
         if (loopCandidates.empty())
