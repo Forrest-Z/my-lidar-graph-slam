@@ -98,13 +98,13 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
         localMap, precompMaps, scanData,
         mapLocalScanPose, this->mScoreThreshold);
 
-    /* Loop detection fails if the solution is not found */
-    if (!matchingSummary.mPoseFound)
-        return false;
-
     /* Return the result pose and the covariance in a map-local frame */
     correspondingPose = matchingSummary.mEstimatedPose;
     estimatedCovMat = matchingSummary.mEstimatedCovariance;
+
+    /* Loop detection fails if the solution is not found */
+    if (!matchingSummary.mPoseFound)
+        return false;
 
     return true;
 }
