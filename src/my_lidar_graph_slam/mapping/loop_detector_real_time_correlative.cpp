@@ -98,13 +98,13 @@ bool LoopDetectorRealTimeCorrelative::FindCorrespondingPose(
         localMap, precompMap, scanData,
         mapLocalScanPose, this->mScoreThreshold);
 
-    /* Loop detection fails if the score does not exceed the threshold */
-    if (!matchingSummary.mPoseFound)
-        return false;
-
     /* Return the result pose and the covariance in a map-local frame */
     correspondingPose = matchingSummary.mEstimatedPose;
     estimatedCovMat = matchingSummary.mEstimatedCovariance;
+
+    /* Loop detection fails if the score does not exceed the threshold */
+    if (!matchingSummary.mPoseFound)
+        return false;
 
     return true;
 }

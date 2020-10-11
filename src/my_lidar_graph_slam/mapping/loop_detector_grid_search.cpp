@@ -89,13 +89,13 @@ bool LoopDetectorGridSearch::FindCorrespondingPose(
     const auto matchingSummary = this->mScanMatcher->OptimizePose(
         gridMap, scanData, mapLocalScanPose, this->mScoreThreshold);
 
-    /* Loop detection fails if the matching score falls below the threshold */
-    if (!matchingSummary.mPoseFound)
-        return false;
-
     /* Return the result */
     correspondingPose = matchingSummary.mEstimatedPose;
     estimatedCovMat = matchingSummary.mEstimatedCovariance;
+
+    /* Loop detection fails if the matching score falls below the threshold */
+    if (!matchingSummary.mPoseFound)
+        return false;
 
     return true;
 }
