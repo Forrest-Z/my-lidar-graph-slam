@@ -127,8 +127,9 @@ void PoseGraphOptimizerLM::OptimizeStep(
         /* Correct the information matrix using the weight function
          * based on the robust estimation (M-estimation)
          * to prevent outliers caused by wrong loop detections */
-        const double errorWeight = this->mLossFunction->Weight(
-            errorVec.transpose() * infoMat * errorVec);
+        const double errorWeight = edge.IsLoopClosingConstraint() ?
+            this->mLossFunction->Weight(
+                errorVec.transpose() * infoMat * errorVec) : 1.0;
         const Eigen::Matrix3d weightedInfoMat = errorWeight * infoMat;
 
         /* Compute 4 non-zero block matrices denoted as 
