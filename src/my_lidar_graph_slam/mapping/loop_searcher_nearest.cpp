@@ -106,21 +106,23 @@ Done:
     Assert(lastFinishedScanIt->mId >= firstScanIt->mId &&
            lastFinishedScanIt->mId <= lastScanIt->mId);
 
+    const auto endScanIt = std::next(lastScanIt);
+
     const int distToFirstCandidate = std::min(
         static_cast<int>(std::distance(firstScanIt, lastFinishedScanIt)),
-        this->mNumOfCandidateNodes);
-    const int distToLastCandidate = std::min(
-        static_cast<int>(std::distance(lastFinishedScanIt, lastScanIt)),
-        this->mNumOfCandidateNodes);
+        this->mNumOfCandidateNodes / 2);
     const auto firstCandidateNodeIt =
         std::prev(lastFinishedScanIt, distToFirstCandidate);
-    const auto lastCandidateNodeIt =
-        std::next(lastFinishedScanIt, distToLastCandidate);
+    const int distToEndCandidate = std::min(
+        static_cast<int>(std::distance(firstCandidateNodeIt, endScanIt)),
+        this->mNumOfCandidateNodes);
+    const auto endCandidateNodeIt =
+        std::next(firstCandidateNodeIt, distToEndCandidate);
     const int numOfActualCandidateNodes =
-        std::distance(firstCandidateNodeIt, lastCandidateNodeIt) + 1;
+        std::distance(firstCandidateNodeIt, endCandidateNodeIt);
 
     const auto candidateNodeRange = scanNodes.RangeFromIterator(
-        firstCandidateNodeIt, std::next(lastCandidateNodeIt));
+        firstCandidateNodeIt, endCandidateNodeIt);
 
     std::vector<NodeId> nodeIds;
     nodeIds.reserve(numOfActualCandidateNodes);
