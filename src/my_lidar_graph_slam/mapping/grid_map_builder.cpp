@@ -644,7 +644,7 @@ void SlidingWindowMaxRow(const GridMapType& gridMap,
             gridMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
         const bool isAllocated = gridMap.PatchIsAllocated(patchIdx);
 
-        if (isAllocated || maxVal != unknownVal)
+        if (isAllocated)
             intermediateMap.Update(colIdx, rowIdx, maxVal);
     };
 
@@ -677,7 +677,7 @@ void SlidingWindowMaxCol(const ConstMapType& intermediateMap,
             intermediateMap.GridCellIndexToPatchIndex(colIdx, rowIdx);
         const bool isAllocated = intermediateMap.PatchIsAllocated(patchIdx);
 
-        if (isAllocated || maxVal != unknownVal)
+        if (isAllocated)
             precompMap.Update(colIdx, rowIdx, maxVal);
     };
 
