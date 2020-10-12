@@ -41,7 +41,7 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
 
     /* Optimize the robot pose by scan matching */
     return this->OptimizePose(gridMap, precompMaps, scanData,
-                              mapLocalInitialPose, 0.0);
+                              mapLocalInitialPose, 0.0, 0.0);
 }
 
 /* Optimize the robot pose by scan matching */
@@ -50,7 +50,8 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
     const std::vector<ConstMapType>& precompMaps,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& mapLocalInitialPose,
-    const double normalizedScoreThreshold) const
+    const double normalizedScoreThreshold,
+    const double knownRateThreshold) const
 {
     /* Find the best pose from the search window
      * that maximizes the matching score value */
@@ -72,9 +73,7 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
         std::ceil(0.5 * this->mRangeTheta / stepTheta));
 
     /* Setup the best score */
-    const double scoreThreshold =
-        normalizedScoreThreshold * scanData->NumOfScans();
-    double scoreMax = scoreThreshold;
+    double scoreMax = normalizedScoreThreshold;
 
     /* Setup the best pose */
     RobotPose2D<double> bestSensorPose = mapLocalSensorPose;
@@ -104,7 +103,8 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
             precompMaps.at(currentNode.mHeight), scanData, nodePose);
 
         /* Ignore the node if the score falls below the threshold */
-        if (resultSummary.mScore <= scoreMax) {
+        if (resultSummary.mNormalizedScore <= scoreMax ||
+            resultSummary.mKnownRate <= knownRateThreshold) {
             /* Pop the current node from the stack */
             nodeStack.pop();
             continue;
@@ -117,7 +117,7 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
 
             /* Update the solution */
             bestSensorPose = nodePose;
-            scoreMax = resultSummary.mScore;
+            scoreMax = resultSummary.mNormalizedScore;
         } else {
             /* Otherwise, split the current node into four new nodes */
             const int x = currentNode.mX;
@@ -139,7 +139,7 @@ ScanMatchingSummary ScanMatcherBranchBound::OptimizePose(
 
     /* The appropriate pose is found if the maximum score is larger than
      * (not larger than or equal to) the score threshold */
-    const bool poseFound = scoreMax > scoreThreshold;
+    const bool poseFound = scoreMax > normalizedScoreThreshold;
 
     /* Evaluate the cost value */
     const double costVal = this->mCostFunc->Cost(

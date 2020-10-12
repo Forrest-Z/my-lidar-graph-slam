@@ -63,7 +63,8 @@ public:
         const std::vector<ConstMapType>& precompMaps,
         const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& mapLocalInitialPose,
-        const double normalizedScoreThreshold) const;
+        const double normalizedScoreThreshold,
+        const double knownRateThreshold) const;
 
     /* Precompute multiple coarser grid maps for scan matching */
     std::vector<ConstMapType> ComputeCoarserMaps(
