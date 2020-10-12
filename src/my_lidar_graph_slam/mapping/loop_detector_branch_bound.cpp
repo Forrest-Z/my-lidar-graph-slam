@@ -14,12 +14,14 @@ namespace Mapping {
 /* Constructor */
 LoopDetectorBranchBound::LoopDetectorBranchBound(
     const std::shared_ptr<ScanMatcherBranchBound>& scanMatcher,
-    const double scoreThreshold) :
+    const double scoreThreshold,
+    const double knownRateThreshold) :
     mScanMatcher(scanMatcher),
-    mScoreThreshold(scoreThreshold)
+    mScoreThreshold(scoreThreshold),
+    mKnownRateThreshold(knownRateThreshold)
 {
-    assert(scoreThreshold > 0.0);
-    assert(scoreThreshold <= 1.0);
+    Assert(scoreThreshold > 0.0 && scoreThreshold <= 1.0);
+    Assert(knownRateThreshold > 0.0 && knownRateThreshold <= 1.0);
 }
 
 /* Find a loop and return a loop constraint */
@@ -95,8 +97,8 @@ bool LoopDetectorBranchBound::FindCorrespondingPose(
 {
     /* Just call the scan matcher to find a corresponding pose */
     const auto matchingSummary = this->mScanMatcher->OptimizePose(
-        localMap, precompMaps, scanData,
-        mapLocalScanPose, this->mScoreThreshold);
+        localMap, precompMaps, scanData, mapLocalScanPose,
+        this->mScoreThreshold, this->mKnownRateThreshold);
 
     /* Return the result pose and the covariance in a map-local frame */
     correspondingPose = matchingSummary.mEstimatedPose;

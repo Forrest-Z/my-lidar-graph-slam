@@ -42,7 +42,8 @@ public:
     /* Constructor */
     LoopDetectorBranchBound(
         const std::shared_ptr<ScanMatcherBranchBound>& scanMatcher,
-        const double scoreThreshold);
+        const double scoreThreshold,
+        const double knownRateThreshold);
 
     /* Destructor */
     ~LoopDetectorBranchBound() = default;
@@ -68,6 +69,8 @@ private:
     std::shared_ptr<ScanMatcherBranchBound> mScanMatcher;
     /* Normalized matching score threshold for loop detector */
     const double                            mScoreThreshold;
+    /* Threshold for the ratio of the known grid cells */
+    const double                            mKnownRateThreshold;
     /* Precomputed grid maps for each local grid map */
     IdMap<LocalMapId, PrecomputedMapStack>  mPrecompMaps;
 };
