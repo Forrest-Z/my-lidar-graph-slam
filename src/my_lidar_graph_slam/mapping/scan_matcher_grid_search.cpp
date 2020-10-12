@@ -38,7 +38,8 @@ ScanMatchingSummary ScanMatcherGridSearch::OptimizePose(
         queryInfo.mMapLocalInitialPose;
 
     /* Optimize the robot pose by scan matching */
-    return this->OptimizePose(gridMap, scanData, mapLocalInitialPose, 0.0);
+    return this->OptimizePose(gridMap, scanData,
+                              mapLocalInitialPose, 0.0, 0.0);
 }
 
 /* Optimize the robot pose by scan matching */
@@ -46,7 +47,8 @@ ScanMatchingSummary ScanMatcherGridSearch::OptimizePose(
     const GridMapType& gridMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& mapLocalInitialPose,
-    const double normalizedScoreThreshold) const
+    const double normalizedScoreThreshold,
+    const double knownRateThreshold) const
 {
     /* Find the best pose from the search window
      * that maximizes the matching score value */
@@ -62,9 +64,7 @@ ScanMatchingSummary ScanMatcherGridSearch::OptimizePose(
     const double st = this->mStepTheta;
 
     /* Setup the best score */
-    const double scoreThreshold =
-        normalizedScoreThreshold * scanData->NumOfScans();
-    double scoreMax = scoreThreshold;
+    double scoreMax = normalizedScoreThreshold;
 
     /* Setup the best pose */
     RobotPose2D<double> bestSensorPose = mapLocalSensorPose;
@@ -82,8 +82,9 @@ ScanMatchingSummary ScanMatcherGridSearch::OptimizePose(
                     this->mScoreFunc->Score(gridMap, scanData, pose);
 
                 /* Update the best pose and maximum score value */
-                if (scoreSummary.mScore > scoreMax) {
-                    scoreMax = scoreSummary.mScore;
+                if (scoreSummary.mNormalizedScore > scoreMax &&
+                    scoreSummary.mKnownRate > knownRateThreshold) {
+                    scoreMax = scoreSummary.mNormalizedScore;
                     bestSensorPose = pose;
                 }
             }
@@ -92,7 +93,7 @@ ScanMatchingSummary ScanMatcherGridSearch::OptimizePose(
 
     /* The appropriate pose is found if the maximum score is larger than
      * (not larger than or equal to) the score threshold */
-    const bool poseFound = scoreMax > scoreThreshold;
+    const bool poseFound = scoreMax > normalizedScoreThreshold;
 
     /* Evaluate the cost value */
     const double costVal = this->mCostFunc->Cost(

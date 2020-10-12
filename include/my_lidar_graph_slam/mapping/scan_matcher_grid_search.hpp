@@ -41,7 +41,8 @@ public:
         const GridMapType& gridMap,
         const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& mapLocalInitialPose,
-        const double normalizedScoreThreshold) const;
+        const double normalizedScoreThreshold,
+        const double knownRateThreshold) const;
 
 private:
     /* Pixel-accurate score function */
