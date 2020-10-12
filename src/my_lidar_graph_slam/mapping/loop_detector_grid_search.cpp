@@ -14,12 +14,14 @@ namespace Mapping {
 /* Constructor */
 LoopDetectorGridSearch::LoopDetectorGridSearch(
     const std::shared_ptr<ScanMatcherGridSearch>& scanMatcher,
-    const double scoreThreshold) :
+    const double scoreThreshold,
+    const double knownRateThreshold) :
     mScanMatcher(scanMatcher),
-    mScoreThreshold(scoreThreshold)
+    mScoreThreshold(scoreThreshold),
+    mKnownRateThreshold(knownRateThreshold)
 {
-    assert(scoreThreshold > 0.0);
-    assert(scoreThreshold <= 1.0);
+    Assert(scoreThreshold > 0.0 && scoreThreshold <= 1.0);
+    Assert(knownRateThreshold > 0.0 && knownRateThreshold <= 1.0);
 }
 
 /* Find a loop and return a loop constraint */
@@ -87,7 +89,8 @@ bool LoopDetectorGridSearch::FindCorrespondingPose(
 {
     /* Just call the exhaustive grid search scan matcher */
     const auto matchingSummary = this->mScanMatcher->OptimizePose(
-        gridMap, scanData, mapLocalScanPose, this->mScoreThreshold);
+        gridMap, scanData, mapLocalScanPose,
+        this->mScoreThreshold, this->mKnownRateThreshold);
 
     /* Return the result */
     correspondingPose = matchingSummary.mEstimatedPose;

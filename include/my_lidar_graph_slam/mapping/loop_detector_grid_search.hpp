@@ -20,7 +20,8 @@ public:
     /* Constructor */
     LoopDetectorGridSearch(
         const std::shared_ptr<ScanMatcherGridSearch>& scanMatcher,
-        const double scoreThreshold);
+        const double scoreThreshold,
+        const double knownRateThreshold);
 
     /* Destructor */
     ~LoopDetectorGridSearch() = default;
@@ -44,6 +45,8 @@ private:
     std::shared_ptr<ScanMatcherGridSearch> mScanMatcher;
     /* Normalized matching score threshold for loop detector */
     const double                           mScoreThreshold;
+    /* Threshold for the ratio of the known grid cells */
+    const double                           mKnownRateThreshold;
 };
 
 } /* namespace Mapping */
