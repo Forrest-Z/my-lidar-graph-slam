@@ -44,7 +44,7 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
      * Pass the minimum possible value as a score threshold to
      * search the entire window */
     return this->OptimizePose(gridMap, precompMap, scanData,
-                              mapLocalInitialPose, 0.0);
+                              mapLocalInitialPose, 0.0, 0.0);
 }
 
 /* Optimize the robot pose by scan matching */
@@ -53,7 +53,8 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
     const ConstMapType& precompMap,
     const Sensor::ScanDataPtr<double>& scanData,
     const RobotPose2D<double>& mapLocalInitialPose,
-    const double normalizedScoreThreshold) const
+    const double normalizedScoreThreshold,
+    const double knownRateThreshold) const
 {
     /* Find the best pose from the search window */
     const RobotPose2D<double> mapLocalSensorPose =
@@ -75,9 +76,7 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
         std::ceil(0.5 * this->mRangeTheta / stepTheta));
 
     /* Perform scan matching against the low resolution grid map */
-    const double scoreThreshold =
-        normalizedScoreThreshold * scanData->NumOfScans();
-    double scoreMax = scoreThreshold;
+    double scoreMax = normalizedScoreThreshold;
     int bestWinX = -winX;
     int bestWinY = -winY;
     int bestWinTheta = -winTheta;
@@ -101,12 +100,13 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
         for (int x = -winX; x <= winX; x += this->mLowResolution) {
             for (int y = -winY; y <= winY; y += this->mLowResolution) {
                 /* Evaluate the matching score */
-                const double score = this->ComputeScore(
-                    precompMap, scanIndices, x, y);
+                const ScoreFunction::Summary resultSummary =
+                    this->ComputeScore(precompMap, scanIndices, x, y);
 
                 /* Ignore the score of the low-resolution grid cell
                  * if the score is below a maximum score */
-                if (score <= scoreMax)
+                if (resultSummary.mNormalizedScore <= scoreMax ||
+                    resultSummary.mKnownRate <= knownRateThreshold)
                     continue;
 
                 /* Evaluate the score using the high-resolution grid map */
@@ -120,7 +120,7 @@ ScanMatchingSummary ScanMatcherRealTimeCorrelative::OptimizePose(
 
     /* The appropriate solution is found if the maximum score is
      * larger than (not larger than or equal to) the score threshold */
-    const bool poseFound = scoreMax > scoreThreshold;
+    const bool poseFound = scoreMax > normalizedScoreThreshold;
     /* Compute the best sensor pose */
     const RobotPose2D<double> bestSensorPose {
         mapLocalSensorPose.mX + bestWinX * stepX,
@@ -207,7 +207,7 @@ void ScanMatcherRealTimeCorrelative::ComputeScanIndices(
 
 /* Compute the scan matching score based on the already projected
  * scan points (indices) and index offsets */
-double ScanMatcherRealTimeCorrelative::ComputeScore(
+ScoreFunction::Summary ScanMatcherRealTimeCorrelative::ComputeScore(
     const GridMapBase<double>& gridMap,
     const std::vector<Point2D<int>>& scanIndices,
     const int offsetX,
@@ -215,15 +215,33 @@ double ScanMatcherRealTimeCorrelative::ComputeScore(
 {
     /* Evaluate the matching score based on the occupancy probability value */
     const double unknownVal = gridMap.UnknownValue();
+    std::size_t numOfKnownGridCells = 0;
     double sumScore = 0.0;
 
     for (const auto& hitIdx : scanIndices) {
         const double mapVal = gridMap.Value(
             hitIdx.mX + offsetX, hitIdx.mY + offsetY, unknownVal);
+
+        /* Ignore the grid cell with unknown occupancy probability */
+        if (mapVal == unknownVal)
+            continue;
+
+        /* Only grid cells that are observed at least once and that have known
+         * occupancy probability values are considered in the computation */
         sumScore += mapVal;
+        ++numOfKnownGridCells;
     }
 
-    return sumScore;
+    /* Normalize the score function */
+    const double normalizedScore =
+        sumScore / static_cast<double>(scanIndices.size());
+
+    /* Compute the rate of the valid grid cells */
+    const double knownRate =
+        static_cast<double>(numOfKnownGridCells) /
+        static_cast<double>(scanIndices.size());
+
+    return ScoreFunction::Summary { normalizedScore, sumScore, knownRate };
 }
 
 /* Evaluate the matching score using high-resolution grid map */
@@ -242,12 +260,12 @@ void ScanMatcherRealTimeCorrelative::EvaluateHighResolutionMap(
     for (int x = offsetX; x < offsetX + this->mLowResolution; ++x) {
         for (int y = offsetY; y < offsetY + this->mLowResolution; ++y) {
             /* Evaluate matching score */
-            const double score =
+            const ScoreFunction::Summary resultSummary =
                 this->ComputeScore(gridMap, scanIndices, x, y);
 
             /* Update the maximum score and search window index */
-            if (maxScore < score) {
-                maxScore = score;
+            if (maxScore < resultSummary.mNormalizedScore) {
+                maxScore = resultSummary.mNormalizedScore;
                 maxWinX = x;
                 maxWinY = y;
                 maxWinTheta = offsetTheta;

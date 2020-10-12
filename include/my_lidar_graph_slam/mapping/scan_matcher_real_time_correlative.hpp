@@ -8,6 +8,7 @@
 
 #include "my_lidar_graph_slam/mapping/cost_function.hpp"
 #include "my_lidar_graph_slam/mapping/grid_map_builder.hpp"
+#include "my_lidar_graph_slam/mapping/score_function.hpp"
 
 namespace MyLidarGraphSlam {
 namespace Mapping {
@@ -37,7 +38,8 @@ public:
         const ConstMapType& precompMap,
         const Sensor::ScanDataPtr<double>& scanData,
         const RobotPose2D<double>& mapLocalInitialPose,
-        const double normalizedScoreThreshold) const;
+        const double normalizedScoreThreshold,
+        const double knownRateThreshold) const;
 
     /* Precompute a coarser grid map for scan matching */
     ConstMapType ComputeCoarserMap(
@@ -61,7 +63,7 @@ private:
 
     /* Compute the scan matching score based on the already projected
      * scan points (indices) and index offsets */
-    double ComputeScore(
+    ScoreFunction::Summary ComputeScore(
         const GridMapBase<double>& gridMap,
         const std::vector<Point2D<int>>& scanIndices,
         const int offsetX,
