@@ -391,6 +391,7 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorGridSearch(
     const auto& config = jsonSettings.get_child(configGroup);
 
     const double scoreThreshold = config.get<double>("ScoreThreshold");
+    const double knownRateThreshold = config.get<double>("KnownRateThreshold");
 
     /* Construct a new exhaustive grid search based scan matcher */
     const std::string scanMatcherType =
@@ -409,7 +410,7 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorGridSearch(
 
     /* Construct a new grid search based loop detector */
     auto pLoopDetector = std::make_shared<Mapping::LoopDetectorGridSearch>(
-        pScanMatcher, scoreThreshold);
+        pScanMatcher, scoreThreshold, knownRateThreshold);
 
     return pLoopDetector;
 }
@@ -423,6 +424,7 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorRealTimeCorrelative(
     const pt::ptree& config = jsonSettings.get_child(configGroup);
 
     const double scoreThreshold = config.get<double>("ScoreThreshold");
+    const double knownRateThreshold = config.get<double>("KnownRateThreshold");
 
     /* Construct a new real-time correlative scan matcher */
     const std::string scanMatcherType =
@@ -441,7 +443,7 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorRealTimeCorrelative(
     /* Construct a real-time correlative loop detector */
     auto pLoopDetector = std::make_shared<
         Mapping::LoopDetectorRealTimeCorrelative>(
-            pScanMatcher, scoreThreshold);
+            pScanMatcher, scoreThreshold, knownRateThreshold);
 
     return pLoopDetector;
 }
@@ -454,7 +456,8 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorBranchBound(
     /* Read settings for a branch-and-bound loop detector */
     const auto& config = jsonSettings.get_child(configGroup);
 
-    const double scoreThreshold = config.get("ScoreThreshold", 0.8);
+    const double scoreThreshold = config.get<double>("ScoreThreshold");
+    const double knownRateThreshold = config.get<double>("KnownRateThreshold");
 
     /* Read settings for a new branch-and-bound based scan matcher */
     const std::string scanMatcherType =
@@ -473,7 +476,7 @@ std::shared_ptr<Mapping::LoopDetector> CreateLoopDetectorBranchBound(
 
     /* Construct a branch-and-bound loop detector object */
     auto pLoopDetector = std::make_shared<Mapping::LoopDetectorBranchBound>(
-        pScanMatcher, scoreThreshold);
+        pScanMatcher, scoreThreshold, knownRateThreshold);
 
     return pLoopDetector;
 }
