@@ -66,6 +66,7 @@
 
     "LoopDetectorGridSearch": {
         "ScoreThreshold": 0.5,
+        "KnownRateThreshold": 0.6,
         "ScanMatcherType": "GridSearch",
         "ScanMatcherConfigGroup": "LoopDetectorGridSearch.ScanMatcher",
         "ScanMatcher": {
@@ -101,6 +102,7 @@
 
     "LoopDetectorRealTimeCorrelative": {
         "ScoreThreshold": 0.6,
+        "KnownRateThreshold": 0.6,
         "ScanMatcherType": "RealTimeCorrelative",
         "ScanMatcherConfigGroup":
             "LoopDetectorRealTimeCorrelative.ScanMatcher",
@@ -127,6 +129,7 @@
 
     "LoopDetectorBranchBound": {
         "ScoreThreshold": 0.6,
+        "KnownRateThreshold": 0.8,
         "ScanMatcherType": "BranchBound",
         "ScanMatcherConfigGroup": "LoopDetectorBranchBound.ScanMatcher",
         "ScanMatcher": {
