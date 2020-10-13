@@ -139,9 +139,8 @@ void GridMapBuilder::AppendLocalMap(
     const Eigen::Matrix3d& scanPoseCovarianceMatrix,
     const NodeId scanNodeId)
 {
-    /* The last local maps are marked as finished */
-    if (!this->mLocalMaps.empty())
-        this->LatestLocalMap().mFinished = true;
+    /* The latest local map is marked as finished */
+    this->FinishLocalMap();
 
     /* Create the odometry edge connecting the old local map and the new
      * scan node if necessary */
@@ -151,6 +150,8 @@ void GridMapBuilder::AppendLocalMap(
         const auto& oldLocalMapNode = localMapNodes.Back();
         /* Make sure that their Ids are the same */
         Assert(oldLocalMap.mId == oldLocalMapNode.mLocalMapId);
+        /* Make sure that the old local map is finished */
+        Assert(oldLocalMap.mFinished);
         /* Make sure that the old local map contains scan data older than
          * the new scan data with the Id `scanNodeId` */
         Assert(scanNodeId > oldLocalMap.mScanNodeIdMax);
