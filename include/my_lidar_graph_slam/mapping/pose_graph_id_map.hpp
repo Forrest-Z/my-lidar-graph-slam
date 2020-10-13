@@ -22,7 +22,7 @@ class Range
 {
 public:
     /* Constructor */
-    Range(const IteratorType& beginIt, const IteratorType& endIt) :
+    Range(const IteratorType beginIt, const IteratorType endIt) :
         mBeginIt(beginIt), mEndIt(endIt) { }
 
     /* Copy constructor */
@@ -35,17 +35,17 @@ public:
     Range& operator=(Range&&) = default;
 
     /* Get the iterator to the begin element */
-    inline IteratorType& begin() noexcept
+    inline IteratorType begin() noexcept
     { return this->mBeginIt; }
     /* Get the iterator to the begin element */
-    inline const IteratorType& begin() const noexcept
+    inline const IteratorType begin() const noexcept
     { return this->mBeginIt; }
 
     /* Get the iterator to the end element */
-    inline IteratorType& end() noexcept
+    inline IteratorType end() noexcept
     { return this->mEndIt; }
     /* Get the iterator to the end element */
-    inline const IteratorType& end() const noexcept
+    inline const IteratorType end() const noexcept
     { return this->mEndIt; }
 
 private:
@@ -98,7 +98,7 @@ public:
         using iterator_category = std::bidirectional_iterator_tag;
 
         /* Constructor with the std::map iterator */
-        Iterator(const typename MapType::iterator& mapIt) :
+        explicit Iterator(const typename MapType::iterator mapIt) :
             mMapIt(mapIt) { }
 
         /* Dereference operator */
@@ -144,7 +144,7 @@ public:
         using iterator_category = std::bidirectional_iterator_tag;
 
         /* Constructor with the std::map const iterator */
-        ConstIterator(const typename MapType::const_iterator& mapIt) :
+        explicit ConstIterator(const typename MapType::const_iterator mapIt) :
             mMapIt(mapIt) { }
 
         /* Dereference operator */
@@ -302,11 +302,11 @@ public:
 
     /* Create a range [beginIt, endIt) from a pair of iterators */
     inline Range<Iterator> RangeFromIterator(
-        const Iterator& beginIt, const Iterator& endIt)
+        const Iterator beginIt, const Iterator endIt)
     { return Range<Iterator>(beginIt, endIt); }
     /* Create a range [beginIt, endIt) from a pair of iterators */
     inline Range<ConstIterator> RangeFromIterator(
-        const ConstIterator& beginIt, const ConstIterator& endIt) const
+        const ConstIterator beginIt, const ConstIterator endIt) const
     { return Range<ConstIterator>(beginIt, endIt); }
 
     /* Get the minimum Id in this map */
