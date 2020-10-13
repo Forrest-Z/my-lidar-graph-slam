@@ -41,6 +41,9 @@ public:
     void Run(LidarGraphSlam* const pParent,
              std::atomic<bool>& stopRequest);
 
+    /* Run a single iteration */
+    void RunStep(LidarGraphSlam* const pParent);
+
 private:
     /* Pose graph optimizer */
     std::shared_ptr<PoseGraphOptimizer> mPoseGraphOptimizer;

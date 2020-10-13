@@ -26,44 +26,56 @@ void LidarGraphSlamBackend::Run(
         /* Wait for the update from the SLAM frontend */
         pParent->WaitForNotification();
 
-        /* Find loop candidates */
-        const auto searchHint = pParent->GetLoopSearchHint();
-
-        if (searchHint.mLocalMapNodes.empty() || searchHint.mScanNodes.empty())
-            continue;
-
-        auto loopCandidates = this->mLoopSearcher->Search(searchHint);
-
-        if (loopCandidates.empty())
-            continue;
-
-        /* Perform loop detection using candidates, each of which consists of
-         * a collection of pose graph nodes and a local grid map */
-        auto loopDetectionQueries =
-            pParent->GetLoopDetectionQueries(loopCandidates);
-
-        LoopDetectionResultVector loopDetectionResults;
-        this->mLoopDetector->Detect(
-            loopDetectionQueries, loopDetectionResults);
-
-        if (loopDetectionResults.empty())
-            continue;
-
-        /* Append loop closing constraints using the loop detection results */
-        pParent->AppendLoopClosingEdges(loopDetectionResults);
-
-        /* Retrieve the finished pose graph nodes and edges */
-        IdMap<LocalMapId, LocalMapNode> localMapNodes;
-        IdMap<NodeId, ScanNode> scanNodes;
-        std::vector<PoseGraphEdge> poseGraphEdges;
-        pParent->GetPoseGraphFinished(localMapNodes, scanNodes, poseGraphEdges);
-
-        /* Perform pose graph optimization */
-        this->mPoseGraphOptimizer->Optimize(
-            localMapNodes, scanNodes, poseGraphEdges);
-        /* Update pose graph nodes and rebuild grid maps */
-        pParent->AfterLoopClosure(localMapNodes, scanNodes);
+        /* Run a single iteration */
+        this->RunStep(pParent);
     }
+
+    /* Perform the last iteration after the SLAM frontend has finished
+     * Loop detection and pose graph optimization are performed against
+     * the last local grid map appended to the grid map builder */
+    this->RunStep(pParent);
+}
+
+/* Run a single iteration */
+void LidarGraphSlamBackend::RunStep(LidarGraphSlam* const pParent)
+{
+    /* Find loop candidates */
+    const auto searchHint = pParent->GetLoopSearchHint();
+
+    if (searchHint.mLocalMapNodes.empty() || searchHint.mScanNodes.empty())
+        return;
+
+    auto loopCandidates = this->mLoopSearcher->Search(searchHint);
+
+    if (loopCandidates.empty())
+        return;
+
+    /* Perform loop detection using candidates, each of which consists of
+     * a collection of pose graph nodes and a local grid map */
+    auto loopDetectionQueries =
+        pParent->GetLoopDetectionQueries(loopCandidates);
+
+    LoopDetectionResultVector loopDetectionResults;
+    this->mLoopDetector->Detect(
+        loopDetectionQueries, loopDetectionResults);
+
+    if (loopDetectionResults.empty())
+        return;
+
+    /* Append loop closing constraints using the loop detection results */
+    pParent->AppendLoopClosingEdges(loopDetectionResults);
+
+    /* Retrieve the finished pose graph nodes and edges */
+    IdMap<LocalMapId, LocalMapNode> localMapNodes;
+    IdMap<NodeId, ScanNode> scanNodes;
+    std::vector<PoseGraphEdge> poseGraphEdges;
+    pParent->GetPoseGraphFinished(localMapNodes, scanNodes, poseGraphEdges);
+
+    /* Perform pose graph optimization */
+    this->mPoseGraphOptimizer->Optimize(
+        localMapNodes, scanNodes, poseGraphEdges);
+    /* Update pose graph nodes and rebuild grid maps */
+    pParent->AfterLoopClosure(localMapNodes, scanNodes);
 }
 
 } /* namespace Mapping */
