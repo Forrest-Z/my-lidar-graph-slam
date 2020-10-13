@@ -180,15 +180,14 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
-    /* Get the iterator to the first unfinished local map */
+    /* Get the iterator to the first unfinished local map
+     * If not found, all local grid maps stored in the grid map builder are
+     * in finished state and return them */
     const auto unfinishedMapIt = std::find_if(
         this->mGridMapBuilder->LocalMaps().cbegin(),
         this->mGridMapBuilder->LocalMaps().cend(),
         [](const IdMap<LocalMapId, LocalMap>::ConstIdDataPair& localMapPair) {
             return !localMapPair.mData.mFinished; });
-
-    /* Local map in unfinished state should be found */
-    Assert(unfinishedMapIt != this->mGridMapBuilder->LocalMaps().end());
 
     /* Return if there is no finished local grid map */
     if (unfinishedMapIt == this->mGridMapBuilder->LocalMaps().begin())
@@ -199,18 +198,23 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
             NodeId(NodeId::Invalid), LocalMapId(LocalMapId::Invalid) };
 
     /* Local maps with Ids larger than `localMapIdMax` are ignored */
-    const LocalMapId localMapIdMax = unfinishedMapIt->mId;
+    const LocalMapId localMapIdMax =
+        unfinishedMapIt != this->mGridMapBuilder->LocalMaps().cend() ?
+            unfinishedMapIt->mId : LocalMapId { LocalMapId::Invalid };
     /* Scan nodes with Ids larger than `nodeIdMax` are ignored */
-    const NodeId nodeIdMax = unfinishedMapIt->mData.mScanNodeIdMin;
+    const NodeId nodeIdMax =
+        unfinishedMapIt != this->mGridMapBuilder->LocalMaps().cend() ?
+            unfinishedMapIt->mData.mScanNodeIdMin : NodeId { NodeId::Invalid };
 
     IdMap<NodeId, ScanNodeData> scanNodes;
     IdMap<LocalMapId, LocalMapData> localMapNodes;
 
     /* Setup the scan nodes information */
     for (const auto& [nodeId, scanNode] : this->mPoseGraph->ScanNodes()) {
-        /* Ignore the scan node that belongs in the unfinished local map */
-        if (scanNode.mLocalMapId >= localMapIdMax ||
-            scanNode.mNodeId >= nodeIdMax)
+        /* Ignore the scan node that belongs to the unfinished local map */
+        if (localMapIdMax.mId != LocalMapId::Invalid &&
+            (scanNode.mLocalMapId >= localMapIdMax ||
+             scanNode.mNodeId >= nodeIdMax))
             break;
 
         /* Append the scan node information */
@@ -220,7 +224,8 @@ LoopSearchHint LidarGraphSlam::GetLoopSearchHint() const
     /* Setup the local map nodes information */
     for (const auto& [nodeId, mapNode] : this->mPoseGraph->LocalMapNodes()) {
         /* Ignore the unfinished local map */
-        if (nodeId >= localMapIdMax)
+        if (localMapIdMax.mId != LocalMapId::Invalid &&
+            nodeId >= localMapIdMax)
             break;
 
         /* Retrieve the local map information */
