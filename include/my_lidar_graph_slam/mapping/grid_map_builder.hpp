@@ -139,6 +139,9 @@ public:
         const IdMap<LocalMapId, LocalMapNode>& localMapNodes,
         const IdMap<NodeId, ScanNode>& scanNodes);
 
+    /* Finish the current local grid map */
+    void FinishLocalMap();
+
     /* Construct the global map */
     void ConstructGlobalMap(
         const IdMap<NodeId, ScanNode>& scanNodes,

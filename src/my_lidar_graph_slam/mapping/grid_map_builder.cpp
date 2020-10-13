@@ -95,6 +95,14 @@ void GridMapBuilder::AfterLoopClosure(
     this->UpdateAccumTravelDist(scanNodes);
 }
 
+/* Finish the current local grid map */
+void GridMapBuilder::FinishLocalMap()
+{
+    /* The current local map is marked as finished */
+    if (!this->mLocalMaps.empty())
+        this->LatestLocalMap().mFinished = true;
+}
+
 /* Construct the global grid map */
 void GridMapBuilder::ConstructGlobalMap(
     const IdMap<NodeId, ScanNode>& scanNodes,
