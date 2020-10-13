@@ -927,6 +927,20 @@ void LoadSettings(const fs::path& settingsFilePath,
     pLidarGraphSlam = CreateLidarGraphSlam(jsonSettings);
 }
 
+/* Draw pose graph on Gnuplot window */
+void DrawPoseGraph(const Mapping::LidarGraphSlamPtr& pLidarGraphSlam,
+                   const std::unique_ptr<IO::GnuplotHelper>& pGnuplotHelper)
+{
+    /* Get the pose graph information */
+    Mapping::IdMap<Mapping::LocalMapId, Mapping::LocalMapNode> localMapNodes;
+    Mapping::IdMap<Mapping::NodeId, Mapping::ScanNodeData> scanNodes;
+    std::vector<Mapping::EdgeData> poseGraphEdges;
+    pLidarGraphSlam->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
+
+    /* Draw the current pose graph if necessary */
+    pGnuplotHelper->DrawPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
+}
+
 int main(int argc, char** argv)
 {
     if (argc < 3) {
@@ -983,20 +997,16 @@ int main(int argc, char** argv)
             launcherSettings.mDrawFrameInterval != 0)
             continue;
 
-        /* Get the pose graph information */
-        Mapping::IdMap<Mapping::LocalMapId,
-            Mapping::LocalMapNode> localMapNodes;
-        Mapping::IdMap<Mapping::NodeId,
-            Mapping::ScanNodeData> scanNodes;
-        std::vector<Mapping::EdgeData> poseGraphEdges;
-        pLidarGraphSlam->GetPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
-
         /* Draw the current pose graph if necessary */
-        pGnuplotHelper->DrawPoseGraph(localMapNodes, scanNodes, poseGraphEdges);
+        DrawPoseGraph(pLidarGraphSlam, pGnuplotHelper);
     }
 
     /* Stop the SLAM backend */
     pLidarGraphSlam->StopBackend();
+
+    /* Draw the final pose graph if necessary */
+    if (launcherSettings.mGuiEnabled)
+        DrawPoseGraph(pLidarGraphSlam, pGnuplotHelper);
 
     IO::MapSaver* const pMapSaver = IO::MapSaver::Instance();
 
