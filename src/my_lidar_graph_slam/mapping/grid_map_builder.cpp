@@ -234,8 +234,11 @@ bool GridMapBuilder::UpdatePoseGraph(
     /* Determine whether to create a new local map */
     const bool travelDistThreshold =
         this->mTravelDistLastLocalMap >= this->mTravelDistThreshold;
+    const bool lastMapFinished =
+        !this->mLocalMaps.empty() && this->mLocalMaps.Back().mFinished;
     const bool isFirstScan = this->mLocalMaps.size() == 0;
-    const bool localMapInserted = travelDistThreshold || isFirstScan;
+    const bool localMapInserted =
+        travelDistThreshold || lastMapFinished || isFirstScan;
 
     /* Create a new local map if necessary
      * The pose (in a world coordinate frame) of the new local map is set to
