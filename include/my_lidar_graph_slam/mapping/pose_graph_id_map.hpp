@@ -101,7 +101,9 @@ public:
         explicit Iterator(const typename MapType::iterator mapIt) :
             mMapIt(mapIt) { }
 
-        /* Dereference operator */
+        /* Dereference operator (reference is not returned and std::find_if
+         * cannot be used since it expects this dereference operator to return
+         * a reference (not temporary variable) to the current element */
         inline IdDataPair operator*() const
         { return IdDataPair(this->mMapIt->first, this->mMapIt->second); }
         /* Member access operator */
@@ -147,7 +149,9 @@ public:
         explicit ConstIterator(const typename MapType::const_iterator mapIt) :
             mMapIt(mapIt) { }
 
-        /* Dereference operator */
+        /* Dereference operator (reference is not returned and std::find_if
+         * cannot be used since it expects this dereference operator to return
+         * a reference (not temporary variable) to the current element */
         inline ConstIdDataPair operator*() const
         { return ConstIdDataPair(this->mMapIt->first, this->mMapIt->second); }
         /* Member access operator */
