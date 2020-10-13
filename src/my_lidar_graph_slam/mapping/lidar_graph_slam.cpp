@@ -87,7 +87,9 @@ void LidarGraphSlam::GetPoseGraphFinished(
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
-    /* Get the iterator to the first unfinished local map */
+    /* Get the iterator to the first unfinished local map
+     * If not found, all local grid maps stored in the grid map builder are
+     * in finished state and return them */
     const auto unfinishedMapIt = std::find_if(
         this->mGridMapBuilder->LocalMaps().cbegin(),
         this->mGridMapBuilder->LocalMaps().cend(),
@@ -95,26 +97,33 @@ void LidarGraphSlam::GetPoseGraphFinished(
             return !localMapPair.mData.mFinished; });
 
     /* Local maps with Ids larger than `localMapIdMax` are removed */
-    const LocalMapId localMapIdMax = unfinishedMapIt->mId;
+    const LocalMapId localMapIdMax =
+        unfinishedMapIt != this->mGridMapBuilder->LocalMaps().cend() ?
+            unfinishedMapIt->mId : LocalMapId { LocalMapId::Invalid };
     /* Scan nodes with Ids larger than `nodeIdMax` are removed */
-    const NodeId nodeIdMax = unfinishedMapIt->mData.mScanNodeIdMin;
+    const NodeId nodeIdMax =
+        unfinishedMapIt != this->mGridMapBuilder->LocalMaps().cend() ?
+            unfinishedMapIt->mData.mScanNodeIdMin : NodeId { NodeId::Invalid };
 
     /* Copy the local map nodes */
     for (const auto& [nodeId, mapNode] : this->mPoseGraph->LocalMapNodes())
-        if (mapNode.mLocalMapId < localMapIdMax)
+        if (localMapIdMax.mId == LocalMapId::Invalid ||
+            mapNode.mLocalMapId < localMapIdMax)
             localMapNodes.Append(nodeId, mapNode.mGlobalPose);
 
     /* Copy the scan nodes */
     for (const auto& [nodeId, scanNode] : this->mPoseGraph->ScanNodes())
-        if (scanNode.mLocalMapId < localMapIdMax &&
-            scanNode.mNodeId < nodeIdMax)
+        if (localMapIdMax.mId == LocalMapId::Invalid ||
+            (scanNode.mLocalMapId < localMapIdMax &&
+             scanNode.mNodeId < nodeIdMax))
             scanNodes.Append(nodeId, scanNode.mLocalMapId, scanNode.mLocalPose,
                              scanNode.mScanData, scanNode.mGlobalPose);
 
     /* Copy the pose graph edges */
     for (const auto& poseGraphEdge : this->mPoseGraph->Edges())
-        if (poseGraphEdge.mLocalMapNodeId < localMapIdMax &&
-            poseGraphEdge.mScanNodeId < nodeIdMax)
+        if (localMapIdMax.mId == LocalMapId::Invalid ||
+            (poseGraphEdge.mLocalMapNodeId < localMapIdMax &&
+             poseGraphEdge.mScanNodeId < nodeIdMax))
             poseGraphEdges.emplace_back(
                 poseGraphEdge.mLocalMapNodeId, poseGraphEdge.mScanNodeId,
                 poseGraphEdge.mEdgeType, poseGraphEdge.mConstraintType,
