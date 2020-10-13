@@ -138,7 +138,7 @@ public:
     public:
         /* Type declarations */
         using value_type = ConstIdDataPair;
-        using reference = ConstIdDataPair&;
+        using reference = const ConstIdDataPair&;
         using pointer = std::unique_ptr<const ConstIdDataPair>;
         using difference_type = std::ptrdiff_t;
         using iterator_category = std::bidirectional_iterator_tag;
