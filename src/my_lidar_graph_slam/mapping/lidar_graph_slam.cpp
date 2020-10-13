@@ -600,6 +600,9 @@ void LidarGraphSlam::StopBackend()
     /* Acquire the unique lock */
     std::unique_lock uniqueLock { this->mMutex };
 
+    /* Mark the current local grid map as finished */
+    this->mGridMapBuilder->FinishLocalMap();
+
     /* Notify the SLAM backend to terminate */
     this->mBackendNotify = true;
     this->mBackendStopRequest = true;
